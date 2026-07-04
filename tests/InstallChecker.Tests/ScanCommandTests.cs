@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using InstallChecker;
 using Microsoft.Data.Sqlite;
 
@@ -191,6 +192,85 @@ public class ScanCommandTests : IDisposable
         var rows = ReadObservations();
         Assert.Single(rows); // le fichier lisible est bien inséré, le fichier illisible absent
         Assert.EndsWith("lisible.txt", rows[0].Path);
+    }
+
+    [Fact]
+    public void Scan_FileWithVersionInfo_StoresExactlyWhatApiReturns()
+    {
+        var copied = Path.Combine(_root, "kernel32.dll");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), copied);
+        var expected = FileVersionInfo.GetVersionInfo(copied); // oracle : l'API elle-même
+
+        var (exitCode, _, _) = Scan();
+
+        Assert.Equal(0, exitCode);
+        var row = ReadVersionInfo(copied);
+        Assert.Equal(expected.ProductName, row.ProductName);
+        Assert.Equal(expected.CompanyName, row.CompanyName);
+        Assert.Equal(expected.ProductVersion, row.ProductVersion);
+        Assert.Equal(expected.FileVersion, row.FileVersion);
+        Assert.NotNull(row.CompanyName); // kernel32 a toujours un CompanyName : le test ne valide pas du NULL contre du NULL
+    }
+
+    [Fact]
+    public void Scan_FileWithoutVersionInfo_StoresNullsWithoutError()
+    {
+        var plain = Path.Combine(_root, "sans-version.txt");
+        File.WriteAllText(plain, "aucune ressource VersionInfo ici");
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadVersionInfo(plain);
+        Assert.Null(row.ProductName);
+        Assert.Null(row.CompanyName);
+        Assert.Null(row.ProductVersion);
+        Assert.Null(row.FileVersion);
+    }
+
+    [Fact]
+    public void Scan_EveryObservationHasExactlyOneVersionInfoRow()
+    {
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "alpha");
+        File.WriteAllText(Path.Combine(_root, "b.txt"), "beta");
+
+        Scan();
+        Scan();
+
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var count = connection.CreateCommand();
+        count.CommandText = """
+            SELECT (SELECT COUNT(*) FROM scan_observations),
+                   (SELECT COUNT(*) FROM version_info),
+                   (SELECT COUNT(DISTINCT observation_id) FROM version_info);
+            """;
+        using var reader = count.ExecuteReader();
+        reader.Read();
+        Assert.Equal(4, reader.GetInt64(0));
+        Assert.Equal(4, reader.GetInt64(1));
+        Assert.Equal(4, reader.GetInt64(2)); // 1 ligne version_info par observation, liée par observation_id
+    }
+
+    private (string? ProductName, string? CompanyName, string? ProductVersion, string? FileVersion) ReadVersionInfo(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT v.product_name, v.company_name, v.product_version, v.file_version
+            FROM version_info v
+            JOIN scan_observations o ON o.id = v.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne version_info pour {path}");
+        string? Col(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
+        var row = (Col(0), Col(1), Col(2), Col(3));
+        Assert.False(reader.Read(), $"plusieurs lignes version_info pour {path}");
+        return row;
     }
 
     /// <summary>Extrait la colonne sha256 de la ligne du fichier nommé.</summary>

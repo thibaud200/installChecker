@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 
@@ -32,6 +33,13 @@ public static class ScanCommand
                     sha256     TEXT NOT NULL,
                     scanned_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS version_info (
+                    observation_id  INTEGER NOT NULL,
+                    product_name    TEXT,
+                    company_name    TEXT,
+                    product_version TEXT,
+                    file_version    TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -52,12 +60,26 @@ public static class ScanCommand
         using var transaction = connection.BeginTransaction();
         using var insert = connection.CreateCommand();
         insert.Transaction = transaction;
-        insert.CommandText =
-            "INSERT INTO scan_observations (path, size, sha256, scanned_at) VALUES ($path, $size, $sha256, $scannedAt);";
+        insert.CommandText = """
+            INSERT INTO scan_observations (path, size, sha256, scanned_at) VALUES ($path, $size, $sha256, $scannedAt);
+            SELECT last_insert_rowid();
+            """;
         var pPath = insert.Parameters.Add("$path", SqliteType.Text);
         var pSize = insert.Parameters.Add("$size", SqliteType.Integer);
         var pSha256 = insert.Parameters.Add("$sha256", SqliteType.Text);
         var pScannedAt = insert.Parameters.Add("$scannedAt", SqliteType.Text);
+
+        using var insertVersion = connection.CreateCommand();
+        insertVersion.Transaction = transaction;
+        insertVersion.CommandText = """
+            INSERT INTO version_info (observation_id, product_name, company_name, product_version, file_version)
+            VALUES ($observationId, $productName, $companyName, $productVersion, $fileVersion);
+            """;
+        var pObservationId = insertVersion.Parameters.Add("$observationId", SqliteType.Integer);
+        var pProductName = insertVersion.Parameters.Add("$productName", SqliteType.Text);
+        var pCompanyName = insertVersion.Parameters.Add("$companyName", SqliteType.Text);
+        var pProductVersion = insertVersion.Parameters.Add("$productVersion", SqliteType.Text);
+        var pFileVersion = insertVersion.Parameters.Add("$fileVersion", SqliteType.Text);
 
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
@@ -71,7 +93,16 @@ public static class ScanCommand
                 pSize.Value = file.Length;
                 pSha256.Value = sha256;
                 pScannedAt.Value = DateTime.UtcNow.ToString("O");
-                insert.ExecuteNonQuery();
+                var observationId = (long)insert.ExecuteScalar()!;
+
+                // Stocke ce que retourne l'API telle quelle. Aucune ressource VersionInfo → colonnes NULL, pas une erreur.
+                var versionInfo = FileVersionInfo.GetVersionInfo(file.FullName);
+                pObservationId.Value = observationId;
+                pProductName.Value = (object?)versionInfo.ProductName ?? DBNull.Value;
+                pCompanyName.Value = (object?)versionInfo.CompanyName ?? DBNull.Value;
+                pProductVersion.Value = (object?)versionInfo.ProductVersion ?? DBNull.Value;
+                pFileVersion.Value = (object?)versionInfo.FileVersion ?? DBNull.Value;
+                insertVersion.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;
