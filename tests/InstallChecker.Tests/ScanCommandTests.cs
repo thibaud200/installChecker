@@ -244,13 +244,117 @@ public class ScanCommandTests : IDisposable
         count.CommandText = """
             SELECT (SELECT COUNT(*) FROM scan_observations),
                    (SELECT COUNT(*) FROM version_info),
-                   (SELECT COUNT(DISTINCT observation_id) FROM version_info);
+                   (SELECT COUNT(DISTINCT observation_id) FROM version_info),
+                   (SELECT COUNT(*) FROM file_headers),
+                   (SELECT COUNT(DISTINCT observation_id) FROM file_headers);
             """;
         using var reader = count.ExecuteReader();
         reader.Read();
         Assert.Equal(4, reader.GetInt64(0));
         Assert.Equal(4, reader.GetInt64(1));
         Assert.Equal(4, reader.GetInt64(2)); // 1 ligne version_info par observation, liée par observation_id
+        Assert.Equal(4, reader.GetInt64(3));
+        Assert.Equal(4, reader.GetInt64(4)); // même invariant pour file_headers
+    }
+
+    [Fact]
+    public void Scan_PeExecutable_ClassifiedAsPe()
+    {
+        var copied = Path.Combine(_root, "kernel32.dll");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), copied);
+        var expectedHex = ExpectedMagicHex(copied);
+
+        Scan();
+
+        var (magicHex, container) = ReadFileHeader(copied);
+        Assert.Equal(expectedHex, magicHex);
+        Assert.StartsWith("4d5a", magicHex); // "MZ"
+        Assert.Equal("pe", container);
+    }
+
+    [Fact]
+    public void Scan_OleCompoundFile_ClassifiedAsOleCfb()
+    {
+        var msi = Path.Combine(_root, "fabrique.msi");
+        File.WriteAllBytes(msi, [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0x00, 0x42]);
+
+        Scan();
+
+        var (magicHex, container) = ReadFileHeader(msi);
+        Assert.Equal("d0cf11e0a1b11ae1", magicHex);
+        Assert.Equal("ole-cfb", container);
+    }
+
+    [Fact]
+    public void Scan_ZipArchive_ClassifiedAsZip()
+    {
+        var zip = Path.Combine(_root, "archive.zip");
+        using (var archive = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create))
+            archive.CreateEntry("contenu.txt");
+        var expectedHex = ExpectedMagicHex(zip);
+
+        Scan();
+
+        var (magicHex, container) = ReadFileHeader(zip);
+        Assert.Equal(expectedHex, magicHex);
+        Assert.StartsWith("504b0304", magicHex); // "PK\x03\x04"
+        Assert.Equal("zip", container);
+    }
+
+    [Fact]
+    public void Scan_UnknownFile_ContainerIsNull()
+    {
+        var texte = Path.Combine(_root, "inconnu.txt");
+        File.WriteAllText(texte, "juste du texte");
+        var expectedHex = ExpectedMagicHex(texte);
+
+        Scan();
+
+        var (magicHex, container) = ReadFileHeader(texte);
+        Assert.Equal(expectedHex, magicHex);
+        Assert.Equal(16, magicHex.Length); // 8 octets présents
+        Assert.Null(container);
+    }
+
+    [Fact]
+    public void Scan_FileShorterThanEightBytes_StoresOnlyPresentBytes()
+    {
+        var court = Path.Combine(_root, "court.bin");
+        File.WriteAllBytes(court, [0x4D, 0x5A, 0x42]); // commence par "MZ" mais 3 octets seulement
+
+        Scan();
+
+        var (magicHex, container) = ReadFileHeader(court);
+        Assert.Equal("4d5a42", magicHex); // exactement les octets présents, rien de plus
+        Assert.Equal("pe", container);    // le motif MZ est présent : classification identique
+    }
+
+    /// <summary>Oracle : hex minuscule des 8 premiers octets réels du fichier, lus par le test lui-même.</summary>
+    private static string ExpectedMagicHex(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var buffer = new byte[8];
+        var read = stream.ReadAtLeast(buffer, 8, throwOnEndOfStream: false);
+        return Convert.ToHexStringLower(buffer.AsSpan(..read));
+    }
+
+    private (string MagicHex, string? Container) ReadFileHeader(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT h.magic_hex, h.container
+            FROM file_headers h
+            JOIN scan_observations o ON o.id = h.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne file_headers pour {path}");
+        var row = (reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1));
+        Assert.False(reader.Read(), $"plusieurs lignes file_headers pour {path}");
+        return row;
     }
 
     private (string? ProductName, string? CompanyName, string? ProductVersion, string? FileVersion) ReadVersionInfo(string path)

@@ -40,6 +40,11 @@ public static class ScanCommand
                     product_version TEXT,
                     file_version    TEXT
                 );
+                CREATE TABLE IF NOT EXISTS file_headers (
+                    observation_id INTEGER NOT NULL,
+                    magic_hex      TEXT NOT NULL,
+                    container      TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -81,13 +86,28 @@ public static class ScanCommand
         var pProductVersion = insertVersion.Parameters.Add("$productVersion", SqliteType.Text);
         var pFileVersion = insertVersion.Parameters.Add("$fileVersion", SqliteType.Text);
 
+        using var insertHeader = connection.CreateCommand();
+        insertHeader.Transaction = transaction;
+        insertHeader.CommandText = """
+            INSERT INTO file_headers (observation_id, magic_hex, container)
+            VALUES ($observationId, $magicHex, $container);
+            """;
+        var pHeaderObservationId = insertHeader.Parameters.Add("$observationId", SqliteType.Integer);
+        var pMagicHex = insertHeader.Parameters.Add("$magicHex", SqliteType.Text);
+        var pContainer = insertHeader.Parameters.Add("$container", SqliteType.Text);
+
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
         {
             try
             {
-                using var stream = file.OpenRead();
-                var sha256 = Convert.ToHexStringLower(SHA256.HashData(stream)); // lecture en flux, jamais le fichier entier en mémoire
+                // Toutes les lectures d'abord (chaque capacité ouvre le fichier indépendamment),
+                // toutes les écritures ensuite : aucune observation partielle en cas d'échec de lecture.
+                string sha256;
+                using (var stream = file.OpenRead())
+                    sha256 = Convert.ToHexStringLower(SHA256.HashData(stream)); // lecture en flux, jamais le fichier entier en mémoire
+                var versionInfo = FileVersionInfo.GetVersionInfo(file.FullName);
+                var (magicHex, container) = FileHeaderExtractor.Read(file.FullName);
 
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
@@ -96,13 +116,17 @@ public static class ScanCommand
                 var observationId = (long)insert.ExecuteScalar()!;
 
                 // Stocke ce que retourne l'API telle quelle. Aucune ressource VersionInfo → colonnes NULL, pas une erreur.
-                var versionInfo = FileVersionInfo.GetVersionInfo(file.FullName);
                 pObservationId.Value = observationId;
                 pProductName.Value = (object?)versionInfo.ProductName ?? DBNull.Value;
                 pCompanyName.Value = (object?)versionInfo.CompanyName ?? DBNull.Value;
                 pProductVersion.Value = (object?)versionInfo.ProductVersion ?? DBNull.Value;
                 pFileVersion.Value = (object?)versionInfo.FileVersion ?? DBNull.Value;
                 insertVersion.ExecuteNonQuery();
+
+                pHeaderObservationId.Value = observationId;
+                pMagicHex.Value = magicHex;
+                pContainer.Value = (object?)container ?? DBNull.Value;
+                insertHeader.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;
