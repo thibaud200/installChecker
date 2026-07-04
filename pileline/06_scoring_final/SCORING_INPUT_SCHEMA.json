@@ -1,0 +1,8 @@
+{
+  "evidence_map": [],
+  "confidence_audit": [],
+  "source_weights": {
+    "GEM": 1.0,
+    "GPT": 0.5
+  }
+}

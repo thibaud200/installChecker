@@ -1,0 +1,117 @@
+À partir des éléments fournis ci-dessous :
+
+- 1 à N analyses provenant de différentes IA (ex : Gemini, ChatGPT, autres)
+- Chaque analyse est déjà structurée selon le format suivant :
+  SIGNALS / RISKS / INTERPRETATION / DECISION_SUPPORT
+
+IMPORTANT :
+Chaque source est indépendante. Ne pas les fusionner mentalement avant analyse.
+
+--------------------------------------------------
+
+SOURCE: Gemini (Retour_Gemini_1ere_Proposition.md)
+TYPE: Architecture review
+STANCE: B
+CONFIDENCE: élevée
+
+SIGNALS:
+- validation pipeline I/O
+- critique plugins
+- validation C#/.NET
+
+RISKS:
+- hash partial insuffisant pour identité
+- confusion identity vs dedup
+
+INTERPRETATION:
+- architecture B est la plus cohérente avec contraintes I/O et scaling
+
+DECISION_SUPPORT:
+- favorise architecture B
+
+--------------------------------------------------
+
+SOURCE: ChatGPT (Retour_ChatGPT_1ere_Solution.md)
+TYPE: Architecture review
+STANCE: B
+CONFIDENCE: élevée
+
+SIGNALS:
+- séparation identity vs dedup
+- validation pipeline A→B
+- critique scoring instability
+
+RISKS:
+- biais scoring
+- confusion hash / identity
+
+INTERPRETATION:
+- architecture B est la plus robuste structurellement
+
+DECISION_SUPPORT:
+- confirme architecture B
+
+--------------------------------------------------
+
+OBJECTIF DE CETTE ÉTAPE
+
+Tu es dans une phase STRICTEMENT ANALYTIQUE.
+
+Tu ne dois PAS :
+- prendre de décision finale
+- choisir une architecture
+- recommander une solution
+- fusionner les opinions
+- produire une synthèse décisionnelle
+
+Tu dois uniquement :
+- analyser les relations entre sources
+- comparer les informations
+- détecter les structures communes et divergentes
+- extraire des signaux techniques exploitables
+- identifier les biais d’analyse
+
+--------------------------------------------------
+
+SORTIE ATTENDUE
+
+## 1. Consensus global
+Liste des points confirmés par toutes les sources sans exception.
+
+## 2. Divergences
+Différences entre les sources + hypothèses expliquant ces divergences.
+
+## 3. Signaux techniques fiables
+Informations techniques récurrentes et robustes (indépendantes de l’opinion).
+
+## 4. Zones d’incertitude
+Points non couverts, ambiguïtés, ou informations manquantes critiques.
+
+## 5. Biais détectés
+Analyse des biais possibles :
+- sur-optimisation
+- sur-simplification
+- sur-ingénierie
+- confusion entre concepts (ex : identity vs dedup)
+- biais de langage ou d’architecture
+
+--------------------------------------------------
+
+RÈGLES STRICTES
+
+- Aucune architecture ne doit être proposée
+- Aucune recommandation ne doit être faite
+- Aucun choix ne doit être exprimé
+- Aucune synthèse finale ne doit être produite
+- Ne pas produire de “best option”
+- Ne pas hiérarchiser les architectures
+
+--------------------------------------------------
+
+IMPORTANT
+
+Ce module est une étape d’analyse comparative uniquement.
+
+La décision finale sera prise par un pipeline séparé.
+
+Ce que tu produis doit être exploitable par un système de scoring automatique.

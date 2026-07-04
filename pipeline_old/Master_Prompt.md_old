@@ -1,0 +1,510 @@
+# Rôle
+
+Tu agis comme une équipe composée de :
+
+* Software Architect Senior
+* Windows Internals Expert
+* Performance Engineer
+* Reverse Engineering Expert
+* Security Engineer
+* DevOps Engineer
+* Database Architect
+* API Designer
+* Open Source Maintainer
+* UX Designer
+* Build & Packaging Engineer
+
+Tu dois raisonner comme si tu concevais un logiciel professionnel destiné à être maintenu pendant plusieurs années.
+
+Ne cherche pas à me faire plaisir. Challenge chacune de mes idées.
+Propose de meilleures alternatives lorsqu'elles existent.
+Justifie chaque décision.
+Lorsque plusieurs solutions existent, compare-les objectivement.
+Ne pars jamais du principe que mon idée est la meilleure.
+
+---
+
+# Objectif du projet
+
+Je souhaite concevoir un logiciel Windows permettant de gérer une bibliothèque contenant plusieurs milliers voire plusieurs centaines de milliers d'installateurs Windows.
+Le projet est exclusivement destiné à Windows.
+Il ne doit contenir aucune logique Linux ni macOS.
+Formats concernés :
+
+* EXE
+* MSI
+* MSIX
+* APPX
+* APPXBUNDLE
+* éventuellement archives ZIP contenant un installateur
+
+Le logiciel ne doit pas être un simple détecteur de doublons.
+Il doit devenir un moteur d'analyse intelligent des installateurs Windows.
+
+---
+
+# Finalités
+
+Le logiciel devra notamment permettre :
+
+* identifier automatiquement un logiciel
+* retrouver son éditeur
+* retrouver sa version
+* retrouver son architecture
+* retrouver son type d'installateur
+* retrouver son certificat
+* retrouver sa signature
+* retrouver son URL officielle
+* retrouver sa dernière version disponible
+* détecter les anciennes versions
+* détecter les doublons
+* proposer quelle version conserver
+* préparer éventuellement une contribution WinGet
+
+La publication restera TOUJOURS manuelle.
+
+---
+
+# Contraintes
+
+Je souhaite :
+
+* aucune dépendance inutile
+* faible consommation mémoire
+* architecture modulaire
+* très hautes performances
+* reprise après interruption
+* évolutivité sur plusieurs années
+
+Le logiciel doit pouvoir fonctionner sur une bibliothèque de plusieurs centaines de milliers de fichiers.
+
+---
+
+# Analyse locale
+
+Pour chaque fichier récupérer le maximum d'informations.
+
+## Informations système
+
+* chemin
+* taille
+* taille allouée
+* extension
+* nom
+* dates
+* attributs
+* ACL
+* propriétaire
+* liens
+* ADS
+* permissions
+* type MIME
+* magic number
+
+## Hash
+
+Comparer l'intérêt de :
+
+* SHA256
+* SHA512
+* BLAKE3
+* xxHash
+* CRC32
+* etc..
+
+Déterminer lesquels sont réellement utiles.
+
+---
+
+# Analyse Windows
+
+Extraire :
+
+VersionInfo
+
+* ProductName
+* CompanyName
+* ProductVersion
+* FileVersion
+* InternalName
+* OriginalFilename
+* Description
+
+Authenticode
+
+* certificat
+* validité
+* timestamp
+* chaîne de confiance
+
+PE
+
+* architecture
+* sections
+* ressources
+* icônes
+* manifest
+* imports
+* exports
+* timestamp PE
+
+---
+
+# Analyse des installateurs
+
+Détecter automatiquement :
+
+* MSI
+* NSIS
+* Inno Setup
+* InstallShield
+* WiX
+* Burn
+* Squirrel
+* ClickOnce
+* autres technologies pertinentes
+
+Comparer les meilleures techniques de détection.
+
+---
+
+# Identification intelligente
+
+Le logiciel doit pouvoir reconnaître :
+
+setup.exe
+
+installer.exe
+install.exe
+update.exe
+etc.
+
+Même sans nom explicite.
+
+Comparer plusieurs méthodes :
+
+* métadonnées
+* hash
+* certificat
+* signature
+* ressources
+* chaînes de caractères
+* icône
+* heuristiques
+* IA si pertinente
+
+Créer un score de confiance.
+
+Le score devra expliquer pourquoi il est obtenu.
+
+---
+
+# Gestion des versions
+
+Différencier :
+
+* doublon exact
+* copie renommée
+* version plus récente
+* architecture différente
+* portable
+* installateur
+* beta
+* alpha
+* nightly
+* RC
+
+Comparer plusieurs stratégies.
+
+---
+
+# Sources externes
+
+Étudier :
+
+WinGet
+Chocolatey
+Scoop
+GitHub Releases
+API officielles
+Sites officiels
+Autres catalogues publics pertinents.
+
+Comparer :
+
+* qualité
+* couverture
+* fiabilité
+* rapidité
+* limitations
+
+---
+
+# WinGet
+
+Étudier précisément :
+
+* structure des manifests
+* récupération
+* génération
+* validation
+* contribution
+* automatisation possible
+* limites
+
+---
+
+# Téléchargement
+
+Comparer plusieurs stratégies :
+mise à jour
+remplacement
+
+archivage
+historique
+rollback
+
+---
+
+# Base de données
+
+Comparer :
+
+SQLite
+DuckDB
+LiteDB
+RocksDB
+PostgreSQL
+autres
+
+Comparer :
+
+* indexation
+* vitesse
+* concurrence
+* recherche
+* maintenance
+
+---
+
+# Architecture
+
+Je souhaite un découpage modulaire.
+
+Exemple :
+
+Scanner
+
+Watcher
+
+Analyse système
+
+Analyse PE
+Analyse Authenticode
+Analyse MSI
+Analyse NSIS
+Analyse Inno
+Hash
+Identification
+Matching
+Versions
+Déduplication
+Téléchargement
+Connecteur WinGet
+Connecteur Chocolatey
+Connecteur Scoop
+Connecteur GitHub
+Base de données
+Cache
+Configuration
+API
+CLI
+GUI
+Rapports
+Plugins
+
+Comparer plusieurs architectures.
+
+Hexagonale
+
+Clean Architecture
+DDD
+Onion
+Microkernel
+Plugins
+Événementielle
+Pipeline
+Producteur / consommateur
+Justifier le meilleur choix.
+
+---
+
+# Performances
+
+Je souhaite une analyse extrêmement poussée.
+
+Comparer :
+
+Rust
+C#
+Go
+C++
+Java
+Autres
+
+Comparer :
+
+* CPU
+* mémoire
+* multithreading
+* async
+* IO
+* SIMD
+* cache
+* parsing PE
+* Win32
+* API Windows
+* maintenance
+
+Si une architecture hybride est préférable, proposer :
+
+exemple
+Rust + C#
+Rust + WPF
+Rust + Avalonia
+etc.
+
+---
+
+# Optimisation
+
+Réfléchir notamment à :
+
+pipeline
+cache
+lazy loading
+batch
+index
+compression
+thread pool
+work stealing
+memory mapping
+annulation
+priorités
+
+gestion HDD vs SSD
+
+hash partiels
+pré-filtrage
+reprise
+journalisation
+
+---
+
+# Extensibilité
+
+Le projet devra pouvoir accueillir :
+
+nouveaux catalogues
+nouveaux formats
+nouveaux analyseurs
+plugins
+
+sans modifier le cœur.
+
+---
+
+# Tests
+
+Proposer :
+
+tests unitaires
+tests d'intégration
+tests de charge
+benchmarks
+tests de robustesse
+tests sur plusieurs centaines de milliers de fichiers.
+
+---
+
+# Interface
+
+Comparer :
+
+CLI
+GUI
+REST API
+Web locale
+
+Comparer :
+
+WPF
+WinUI
+Avalonia
+MAUI
+Electron
+Autres
+
+---
+
+# Sécurité
+
+Étudier :
+
+sandbox
+signature
+certificats
+hash
+
+vérification des téléchargements
+
+MITM
+
+HTTPS
+
+cache sécurisé
+
+---
+
+# Livrables attendus
+
+Je souhaite un véritable dossier d'architecture contenant :
+
+* analyse critique du projet
+* risques
+* compromis
+* limites
+* difficultés
+* architecture retenue
+* justification
+* modules détaillés
+* responsabilités de chaque module
+* interfaces entre modules
+* diagrammes Mermaid
+* diagrammes de séquence
+* diagrammes de flux
+* structure des dossiers
+* structure des projets
+* modèle de données
+* schéma de base de données
+* stratégie de cache
+* stratégie de journalisation
+* stratégie de configuration
+* stratégie de tests
+* plan de développement
+* roadmap
+* estimation de complexité
+* estimation des performances
+* dette technique potentielle
+* fonctionnalités futures
+
+Pour chaque proposition :
+
+* justifier les choix
+* comparer les alternatives
+* expliquer pourquoi elles sont retenues ou rejetées.
+
+Enfin, effectue une recherche approfondie afin de déterminer si un logiciel libre, 
+commercial ou un projet open source implémente déjà tout ou partie de cette vision. 
+Compare précisément leurs fonctionnalités, leurs limites et indique quelles briques existantes pourraient être réutilisées 
+au lieu d'être développées de zéro.

@@ -1,0 +1,43 @@
+ACKNOWLEDGEMENT:
+
+La classification des sources est acceptée.
+
+--------------------------------------------------
+
+IMPORTANT CONSTRAINT:
+
+Tu es dans le rôle TRACE AUDITOR uniquement.
+
+Tu n’as PAS l’autorisation de :
+- définir des règles globales de scoring
+- interpréter la structure globale du système
+- modifier la notion de consensus ou de N effectif
+- conclure sur la comparabilité globale des sources
+
+--------------------------------------------------
+
+ACTION AUTORISÉE UNIQUEMENT:
+
+1. Vérifier la cohérence locale des classifications
+2. Identifier erreurs de type (primaire / dérivé / contrôle)
+3. Signaler les risques de double comptage
+4. Signaler les problèmes de dépendance entre sources
+
+--------------------------------------------------
+
+ACTION INTERDITE:
+
+- Toute synthèse globale du système
+- Toute définition de règles de scoring global
+- Toute conclusion sur la validité du pipeline
+- Toute réécriture du modèle d’analyse
+
+--------------------------------------------------
+
+FOCUS ATTENDU:
+
+- erreurs de classification
+- dépendances entre sources
+- risques de contamination entre niveaux
+
+Aucune conclusion système ne doit être produite.

@@ -1,0 +1,13 @@
+{
+  "EVIDENCE_MAP": [
+    {
+      "signal_id": "string",
+      "source_id": "string",
+      "quote": "string",
+      "mapping_type": "exact | partial | inferred"
+    }
+  ],
+  "CONFIDENCE_AUDIT": [],
+  "ERROR_DETECTION": [],
+  "UNRESOLVED": []
+}
