@@ -53,6 +53,15 @@ public static class ScanCommand
                     timestamp             INTEGER,
                     optional_header_magic TEXT
                 );
+                CREATE TABLE IF NOT EXISTS authenticode (
+                    observation_id INTEGER NOT NULL,
+                    subject        TEXT,
+                    issuer         TEXT,
+                    serial_number  TEXT,
+                    thumbprint     TEXT,
+                    not_before     TEXT,
+                    not_after      TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -117,6 +126,20 @@ public static class ScanCommand
         var pTimestamp = insertPe.Parameters.Add("$timestamp", SqliteType.Integer);
         var pOptionalHeaderMagic = insertPe.Parameters.Add("$optionalHeaderMagic", SqliteType.Text);
 
+        using var insertAuthenticode = connection.CreateCommand();
+        insertAuthenticode.Transaction = transaction;
+        insertAuthenticode.CommandText = """
+            INSERT INTO authenticode (observation_id, subject, issuer, serial_number, thumbprint, not_before, not_after)
+            VALUES ($observationId, $subject, $issuer, $serialNumber, $thumbprint, $notBefore, $notAfter);
+            """;
+        var pAuthObservationId = insertAuthenticode.Parameters.Add("$observationId", SqliteType.Integer);
+        var pSubject = insertAuthenticode.Parameters.Add("$subject", SqliteType.Text);
+        var pIssuer = insertAuthenticode.Parameters.Add("$issuer", SqliteType.Text);
+        var pSerialNumber = insertAuthenticode.Parameters.Add("$serialNumber", SqliteType.Text);
+        var pThumbprint = insertAuthenticode.Parameters.Add("$thumbprint", SqliteType.Text);
+        var pNotBefore = insertAuthenticode.Parameters.Add("$notBefore", SqliteType.Text);
+        var pNotAfter = insertAuthenticode.Parameters.Add("$notAfter", SqliteType.Text);
+
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
         {
@@ -130,6 +153,7 @@ public static class ScanCommand
                 var versionInfo = FileVersionInfo.GetVersionInfo(file.FullName);
                 var (magicHex, container) = FileHeaderExtractor.Read(file.FullName);
                 var peInfo = PeInfoExtractor.Read(file.FullName);
+                var authenticode = AuthenticodeExtractor.Read(file.FullName);
 
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
@@ -157,6 +181,15 @@ public static class ScanCommand
                 pTimestamp.Value = (object?)peInfo.Timestamp ?? DBNull.Value;
                 pOptionalHeaderMagic.Value = (object?)peInfo.OptionalHeaderMagic ?? DBNull.Value;
                 insertPe.ExecuteNonQuery();
+
+                pAuthObservationId.Value = observationId;
+                pSubject.Value = (object?)authenticode.Subject ?? DBNull.Value;
+                pIssuer.Value = (object?)authenticode.Issuer ?? DBNull.Value;
+                pSerialNumber.Value = (object?)authenticode.SerialNumber ?? DBNull.Value;
+                pThumbprint.Value = (object?)authenticode.Thumbprint ?? DBNull.Value;
+                pNotBefore.Value = (object?)authenticode.NotBefore ?? DBNull.Value;
+                pNotAfter.Value = (object?)authenticode.NotAfter ?? DBNull.Value;
+                insertAuthenticode.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;

@@ -248,7 +248,9 @@ public class ScanCommandTests : IDisposable
                    (SELECT COUNT(*) FROM file_headers),
                    (SELECT COUNT(DISTINCT observation_id) FROM file_headers),
                    (SELECT COUNT(*) FROM pe_info),
-                   (SELECT COUNT(DISTINCT observation_id) FROM pe_info);
+                   (SELECT COUNT(DISTINCT observation_id) FROM pe_info),
+                   (SELECT COUNT(*) FROM authenticode),
+                   (SELECT COUNT(DISTINCT observation_id) FROM authenticode);
             """;
         using var reader = count.ExecuteReader();
         reader.Read();
@@ -259,6 +261,8 @@ public class ScanCommandTests : IDisposable
         Assert.Equal(4, reader.GetInt64(4)); // même invariant pour file_headers
         Assert.Equal(4, reader.GetInt64(5));
         Assert.Equal(4, reader.GetInt64(6)); // même invariant pour pe_info
+        Assert.Equal(4, reader.GetInt64(7));
+        Assert.Equal(4, reader.GetInt64(8)); // même invariant pour authenticode
     }
 
     [Fact]
@@ -380,6 +384,82 @@ public class ScanCommandTests : IDisposable
         Assert.Null(row.Characteristics);
         Assert.Null(row.Timestamp);
         Assert.Null(row.OptionalHeaderMagic);
+    }
+
+    [Fact]
+    public void Scan_SignedMicrosoftBinary_StoresLeafCertificateFieldsExactly()
+    {
+        var dotnetExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet", "dotnet.exe");
+        Assert.True(File.Exists(dotnetExe), "dotnet.exe requis pour le cas signé");
+        var copied = Path.Combine(_root, "dotnet-signe.exe");
+        File.Copy(dotnetExe, copied);
+        var expected = AuthenticodeExtractor.Read(copied); // oracle : l'API elle-même, appelée par le test
+        Assert.NotNull(expected.Subject);                  // garde-fou : le binaire de référence est bien signé (embarqué)
+
+        Scan();
+
+        var stored = ReadAuthenticode(copied);
+        Assert.Equal(expected.Subject, stored.Subject);
+        Assert.Equal(expected.Issuer, stored.Issuer);
+        Assert.Equal(expected.SerialNumber, stored.SerialNumber);
+        Assert.Equal(expected.Thumbprint, stored.Thumbprint);
+        Assert.Equal(expected.NotBefore, stored.NotBefore);
+        Assert.Equal(expected.NotAfter, stored.NotAfter);
+    }
+
+    [Fact]
+    public void Scan_UnsignedPeBinary_AuthenticodeRowIsAllNull()
+    {
+        var copied = Path.Combine(_root, "non-signe.dll");
+        File.Copy(typeof(ScanCommand).Assembly.Location, copied); // notre propre assembly : PE réel, jamais signé
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadAuthenticode(copied);
+        Assert.Null(row.Subject);
+        Assert.Null(row.Issuer);
+        Assert.Null(row.SerialNumber);
+        Assert.Null(row.Thumbprint);
+        Assert.Null(row.NotBefore);
+        Assert.Null(row.NotAfter);
+    }
+
+    [Fact]
+    public void Scan_TextFile_AuthenticodeRowIsAllNull()
+    {
+        var texte = Path.Combine(_root, "pas-signe.txt");
+        File.WriteAllText(texte, "du texte, pas de signature");
+
+        var (exitCode, _, _) = Scan();
+
+        Assert.Equal(0, exitCode);
+        var row = ReadAuthenticode(texte);
+        Assert.Null(row.Subject);
+        Assert.Null(row.Thumbprint);
+    }
+
+    private sealed record AuthenticodeRow(string? Subject, string? Issuer, string? SerialNumber, string? Thumbprint, string? NotBefore, string? NotAfter);
+
+    private AuthenticodeRow ReadAuthenticode(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT a.subject, a.issuer, a.serial_number, a.thumbprint, a.not_before, a.not_after
+            FROM authenticode a
+            JOIN scan_observations o ON o.id = a.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne authenticode pour {path}");
+        string? Col(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
+        var row = new AuthenticodeRow(Col(0), Col(1), Col(2), Col(3), Col(4), Col(5));
+        Assert.False(reader.Read(), $"plusieurs lignes authenticode pour {path}");
+        return row;
     }
 
     private sealed record PeRow(string? Machine, string? Subsystem, long? Characteristics, long? Timestamp, string? OptionalHeaderMagic);
