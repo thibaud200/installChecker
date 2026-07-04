@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
 namespace InstallChecker;
@@ -7,12 +8,14 @@ namespace InstallChecker;
 public static class ScanCommand
 {
     /// <summary>
-    /// Parcourt récursivement <paramref name="root"/>, écrit "chemin complet TAB taille TAB sha256"
-    /// par fichier et enregistre chaque ligne comme observation dans la base SQLite <paramref name="dbPath"/>.
-    /// La table est append-only : chaque exécution ajoute de nouvelles observations, sans dédoublonnage.
+    /// Parcourt récursivement <paramref name="root"/>, écrit une ligne par fichier sur stdout
+    /// (TSV "chemin TAB taille TAB sha256" par défaut, JSON Lines si <paramref name="jsonOutput"/>)
+    /// et enregistre chaque observation dans la base SQLite <paramref name="dbPath"/>.
+    /// Les tables sont append-only : chaque exécution ajoute de nouvelles observations, sans dédoublonnage.
+    /// La projection JSON est dérivée strictement des mêmes valeurs que les INSERT (zéro recalcul).
     /// </summary>
     /// <returns>0 si le scan s'est terminé (même avec erreurs locales), 1 si la racine ou la base est invalide.</returns>
-    public static int Run(string root, string dbPath, TextWriter output, TextWriter errors)
+    public static int Run(string root, string dbPath, bool jsonOutput, TextWriter output, TextWriter errors)
     {
         if (!Directory.Exists(root))
         {
@@ -199,10 +202,11 @@ public static class ScanCommand
                 var msiProperties = MsiPropertiesExtractor.Read(file.FullName);
                 var appxManifest = AppxManifestExtractor.Read(file.FullName);
 
+                var scannedAt = DateTime.UtcNow.ToString("O");
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
                 pSha256.Value = sha256;
-                pScannedAt.Value = DateTime.UtcNow.ToString("O");
+                pScannedAt.Value = scannedAt;
                 var observationId = (long)insert.ExecuteScalar()!;
 
                 // Stocke ce que retourne l'API telle quelle. Aucune ressource VersionInfo → colonnes NULL, pas une erreur.
@@ -251,7 +255,74 @@ public static class ScanCommand
                 pAppxProcessorArchitecture.Value = (object?)appxManifest.ProcessorArchitecture ?? DBNull.Value;
                 insertAppx.ExecuteNonQuery();
 
-                output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
+                if (jsonOutput)
+                {
+                    // Projection stricte des valeurs insérées ci-dessus — aucune valeur recalculée ni relue.
+                    output.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        file = file.FullName,
+                        observation_id = observationId,
+                        core = new
+                        {
+                            size = file.Length,
+                            sha256,
+                            scanned_at = scannedAt,
+                            magic_hex = magicHex,
+                            container,
+                            pe_info = new
+                            {
+                                machine = peInfo.Machine,
+                                subsystem = peInfo.Subsystem,
+                                characteristics = peInfo.Characteristics,
+                                timestamp = peInfo.Timestamp,
+                                optional_header_magic = peInfo.OptionalHeaderMagic,
+                            },
+                        },
+                        metadata = new
+                        {
+                            version_info = new
+                            {
+                                product_name = versionInfo.ProductName,
+                                company_name = versionInfo.CompanyName,
+                                product_version = versionInfo.ProductVersion,
+                                file_version = versionInfo.FileVersion,
+                            },
+                            authenticode = new
+                            {
+                                subject = authenticode.Subject,
+                                issuer = authenticode.Issuer,
+                                serial_number = authenticode.SerialNumber,
+                                thumbprint = authenticode.Thumbprint,
+                                not_before = authenticode.NotBefore,
+                                not_after = authenticode.NotAfter,
+                            },
+                        },
+                        installer = new
+                        {
+                            msi_properties = new
+                            {
+                                product_name = msiProperties.ProductName,
+                                product_version = msiProperties.ProductVersion,
+                                manufacturer = msiProperties.Manufacturer,
+                                product_code = msiProperties.ProductCode,
+                                upgrade_code = msiProperties.UpgradeCode,
+                                product_language = msiProperties.ProductLanguage,
+                            },
+                            appx_manifest = new
+                            {
+                                name = appxManifest.Name,
+                                publisher = appxManifest.Publisher,
+                                version = appxManifest.Version,
+                                processor_architecture = appxManifest.ProcessorArchitecture,
+                            },
+                        },
+                        status = "ok", // "failed"/"partial" : réservés à l'option fichiers inaccessibles, non activée
+                    }));
+                }
+                else
+                {
+                    output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
+                }
                 fileCount++;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

@@ -17,11 +17,11 @@ public class ScanCommandTests : IDisposable
         Directory.Delete(_dbDir, recursive: true);
     }
 
-    private (int ExitCode, string[] Lines, string Errors) Scan()
+    private (int ExitCode, string[] Lines, string Errors) Scan(bool json = false)
     {
         var output = new StringWriter();
         var errors = new StringWriter();
-        var exitCode = ScanCommand.Run(_root, DbPath, output, errors);
+        var exitCode = ScanCommand.Run(_root, DbPath, json, output, errors);
         var lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         return (exitCode, lines, errors.ToString());
     }
@@ -83,10 +83,72 @@ public class ScanCommandTests : IDisposable
     public void Scan_MissingRoot_ReturnsOne()
     {
         var errors = new StringWriter();
-        var exitCode = ScanCommand.Run(Path.Combine(_root, "n-existe-pas"), DbPath, TextWriter.Null, errors);
+        var exitCode = ScanCommand.Run(Path.Combine(_root, "n-existe-pas"), DbPath, false, TextWriter.Null, errors);
 
         Assert.Equal(1, exitCode);
         Assert.Contains("introuvable", errors.ToString());
+    }
+
+    [Fact]
+    public void Scan_JsonOutput_LinesMatchDatabaseValuesExactly()
+    {
+        var copied = Path.Combine(_root, "kernel32.dll");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), copied);
+
+        var (exitCode, lines, _) = Scan(json: true);
+
+        Assert.Equal(0, exitCode);
+        var line = Assert.Single(lines);
+        using var doc = System.Text.Json.JsonDocument.Parse(line); // chaque ligne est un JSON valide
+        var rootElement = doc.RootElement;
+
+        Assert.Equal(copied, rootElement.GetProperty("file").GetString());
+        Assert.Equal("ok", rootElement.GetProperty("status").GetString());
+
+        // Projection stricte : mêmes valeurs que la base, champ à champ.
+        var stored = ReadObservations().Single();
+        Assert.Equal(stored.Sha256, rootElement.GetProperty("core").GetProperty("sha256").GetString());
+        Assert.Equal(stored.Size, rootElement.GetProperty("core").GetProperty("size").GetInt64());
+        var storedVersion = ReadVersionInfo(copied);
+        Assert.Equal(storedVersion.CompanyName,
+            rootElement.GetProperty("metadata").GetProperty("version_info").GetProperty("company_name").GetString());
+        var storedPe = ReadPeInfo(copied);
+        Assert.Equal(storedPe.Machine,
+            rootElement.GetProperty("core").GetProperty("pe_info").GetProperty("machine").GetString());
+        var storedAuth = ReadAuthenticode(copied);
+        Assert.Equal(storedAuth.Thumbprint,
+            rootElement.GetProperty("metadata").GetProperty("authenticode").GetProperty("thumbprint").GetString());
+    }
+
+    [Fact]
+    public void Scan_JsonOutput_AbsentObservationsAreJsonNull()
+    {
+        File.WriteAllText(Path.Combine(_root, "simple.txt"), "texte");
+
+        var (_, lines, _) = Scan(json: true);
+
+        using var doc = System.Text.Json.JsonDocument.Parse(Assert.Single(lines));
+        var rootElement = doc.RootElement;
+        Assert.Equal(System.Text.Json.JsonValueKind.Null,
+            rootElement.GetProperty("core").GetProperty("container").ValueKind); // NULL = absence, jamais "unknown"
+        Assert.Equal(System.Text.Json.JsonValueKind.Null,
+            rootElement.GetProperty("core").GetProperty("pe_info").GetProperty("machine").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null,
+            rootElement.GetProperty("installer").GetProperty("msi_properties").GetProperty("product_code").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null,
+            rootElement.GetProperty("installer").GetProperty("appx_manifest").GetProperty("name").ValueKind);
+    }
+
+    [Fact]
+    public void Scan_DefaultOutput_RemainsTsv()
+    {
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "x");
+
+        var (_, lines, _) = Scan();
+
+        var line = Assert.Single(lines);
+        Assert.Equal(3, line.Split('\t').Length); // chemin, taille, sha256 — inchangé
+        Assert.DoesNotContain("{", line);
     }
 
     // Vecteur SHA-256 connu : "abc" (FIPS 180-2, oracle indépendant de l'implémentation).
