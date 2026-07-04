@@ -71,6 +71,13 @@ public static class ScanCommand
                     upgrade_code     TEXT,
                     product_language TEXT
                 );
+                CREATE TABLE IF NOT EXISTS appx_manifest (
+                    observation_id         INTEGER NOT NULL,
+                    name                   TEXT,
+                    publisher              TEXT,
+                    version                TEXT,
+                    processor_architecture TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -163,6 +170,18 @@ public static class ScanCommand
         var pMsiUpgradeCode = insertMsi.Parameters.Add("$upgradeCode", SqliteType.Text);
         var pMsiProductLanguage = insertMsi.Parameters.Add("$productLanguage", SqliteType.Text);
 
+        using var insertAppx = connection.CreateCommand();
+        insertAppx.Transaction = transaction;
+        insertAppx.CommandText = """
+            INSERT INTO appx_manifest (observation_id, name, publisher, version, processor_architecture)
+            VALUES ($observationId, $name, $publisher, $version, $processorArchitecture);
+            """;
+        var pAppxObservationId = insertAppx.Parameters.Add("$observationId", SqliteType.Integer);
+        var pAppxName = insertAppx.Parameters.Add("$name", SqliteType.Text);
+        var pAppxPublisher = insertAppx.Parameters.Add("$publisher", SqliteType.Text);
+        var pAppxVersion = insertAppx.Parameters.Add("$version", SqliteType.Text);
+        var pAppxProcessorArchitecture = insertAppx.Parameters.Add("$processorArchitecture", SqliteType.Text);
+
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
         {
@@ -178,6 +197,7 @@ public static class ScanCommand
                 var peInfo = PeInfoExtractor.Read(file.FullName);
                 var authenticode = AuthenticodeExtractor.Read(file.FullName);
                 var msiProperties = MsiPropertiesExtractor.Read(file.FullName);
+                var appxManifest = AppxManifestExtractor.Read(file.FullName);
 
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
@@ -223,6 +243,13 @@ public static class ScanCommand
                 pMsiUpgradeCode.Value = (object?)msiProperties.UpgradeCode ?? DBNull.Value;
                 pMsiProductLanguage.Value = (object?)msiProperties.ProductLanguage ?? DBNull.Value;
                 insertMsi.ExecuteNonQuery();
+
+                pAppxObservationId.Value = observationId;
+                pAppxName.Value = (object?)appxManifest.Name ?? DBNull.Value;
+                pAppxPublisher.Value = (object?)appxManifest.Publisher ?? DBNull.Value;
+                pAppxVersion.Value = (object?)appxManifest.Version ?? DBNull.Value;
+                pAppxProcessorArchitecture.Value = (object?)appxManifest.ProcessorArchitecture ?? DBNull.Value;
+                insertAppx.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;

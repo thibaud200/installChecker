@@ -252,7 +252,9 @@ public class ScanCommandTests : IDisposable
                    (SELECT COUNT(*) FROM authenticode),
                    (SELECT COUNT(DISTINCT observation_id) FROM authenticode),
                    (SELECT COUNT(*) FROM msi_properties),
-                   (SELECT COUNT(DISTINCT observation_id) FROM msi_properties);
+                   (SELECT COUNT(DISTINCT observation_id) FROM msi_properties),
+                   (SELECT COUNT(*) FROM appx_manifest),
+                   (SELECT COUNT(DISTINCT observation_id) FROM appx_manifest);
             """;
         using var reader = count.ExecuteReader();
         reader.Read();
@@ -267,6 +269,8 @@ public class ScanCommandTests : IDisposable
         Assert.Equal(4, reader.GetInt64(8)); // même invariant pour authenticode
         Assert.Equal(4, reader.GetInt64(9));
         Assert.Equal(4, reader.GetInt64(10)); // même invariant pour msi_properties
+        Assert.Equal(4, reader.GetInt64(11));
+        Assert.Equal(4, reader.GetInt64(12)); // même invariant pour appx_manifest
     }
 
     [Fact]
@@ -503,6 +507,119 @@ public class ScanCommandTests : IDisposable
         var row = ReadMsiProperties(texte);
         Assert.Null(row.ProductName);
         Assert.Null(row.ProductCode);
+    }
+
+    [Fact]
+    public void Scan_ZipWithAppxManifest_StoresIdentityAttributesExactly()
+    {
+        var msix = Path.Combine(_root, "paquet-test.msix");
+        CreateZipWithManifest(msix, """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+              <Identity Name="Test.Paquet" Publisher="CN=Éditeur Test, O=Test" Version="2.0.1.0" ProcessorArchitecture="x64" />
+            </Package>
+            """);
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadAppxManifest(msix);
+        Assert.Equal("Test.Paquet", row.Name);
+        Assert.Equal("CN=Éditeur Test, O=Test", row.Publisher);
+        Assert.Equal("2.0.1.0", row.Version);
+        Assert.Equal("x64", row.ProcessorArchitecture);
+    }
+
+    [Fact]
+    public void Scan_ManifestWithoutProcessorArchitecture_StoresNullWithoutCompletion()
+    {
+        var msix = Path.Combine(_root, "sans-arch.msix");
+        CreateZipWithManifest(msix, """
+            <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+              <Identity Name="Sans.Arch" Publisher="CN=X" Version="1.0.0.0" />
+            </Package>
+            """);
+
+        Scan();
+
+        var row = ReadAppxManifest(msix);
+        Assert.Equal("Sans.Arch", row.Name);
+        Assert.Null(row.ProcessorArchitecture); // attribut absent → NULL, jamais complété
+    }
+
+    [Fact]
+    public void Scan_ZipWithoutManifest_AppxRowIsAllNull()
+    {
+        var zip = Path.Combine(_root, "ordinaire.zip");
+        using (var archive = System.IO.Compression.ZipFile.Open(zip, System.IO.Compression.ZipArchiveMode.Create))
+            archive.CreateEntry("contenu.txt");
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadAppxManifest(zip);
+        Assert.Null(row.Name);
+        Assert.Null(row.Publisher);
+        Assert.Null(row.Version);
+        Assert.Null(row.ProcessorArchitecture); // un ZIP sans manifeste reste un ZIP : aucune conclusion
+    }
+
+    [Fact]
+    public void Scan_MalformedManifestXml_AppxRowIsAllNullWithoutError()
+    {
+        var msix = Path.Combine(_root, "xml-casse.msix");
+        CreateZipWithManifest(msix, "<Package><Identity pas fermé");
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadAppxManifest(msix);
+        Assert.Null(row.Name);
+    }
+
+    [Fact]
+    public void Scan_NonZipFile_AppxRowIsAllNull()
+    {
+        var texte = Path.Combine(_root, "pas-un-zip.txt");
+        File.WriteAllText(texte, "contenu texte");
+
+        Scan();
+
+        var row = ReadAppxManifest(texte);
+        Assert.Null(row.Name);
+        Assert.Null(row.Version);
+    }
+
+    private static void CreateZipWithManifest(string path, string manifestXml)
+    {
+        using var archive = System.IO.Compression.ZipFile.Open(path, System.IO.Compression.ZipArchiveMode.Create);
+        using var writer = new StreamWriter(archive.CreateEntry("AppxManifest.xml").Open());
+        writer.Write(manifestXml);
+    }
+
+    private sealed record AppxRow(string? Name, string? Publisher, string? Version, string? ProcessorArchitecture);
+
+    private AppxRow ReadAppxManifest(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT a.name, a.publisher, a.version, a.processor_architecture
+            FROM appx_manifest a
+            JOIN scan_observations o ON o.id = a.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne appx_manifest pour {path}");
+        string? Col(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
+        var row = new AppxRow(Col(0), Col(1), Col(2), Col(3));
+        Assert.False(reader.Read(), $"plusieurs lignes appx_manifest pour {path}");
+        return row;
     }
 
     private sealed record MsiRow(string? ProductName, string? ProductVersion, string? Manufacturer, string? ProductCode, string? UpgradeCode, string? ProductLanguage);
