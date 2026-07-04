@@ -250,7 +250,9 @@ public class ScanCommandTests : IDisposable
                    (SELECT COUNT(*) FROM pe_info),
                    (SELECT COUNT(DISTINCT observation_id) FROM pe_info),
                    (SELECT COUNT(*) FROM authenticode),
-                   (SELECT COUNT(DISTINCT observation_id) FROM authenticode);
+                   (SELECT COUNT(DISTINCT observation_id) FROM authenticode),
+                   (SELECT COUNT(*) FROM msi_properties),
+                   (SELECT COUNT(DISTINCT observation_id) FROM msi_properties);
             """;
         using var reader = count.ExecuteReader();
         reader.Read();
@@ -263,6 +265,8 @@ public class ScanCommandTests : IDisposable
         Assert.Equal(4, reader.GetInt64(6)); // même invariant pour pe_info
         Assert.Equal(4, reader.GetInt64(7));
         Assert.Equal(4, reader.GetInt64(8)); // même invariant pour authenticode
+        Assert.Equal(4, reader.GetInt64(9));
+        Assert.Equal(4, reader.GetInt64(10)); // même invariant pour msi_properties
     }
 
     [Fact]
@@ -438,6 +442,89 @@ public class ScanCommandTests : IDisposable
         var row = ReadAuthenticode(texte);
         Assert.Null(row.Subject);
         Assert.Null(row.Thumbprint);
+    }
+
+    [Fact]
+    public void Scan_RealMsi_StoresPropertyTableValuesExactly()
+    {
+        // MSI créé par Windows Installer lui-même : les valeurs attendues sont connues par construction.
+        var msi = Path.Combine(_root, "produit-test.msi");
+        MsiTestFixture.CreateMsi(msi, new Dictionary<string, string>
+        {
+            ["ProductName"] = "Produit Test Éàç",
+            ["ProductVersion"] = "1.2.3.4",
+            ["Manufacturer"] = "Éditeur Test",
+            ["ProductCode"] = "{11111111-2222-3333-4444-555555555555}",
+            ["ProductLanguage"] = "1036",
+            // UpgradeCode volontairement absent : doit rester NULL, sans complétion
+        });
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadMsiProperties(msi);
+        Assert.Equal("Produit Test Éàç", row.ProductName);
+        Assert.Equal("1.2.3.4", row.ProductVersion);
+        Assert.Equal("Éditeur Test", row.Manufacturer);
+        Assert.Equal("{11111111-2222-3333-4444-555555555555}", row.ProductCode);
+        Assert.Equal("1036", row.ProductLanguage);
+        Assert.Null(row.UpgradeCode); // propriété absente du MSI → NULL, jamais complétée
+    }
+
+    [Fact]
+    public void Scan_OleCfbSignatureButNotMsi_MsiPropertiesRowIsAllNull()
+    {
+        var faux = Path.Combine(_root, "faux-ole.bin");
+        File.WriteAllBytes(faux, [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0x00, 0x42]);
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadMsiProperties(faux);
+        Assert.Null(row.ProductName);
+        Assert.Null(row.ProductVersion);
+        Assert.Null(row.Manufacturer);
+        Assert.Null(row.ProductCode);
+        Assert.Null(row.UpgradeCode);
+        Assert.Null(row.ProductLanguage);
+    }
+
+    [Fact]
+    public void Scan_NonOleFile_MsiPropertiesRowIsAllNull()
+    {
+        var texte = Path.Combine(_root, "pas-un-msi.txt");
+        File.WriteAllText(texte, "contenu texte");
+
+        var (exitCode, _, _) = Scan();
+
+        Assert.Equal(0, exitCode);
+        var row = ReadMsiProperties(texte);
+        Assert.Null(row.ProductName);
+        Assert.Null(row.ProductCode);
+    }
+
+    private sealed record MsiRow(string? ProductName, string? ProductVersion, string? Manufacturer, string? ProductCode, string? UpgradeCode, string? ProductLanguage);
+
+    private MsiRow ReadMsiProperties(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT m.product_name, m.product_version, m.manufacturer, m.product_code, m.upgrade_code, m.product_language
+            FROM msi_properties m
+            JOIN scan_observations o ON o.id = m.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne msi_properties pour {path}");
+        string? Col(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
+        var row = new MsiRow(Col(0), Col(1), Col(2), Col(3), Col(4), Col(5));
+        Assert.False(reader.Read(), $"plusieurs lignes msi_properties pour {path}");
+        return row;
     }
 
     private sealed record AuthenticodeRow(string? Subject, string? Issuer, string? SerialNumber, string? Thumbprint, string? NotBefore, string? NotAfter);

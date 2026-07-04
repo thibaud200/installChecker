@@ -62,6 +62,15 @@ public static class ScanCommand
                     not_before     TEXT,
                     not_after      TEXT
                 );
+                CREATE TABLE IF NOT EXISTS msi_properties (
+                    observation_id   INTEGER NOT NULL,
+                    product_name     TEXT,
+                    product_version  TEXT,
+                    manufacturer     TEXT,
+                    product_code     TEXT,
+                    upgrade_code     TEXT,
+                    product_language TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -140,6 +149,20 @@ public static class ScanCommand
         var pNotBefore = insertAuthenticode.Parameters.Add("$notBefore", SqliteType.Text);
         var pNotAfter = insertAuthenticode.Parameters.Add("$notAfter", SqliteType.Text);
 
+        using var insertMsi = connection.CreateCommand();
+        insertMsi.Transaction = transaction;
+        insertMsi.CommandText = """
+            INSERT INTO msi_properties (observation_id, product_name, product_version, manufacturer, product_code, upgrade_code, product_language)
+            VALUES ($observationId, $productName, $productVersion, $manufacturer, $productCode, $upgradeCode, $productLanguage);
+            """;
+        var pMsiObservationId = insertMsi.Parameters.Add("$observationId", SqliteType.Integer);
+        var pMsiProductName = insertMsi.Parameters.Add("$productName", SqliteType.Text);
+        var pMsiProductVersion = insertMsi.Parameters.Add("$productVersion", SqliteType.Text);
+        var pMsiManufacturer = insertMsi.Parameters.Add("$manufacturer", SqliteType.Text);
+        var pMsiProductCode = insertMsi.Parameters.Add("$productCode", SqliteType.Text);
+        var pMsiUpgradeCode = insertMsi.Parameters.Add("$upgradeCode", SqliteType.Text);
+        var pMsiProductLanguage = insertMsi.Parameters.Add("$productLanguage", SqliteType.Text);
+
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
         {
@@ -154,6 +177,7 @@ public static class ScanCommand
                 var (magicHex, container) = FileHeaderExtractor.Read(file.FullName);
                 var peInfo = PeInfoExtractor.Read(file.FullName);
                 var authenticode = AuthenticodeExtractor.Read(file.FullName);
+                var msiProperties = MsiPropertiesExtractor.Read(file.FullName);
 
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
@@ -190,6 +214,15 @@ public static class ScanCommand
                 pNotBefore.Value = (object?)authenticode.NotBefore ?? DBNull.Value;
                 pNotAfter.Value = (object?)authenticode.NotAfter ?? DBNull.Value;
                 insertAuthenticode.ExecuteNonQuery();
+
+                pMsiObservationId.Value = observationId;
+                pMsiProductName.Value = (object?)msiProperties.ProductName ?? DBNull.Value;
+                pMsiProductVersion.Value = (object?)msiProperties.ProductVersion ?? DBNull.Value;
+                pMsiManufacturer.Value = (object?)msiProperties.Manufacturer ?? DBNull.Value;
+                pMsiProductCode.Value = (object?)msiProperties.ProductCode ?? DBNull.Value;
+                pMsiUpgradeCode.Value = (object?)msiProperties.UpgradeCode ?? DBNull.Value;
+                pMsiProductLanguage.Value = (object?)msiProperties.ProductLanguage ?? DBNull.Value;
+                insertMsi.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;
