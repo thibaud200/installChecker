@@ -246,7 +246,9 @@ public class ScanCommandTests : IDisposable
                    (SELECT COUNT(*) FROM version_info),
                    (SELECT COUNT(DISTINCT observation_id) FROM version_info),
                    (SELECT COUNT(*) FROM file_headers),
-                   (SELECT COUNT(DISTINCT observation_id) FROM file_headers);
+                   (SELECT COUNT(DISTINCT observation_id) FROM file_headers),
+                   (SELECT COUNT(*) FROM pe_info),
+                   (SELECT COUNT(DISTINCT observation_id) FROM pe_info);
             """;
         using var reader = count.ExecuteReader();
         reader.Read();
@@ -255,6 +257,8 @@ public class ScanCommandTests : IDisposable
         Assert.Equal(4, reader.GetInt64(2)); // 1 ligne version_info par observation, liée par observation_id
         Assert.Equal(4, reader.GetInt64(3));
         Assert.Equal(4, reader.GetInt64(4)); // même invariant pour file_headers
+        Assert.Equal(4, reader.GetInt64(5));
+        Assert.Equal(4, reader.GetInt64(6)); // même invariant pour pe_info
     }
 
     [Fact]
@@ -327,6 +331,107 @@ public class ScanCommandTests : IDisposable
         var (magicHex, container) = ReadFileHeader(court);
         Assert.Equal("4d5a42", magicHex); // exactement les octets présents, rien de plus
         Assert.Equal("pe", container);    // le motif MZ est présent : classification identique
+    }
+
+    [Fact]
+    public void Scan_Pe64_StoresRawHeaderValues()
+    {
+        var copied = Path.Combine(_root, "kernel32-64.dll");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), copied);
+        var expected = RawPeValues(copied); // oracle : octets bruts aux offsets documentés du format PE
+
+        Scan();
+
+        var stored = ReadPeInfo(copied);
+        Assert.Equal(expected, stored);
+        Assert.Equal("020b", stored.OptionalHeaderMagic); // PE32+ (64 bits)
+    }
+
+    [Fact]
+    public void Scan_Pe32_StoresRawHeaderValues()
+    {
+        var sysWow64 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SysWOW64", "kernel32.dll");
+        Assert.True(File.Exists(sysWow64), "SysWOW64 requis pour le cas PE 32 bits");
+        var copied = Path.Combine(_root, "kernel32-32.dll");
+        File.Copy(sysWow64, copied);
+        var expected = RawPeValues(copied);
+
+        Scan();
+
+        var stored = ReadPeInfo(copied);
+        Assert.Equal(expected, stored);
+        Assert.Equal("014c", stored.Machine);             // IMAGE_FILE_MACHINE_I386
+        Assert.Equal("010b", stored.OptionalHeaderMagic); // PE32 (32 bits)
+    }
+
+    [Fact]
+    public void Scan_NonPeFile_PeInfoRowIsAllNull()
+    {
+        var texte = Path.Combine(_root, "pas-un-pe.txt");
+        File.WriteAllText(texte, "contenu quelconque");
+
+        var (exitCode, _, errors) = Scan();
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("0 erreur(s) locale(s)", errors);
+        var row = ReadPeInfo(texte);
+        Assert.Null(row.Machine);
+        Assert.Null(row.Subsystem);
+        Assert.Null(row.Characteristics);
+        Assert.Null(row.Timestamp);
+        Assert.Null(row.OptionalHeaderMagic);
+    }
+
+    private sealed record PeRow(string? Machine, string? Subsystem, long? Characteristics, long? Timestamp, string? OptionalHeaderMagic);
+
+    /// <summary>Oracle indépendant : relit les champs directement aux offsets du format PE (e_lfanew, COFF, en-tête optionnel).</summary>
+    private static PeRow RawPeValues(string path)
+    {
+        using var reader = new BinaryReader(File.OpenRead(path));
+        reader.BaseStream.Seek(0x3C, SeekOrigin.Begin);
+        var eLfanew = reader.ReadUInt32();
+        reader.BaseStream.Seek(eLfanew + 4, SeekOrigin.Begin); // saute la signature "PE\0\0"
+        var machine = reader.ReadUInt16();
+        reader.ReadUInt16();                                   // numberOfSections
+        var timestamp = reader.ReadUInt32();
+        reader.ReadUInt32();                                   // pointerToSymbolTable
+        reader.ReadUInt32();                                   // numberOfSymbols
+        var sizeOfOptionalHeader = reader.ReadUInt16();
+        var characteristics = reader.ReadUInt16();
+        var optionalStart = reader.BaseStream.Position;
+        string? magic = null, subsystem = null;
+        if (sizeOfOptionalHeader >= 2)
+            magic = $"{reader.ReadUInt16():x4}";
+        if (sizeOfOptionalHeader >= 70)
+        {
+            reader.BaseStream.Seek(optionalStart + 68, SeekOrigin.Begin);
+            subsystem = $"{reader.ReadUInt16():x4}";
+        }
+        return new PeRow($"{machine:x4}", subsystem, characteristics, timestamp, magic);
+    }
+
+    private PeRow ReadPeInfo(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var select = connection.CreateCommand();
+        select.CommandText = """
+            SELECT p.machine, p.subsystem, p.characteristics, p.timestamp, p.optional_header_magic
+            FROM pe_info p
+            JOIN scan_observations o ON o.id = p.observation_id
+            WHERE o.path = $path;
+            """;
+        select.Parameters.AddWithValue("$path", path);
+        using var reader = select.ExecuteReader();
+        Assert.True(reader.Read(), $"aucune ligne pe_info pour {path}");
+        var row = new PeRow(
+            reader.IsDBNull(0) ? null : reader.GetString(0),
+            reader.IsDBNull(1) ? null : reader.GetString(1),
+            reader.IsDBNull(2) ? null : reader.GetInt64(2),
+            reader.IsDBNull(3) ? null : reader.GetInt64(3),
+            reader.IsDBNull(4) ? null : reader.GetString(4));
+        Assert.False(reader.Read(), $"plusieurs lignes pe_info pour {path}");
+        return row;
     }
 
     /// <summary>Oracle : hex minuscule des 8 premiers octets réels du fichier, lus par le test lui-même.</summary>

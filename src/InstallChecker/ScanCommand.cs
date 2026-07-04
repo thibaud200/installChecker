@@ -45,6 +45,14 @@ public static class ScanCommand
                     magic_hex      TEXT NOT NULL,
                     container      TEXT
                 );
+                CREATE TABLE IF NOT EXISTS pe_info (
+                    observation_id        INTEGER NOT NULL,
+                    machine               TEXT,
+                    subsystem             TEXT,
+                    characteristics       INTEGER,
+                    timestamp             INTEGER,
+                    optional_header_magic TEXT
+                );
                 """;
             create.ExecuteNonQuery();
         }
@@ -96,6 +104,19 @@ public static class ScanCommand
         var pMagicHex = insertHeader.Parameters.Add("$magicHex", SqliteType.Text);
         var pContainer = insertHeader.Parameters.Add("$container", SqliteType.Text);
 
+        using var insertPe = connection.CreateCommand();
+        insertPe.Transaction = transaction;
+        insertPe.CommandText = """
+            INSERT INTO pe_info (observation_id, machine, subsystem, characteristics, timestamp, optional_header_magic)
+            VALUES ($observationId, $machine, $subsystem, $characteristics, $timestamp, $optionalHeaderMagic);
+            """;
+        var pPeObservationId = insertPe.Parameters.Add("$observationId", SqliteType.Integer);
+        var pMachine = insertPe.Parameters.Add("$machine", SqliteType.Text);
+        var pSubsystem = insertPe.Parameters.Add("$subsystem", SqliteType.Text);
+        var pCharacteristics = insertPe.Parameters.Add("$characteristics", SqliteType.Integer);
+        var pTimestamp = insertPe.Parameters.Add("$timestamp", SqliteType.Integer);
+        var pOptionalHeaderMagic = insertPe.Parameters.Add("$optionalHeaderMagic", SqliteType.Text);
+
         long fileCount = 0, errorCount = 0;
         foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
         {
@@ -108,6 +129,7 @@ public static class ScanCommand
                     sha256 = Convert.ToHexStringLower(SHA256.HashData(stream)); // lecture en flux, jamais le fichier entier en mémoire
                 var versionInfo = FileVersionInfo.GetVersionInfo(file.FullName);
                 var (magicHex, container) = FileHeaderExtractor.Read(file.FullName);
+                var peInfo = PeInfoExtractor.Read(file.FullName);
 
                 pPath.Value = file.FullName;
                 pSize.Value = file.Length;
@@ -127,6 +149,14 @@ public static class ScanCommand
                 pMagicHex.Value = magicHex;
                 pContainer.Value = (object?)container ?? DBNull.Value;
                 insertHeader.ExecuteNonQuery();
+
+                pPeObservationId.Value = observationId;
+                pMachine.Value = (object?)peInfo.Machine ?? DBNull.Value;
+                pSubsystem.Value = (object?)peInfo.Subsystem ?? DBNull.Value;
+                pCharacteristics.Value = (object?)peInfo.Characteristics ?? DBNull.Value;
+                pTimestamp.Value = (object?)peInfo.Timestamp ?? DBNull.Value;
+                pOptionalHeaderMagic.Value = (object?)peInfo.OptionalHeaderMagic ?? DBNull.Value;
+                insertPe.ExecuteNonQuery();
 
                 output.WriteLine($"{file.FullName}\t{file.Length}\t{sha256}");
                 fileCount++;
