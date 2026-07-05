@@ -30,6 +30,11 @@ public static class ScanCommand
             errors.WriteLine($"Erreur : base inaccessible : {dbPath} : {ex.Message}");
             return 1;
         }
+        catch (InvalidDataException ex)
+        {
+            errors.WriteLine(ex.Message); // user_version inattendu : le message du store est déjà complet
+            return 1;
+        }
 
         using (store)
         {

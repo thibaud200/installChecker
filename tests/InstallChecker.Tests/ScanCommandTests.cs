@@ -90,6 +90,25 @@ public class ScanCommandTests : IDisposable
     }
 
     [Fact]
+    public void Scan_UnknownUserVersion_ReturnsOneWithExplicitError()
+    {
+        using (var connection = new SqliteConnection($"Data Source={DbPath}"))
+        {
+            connection.Open();
+            using var stamp = connection.CreateCommand();
+            stamp.CommandText = "PRAGMA user_version = 2;";
+            stamp.ExecuteNonQuery();
+        }
+        SqliteConnection.ClearAllPools();
+
+        var errors = new StringWriter();
+        var exitCode = ScanCommand.Run(_root, DbPath, false, TextWriter.Null, errors);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("user_version=2", errors.ToString());
+    }
+
+    [Fact]
     public void Scan_JsonOutput_LinesMatchDatabaseValuesExactly()
     {
         var copied = Path.Combine(_root, "kernel32.dll");

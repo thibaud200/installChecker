@@ -49,9 +49,13 @@ public sealed class ObservationStore : IDisposable
     private readonly SqliteCommand _insertAppx;
     private readonly SqliteParameter _pAppxObservationId, _pAppxName, _pAppxPublisher, _pAppxVersion, _pAppxProcessorArchitecture;
 
+    /// <summary>Version de schéma écrite et exigée dans PRAGMA user_version. Aucune migration : version inconnue = erreur.</summary>
+    public const long SchemaVersion = 1;
+
     /// <summary>
     /// Ouvre (ou crée) la base, crée le schéma si absent, ouvre la transaction unique du scan
-    /// et prépare les INSERT. Lève <see cref="SqliteException"/> si la base est inaccessible.
+    /// et prépare les INSERT. Lève <see cref="SqliteException"/> si la base est inaccessible,
+    /// <see cref="InvalidDataException"/> si son user_version n'est pas celui attendu.
     /// </summary>
     public ObservationStore(string dbPath)
     {
@@ -59,6 +63,15 @@ public sealed class ObservationStore : IDisposable
         try
         {
             _connection.Open(); // crée le fichier si absent
+
+            using var readVersion = _connection.CreateCommand();
+            readVersion.CommandText = "PRAGMA user_version;";
+            var userVersion = (long)readVersion.ExecuteScalar()!;
+            // 0 = base neuve (valeur SQLite par défaut) : on initialise. Toute autre valeur que
+            // SchemaVersion = base d'un autre monde : erreur explicite, aucune migration.
+            if (userVersion != 0 && userVersion != SchemaVersion)
+                throw new InvalidDataException($"Erreur : base incompatible : {dbPath} : user_version={userVersion}, attendu {SchemaVersion}");
+
             using var create = _connection.CreateCommand();
             create.CommandText = """
                 CREATE TABLE IF NOT EXISTS scan_observations (
@@ -115,6 +128,13 @@ public sealed class ObservationStore : IDisposable
                 );
                 """;
             create.ExecuteNonQuery();
+
+            if (userVersion == 0)
+            {
+                using var stamp = _connection.CreateCommand();
+                stamp.CommandText = $"PRAGMA user_version = {SchemaVersion};";
+                stamp.ExecuteNonQuery();
+            }
         }
         catch
         {
