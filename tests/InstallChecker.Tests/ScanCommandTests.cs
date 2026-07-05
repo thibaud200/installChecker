@@ -90,6 +90,21 @@ public class ScanCommandTests : IDisposable
     }
 
     [Fact]
+    public void PeInfoExtractor_FileOver2GiB_ReturnsAllNullWithoutThrowing()
+    {
+        // Reproduction du bug A1 (campagne corpus 1) sans corpus réel : PEReader lève
+        // ArgumentException pour tout flux dont la taille excède int.MaxValue. SetLength
+        // fabrique un fichier de 2 Gio instantanément, sans écrire de contenu.
+        var path = Path.Combine(_root, "huge.bin");
+        using (var fs = new FileStream(path, FileMode.CreateNew))
+            fs.SetLength(2_147_483_648); // int.MaxValue + 1
+
+        var info = PeInfoExtractor.Read(path);
+
+        Assert.Equal(PeInfoExtractor.PeInfo.None, info);
+    }
+
+    [Fact]
     public void Scan_UnknownUserVersion_ReturnsOneWithExplicitError()
     {
         using (var connection = new SqliteConnection($"Data Source={DbPath}"))

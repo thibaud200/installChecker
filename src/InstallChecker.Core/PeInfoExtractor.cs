@@ -30,7 +30,10 @@ public static class PeInfoExtractor
                 Timestamp: (uint)coff.TimeDateStamp,
                 OptionalHeaderMagic: optional is null ? null : $"{(ushort)optional.Magic:x4}");
         }
-        catch (BadImageFormatException)
+        // ArgumentException : le constructeur PEReader refuse tout flux dont la taille excède
+        // int.MaxValue (« Stream length ... too large to hold a PEImage ») — bug A1 de la
+        // campagne corpus 1. Même signification observable qu'un non-PE : observation toute NULL.
+        catch (Exception ex) when (ex is BadImageFormatException or ArgumentException)
         {
             return PeInfo.None;
         }
