@@ -333,6 +333,62 @@ Toute décision structurante doit être documentée :
 - alternatives
 - conséquences
 
+## ADR-001 — .NET 10 comme plateforme
+
+- **Contexte** : le pipeline lit des structures Windows natives (PE, Authenticode, MSI) et doit traiter de gros volumes.
+- **Décision** : .NET 10 (C#), BCL en priorité (`PEReader`, `X509CertificateLoader`, `ZipFile`), P/Invoke quand la BCL ne couvre pas (msi.dll). Windows-only assumé.
+- **Alternatives** : Python (plus lent, parsing PE via lib tierce), Rust/Go (pas d'accès BCL/Win32 aussi direct, coût de développement supérieur).
+- **Conséquences** : dépendance au SDK .NET ; portabilité non recherchée.
+
+## ADR-002 — SQLite append-only, invariant 1:1 par observation
+
+- **Contexte** : reproductibilité et auditabilité exigées ; le même fichier peut être observé plusieurs fois.
+- **Décision** : chaque scan insère de nouvelles lignes, jamais d'UPDATE/DELETE ni de dédoublonnage. Chaque capacité écrit exactement une ligne par observation (même toute-NULL), liée par `observation_id` (rowid de `scan_observations`).
+- **Alternatives** : upsert par chemin ou par hash (perd l'historique, introduit une identité implicite) ; table unique large (colonnes creuses, capacités couplées).
+- **Conséquences** : la base grandit à chaque scan ; toute lecture agrège explicitement ; le sens de « doublon » reste une décision d'analyse, pas de stockage.
+
+## ADR-003 — Capacités d'observation autonomes et indépendantes
+
+- **Contexte** : la fiabilité d'une capacité ne doit jamais dépendre d'une autre ; isolation des erreurs par fichier obligatoire (§9).
+- **Décision** : chaque extracteur ouvre lui-même le fichier, décide seul si le format le concerne, et ne consulte jamais le résultat d'une autre capacité (pas de « c'est un PE donc… »).
+- **Alternatives** : pipeline conditionnel piloté par le type détecté (moins d'I/O mais couplage et propagation d'erreurs entre capacités).
+- **Conséquences** : le fichier est ouvert plusieurs fois par scan — coût accepté tant qu'aucune mesure ne le condamne (§10 : aucune optimisation sans benchmark).
+
+## ADR-004 — Observation pure : NULL = absence, aucune interprétation
+
+- **Contexte** : toute décision doit être explicable (§2) ; le moteur d'identité viendra plus tard, comme consommateur séparé.
+- **Décision** : valeurs brutes telles que retournées par l'API, NULL = « rien observé » (jamais « unknown » ni valeur sentinelle). Aucune normalisation, aucune identification, aucune fusion dans le pipeline d'observation.
+- **Alternatives** : normaliser à l'écriture (versions, éditeurs) — rejeté : mélange observation et interprétation, rend les erreurs d'interprétation irréversibles.
+- **Conséquences** : les données stockées sont rejouables et comparables ; toute interprétation future reste réversible car la source brute est conservée.
+
+## ADR-005 — Authenticode via X509Certificate.CreateFromSignedFile
+
+- **Contexte** : observer le certificat feuille embarqué sans valider la chaîne (pas de réseau, pas de jugement).
+- **Décision** : `X509Certificate.CreateFromSignedFile` (marquée SYSLIB0057 en .NET 10 ; avertissement supprimé localement et documenté), champs relus via `X509CertificateLoader`.
+- **Alternatives** : P/Invoke `CryptQueryObject` (chemin de sortie documenté si l'API est retirée) ; `Get-AuthenticodeSignature` via PowerShell (coût de processus, hors BCL).
+- **Conséquences** : signatures par catalogue non couvertes (NULL — c'est une absence d'observation, pas une conclusion « non signé »).
+
+## ADR-006 — MSI via P/Invoke msi.dll en lecture seule stricte
+
+- **Contexte** : lire la table Property d'un MSI sans moteur d'installation ni COM.
+- **Décision** : P/Invoke direct de msi.dll avec `MSIDBOPEN_READONLY` ; jamais de session d'installation, de réparation ni de validation.
+- **Alternatives** : COM `WindowsInstaller.Installer` (interop plus lourde, mêmes données) ; parsing OLE-CFB manuel (réinvention fragile du format).
+- **Conséquences** : Windows requis (cohérent avec ADR-001) ; fixture de test créée par Windows Installer lui-même.
+
+## ADR-007 — Séparation InstallChecker.Core / ObservationStore / CLI
+
+- **Contexte** : le futur moteur d'identité doit réutiliser le pipeline d'observation sans passer par la CLI (§5 : le core indépendant de l'UI et de la base).
+- **Décision** : les extracteurs et leurs records vivent dans la bibliothèque `InstallChecker.Core` (sans dépendance SQLite) ; `ObservationStore` est le propriétaire unique du stockage (DDL, INSERT, projection JSON) ; `ScanCommand` orchestre seulement.
+- **Alternatives** : tout laisser dans l'exécutable et référencer l'exe comme bibliothèque (couple le consommateur au packaging CLI et aux dépendances SQLite).
+- **Conséquences** : refactoring mécanique sans changement de comportement ; le moteur d'identité sera un second consommateur de Core, dans une phase séparée.
+
+## ADR-008 — Versionnage du schéma par PRAGMA user_version, sans migration
+
+- **Contexte** : le schéma évoluera ; il faut détecter une base d'une autre version sans infrastructure de migration prématurée.
+- **Décision** : `PRAGMA user_version = 1` à l'initialisation ; à l'ouverture, 0 (défaut SQLite) = base neuve à initialiser, toute autre valeur que 1 = erreur explicite. Aucune migration, aucune conversion : les bases existantes sont jetables.
+- **Alternatives** : table de métadonnées dédiée (plus verbeux pour le même service) ; framework de migrations (YAGNI tant que le schéma n'a qu'une version).
+- **Conséquences** : changer le schéma = incrémenter la version et régénérer les bases ; une politique de migration ne sera écrite que si des bases deviennent précieuses.
+
 ---
 
 # 18. ROADMAP (ÉVOLUTIF)
