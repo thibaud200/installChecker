@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/InstallChecker/InstallChecker.csproj" />
+    <Project Path="src/InstallChecker.Core/InstallChecker.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InstallChecker.Tests/InstallChecker.Tests.csproj" />
