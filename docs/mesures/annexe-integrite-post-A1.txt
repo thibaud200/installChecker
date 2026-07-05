@@ -1,0 +1,98 @@
+============================================================
+MESURES GÉNÉRALES
+fichiers observés : 497
+taille base : 430080 octets (0.41 MB)
+taille moyenne par observation (base/fichiers) : 865 octets
+volume scanné : 24681700749 octets
+taille min/médiane/max des fichiers : 192 / 716800 / 6326602004
+
+============================================================
+RÉPARTITION DES CONTENEURS (file_headers.container)
+-- SELECT COALESCE(container, 'NULL'), COUNT(*) FROM file_headers GROUP BY container ORDER BY COUNT(*) DESC
+ole-cfb  :  376  (75.7 %)
+pe       :   61  (12.3 %)
+zip      :   60  (12.1 %)
+
+============================================================
+VERSIONINFO (présence = au moins une des 4 colonnes non NULL)
+-- SELECT COUNT(*) FROM version_info WHERE product_name IS NOT NULL OR company_name IS NOT NULL OR product_version IS NOT NULL OR file_version IS NOT NULL
+présent : 57 (11.5 %) ; absent : 440 (88.5 %)
+
+============================================================
+AUTHENTICODE (présence = subject non NULL ; le record est tout-ou-rien)
+-- SELECT COUNT(*) FROM authenticode WHERE subject IS NOT NULL
+certificat présent : 417 (83.9 %) ; absent : 80 (16.1 %)
+
+============================================================
+PE (pe_info.machine non NULL = en-têtes PE lus)
+-- SELECT COUNT(*) FROM pe_info WHERE machine IS NOT NULL
+nombre de PE : 81 (16.3 %)
+-- SELECT machine, COUNT(*) FROM pe_info WHERE machine IS NOT NULL GROUP BY machine ORDER BY COUNT(*) DESC
+  machine = '014c'   : 49
+  machine = '4b50'   : 20
+  machine = '8664'   : 10
+  machine = 'aa64'   : 2
+-- SELECT optional_header_magic, COUNT(*) FROM pe_info WHERE machine IS NOT NULL GROUP BY optional_header_magic ORDER BY COUNT(*) DESC
+  optional_header_magic = '010b'   : 49
+  optional_header_magic = None     : 20
+  optional_header_magic = '020b'   : 12
+-- SELECT subsystem, COUNT(*) FROM pe_info WHERE machine IS NOT NULL GROUP BY subsystem ORDER BY COUNT(*) DESC
+  subsystem = '0002'   : 55
+  subsystem = None     : 20
+  subsystem = '0003'   : 6
+
+============================================================
+MSI (détecté = au moins une propriété non NULL)
+-- SELECT COUNT(*) FROM msi_properties WHERE product_name IS NOT NULL OR product_version IS NOT NULL OR manufacturer IS NOT NULL OR product_code IS NOT NULL OR upgrade_code IS NOT NULL OR product_language IS NOT NULL
+MSI détectés : 366 (73.6 %)
+  product_name     :  366  (100.0 % des MSI)
+  product_version  :  366  (100.0 % des MSI)
+  manufacturer     :  366  (100.0 % des MSI)
+  product_code     :  366  (100.0 % des MSI)
+  upgrade_code     :  366  (100.0 % des MSI)
+  product_language :  366  (100.0 % des MSI)
+
+============================================================
+APPX (manifeste présent = au moins un attribut Identity non NULL)
+-- SELECT COUNT(*) FROM appx_manifest WHERE name IS NOT NULL OR publisher IS NOT NULL OR version IS NOT NULL OR processor_architecture IS NOT NULL
+manifeste présent : 0 (0.0 %) ; absent : 497
+
+============================================================
+VÉRIFICATIONS D'INTÉGRITÉ
+-- Invariant 1:1 : COUNT(*) de chaque table capacité == COUNT(*) de scan_observations
+  version_info   :  497  [OK]
+  file_headers   :  497  [OK]
+  pe_info        :  497  [OK]
+  authenticode   :  497  [OK]
+  msi_properties :  497  [OK]
+  appx_manifest  :  497  [OK]
+-- Doublons : SELECT observation_id FROM <t> GROUP BY observation_id HAVING COUNT(*) > 1
+  version_info   : 0 doublon(s)  [OK]
+  file_headers   : 0 doublon(s)  [OK]
+  pe_info        : 0 doublon(s)  [OK]
+  authenticode   : 0 doublon(s)  [OK]
+  msi_properties : 0 doublon(s)  [OK]
+  appx_manifest  : 0 doublon(s)  [OK]
+-- Orphelins : SELECT COUNT(*) FROM <t> WHERE observation_id NOT IN (SELECT id FROM scan_observations)
+  version_info   : 0 orphelin(s)  [OK]
+  file_headers   : 0 orphelin(s)  [OK]
+  pe_info        : 0 orphelin(s)  [OK]
+  authenticode   : 0 orphelin(s)  [OK]
+  msi_properties : 0 orphelin(s)  [OK]
+  appx_manifest  : 0 orphelin(s)  [OK]
+-- Observations sans ligne capacité : SELECT COUNT(*) FROM scan_observations WHERE id NOT IN (SELECT observation_id FROM <t>)
+  version_info   : 0 manquant(s)  [OK]
+  file_headers   : 0 manquant(s)  [OK]
+  pe_info        : 0 manquant(s)  [OK]
+  authenticode   : 0 manquant(s)  [OK]
+  msi_properties : 0 manquant(s)  [OK]
+  appx_manifest  : 0 manquant(s)  [OK]
+-- observation_id NULL : SELECT COUNT(*) FROM <t> WHERE observation_id IS NULL
+  version_info   : 0 NULL  [OK]
+  file_headers   : 0 NULL  [OK]
+  pe_info        : 0 NULL  [OK]
+  authenticode   : 0 NULL  [OK]
+  msi_properties : 0 NULL  [OK]
+  appx_manifest  : 0 NULL  [OK]
+
+INTÉGRITÉ : AUCUNE VIOLATION

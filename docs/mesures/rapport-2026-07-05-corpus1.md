@@ -177,7 +177,7 @@ SQL utilisées : `campagne-corpus1.sql` (R1–R12, C5) et `annexe-integrite.txt`
 ## 6. Anomalies constatées
 
 **A1 — Crash global sur fichier ≥ 2 Gio (critique).**
-Fichier : `0206_Reborn 80000 Years c1-394 (epub).zip` (6 326 616 313 octets). Symptôme : exception non gérée, processus terminé (exit `-532462766` / 0xE0434352), scan interrompu au 206ᵉ fichier, **aucune observation persistée** (transaction unique jamais commitée — la base ne contenait que le schéma). Reproduit de façon déterministe sur le fichier isolé. Stderr complet dans `annexe-crash-stderr.txt` :
+Fichier : `0206_Reborn 80000 Years c1-394 (epub).zip` (6 326 602 004 octets — *erratum : une première version de ce rapport indiquait 6 326 616 313 ; la valeur exacte a été relevée en base lors de la re-campagne post-A1*). Symptôme : exception non gérée, processus terminé (exit `-532462766` / 0xE0434352), scan interrompu au 206ᵉ fichier, **aucune observation persistée** (transaction unique jamais commitée — la base ne contenait que le schéma). Reproduit de façon déterministe sur le fichier isolé. Stderr complet dans `annexe-crash-stderr.txt` :
 
 ```
 Unhandled exception. System.ArgumentException: Stream length minus starting position is too large to hold a PEImage. (Parameter 'peStream')
