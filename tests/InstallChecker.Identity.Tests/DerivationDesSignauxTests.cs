@@ -179,6 +179,21 @@ public class DerivationDesSignauxTests
         Assert.Equal(signauxOriginaux.Select(Cle), signauxMelanges.Select(Cle));
     }
 
+    // --- Indépendance de l'ordre des conventions (I31 étendu à ℛ, EXG-27) ---
+
+    [Fact]
+    public void Lordre_des_conventions_dans_le_referentiel_ne_change_pas_les_signaux_produits()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var referentielInverse = new Referentiel(referentiel.ConventionsEnVigueur.Reverse().ToList());
+
+        var direct = DerivationDesSignaux.Deriver(modele, referentiel);
+        var inverse = DerivationDesSignaux.Deriver(modele, referentielInverse);
+
+        Assert.Equal(direct.Select(Cle), inverse.Select(Cle));
+    }
+
     // --- Substituabilité de l'adaptateur en mémoire (I42) ---
 
     [Fact]

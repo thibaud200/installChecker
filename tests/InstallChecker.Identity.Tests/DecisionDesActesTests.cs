@@ -167,6 +167,22 @@ public class DecisionDesActesTests
         Assert.Equal(Cles(direct), Cles(inverse));
     }
 
+    // --- indépendance de l'ordre des conventions (I31 étendu à ℛ, EXG-27) ---
+
+    [Fact]
+    public void Lordre_des_conventions_dans_le_referentiel_ne_change_pas_les_actes_produits()
+    {
+        var hypotheses = HypothesesOracle();
+        var referentiel = ReferentielReel();
+        var referentielInverse = new Referentiel(referentiel.ConventionsEnVigueur.Reverse().ToList());
+        var identifiants = IdentifiantsOracle();
+
+        var direct = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var inverse = DecisionDesActes.Decider(hypotheses, referentielInverse, identifiants);
+
+        Assert.Equal(Cles(direct), Cles(inverse));
+    }
+
     // --- reconstruction depuis Ω et ℛ (bout en bout) ---
 
     [Fact]

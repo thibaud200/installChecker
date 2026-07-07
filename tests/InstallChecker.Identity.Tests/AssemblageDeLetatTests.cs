@@ -232,6 +232,33 @@ public class AssemblageDeLetatTests
         Assert.Equal(Cle(direct), Cle(viaAdaptateur));
     }
 
+    // --- localité (EXG-21, P3) : un acte sans rapport ajouté à Ω ne change aucune élection existante ---
+
+    [Fact]
+    public void Lajout_dun_acte_sans_rapport_ne_change_aucune_election_existante()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var w0 = AssemblerDepuisOracle(modele, referentiel);
+
+        var acteSansRapport = new ActeObservation(
+            modele.Actes.Max(a => a.Identifiant) + 1, 1, "empreinte-inedite-sans-aucun-rapport",
+            new Dictionary<Attribut, ValeurObservee>());
+        var modeleEtendu = new ModeleObservations([.. modele.Actes, acteSansRapport]);
+        var w1 = AssemblerDepuisOracle(modeleEtendu, referentiel);
+
+        var electionsOriginales = w0.Actes.Where(a => a.Type == TypeActe.Election).Select(Cle).ToHashSet();
+        var electionsEtendues = w1.Actes.Where(a => a.Type == TypeActe.Election).Select(Cle).ToHashSet();
+
+        Assert.Equal(112, electionsOriginales.Count);
+        Assert.Equal(112, electionsEtendues.Count); // l'acte ajouté est un singleton : aucune élection nouvelle
+        Assert.Equal(electionsOriginales, electionsEtendues); // toutes conservées à l'identique, champ pour champ
+
+        // Seuls les refus structurels grandissent : leur domaine EST « tous les actes d'Ω » (009 § 6) —
+        // il croît avec Ω par construction, ce qui borne exactement ce que la localité promet ici.
+        Assert.All(w1.Actes.Where(a => a.Type == TypeActe.Refus), r => Assert.Equal(498, r.Domaine.Count));
+    }
+
     // --- calcul correct de τ (006 § 7, 014 § 7.5) ---
 
     [Fact]

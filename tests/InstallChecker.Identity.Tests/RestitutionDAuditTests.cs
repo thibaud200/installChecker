@@ -299,6 +299,33 @@ public class RestitutionDAuditTests
         Assert.Same(tau, reponse);
     }
 
+    // --- le contrat d'audit honoré sur chaque acte de W0, pas seulement des échantillons (011 § 8.3, EXG-05) ---
+
+    [Fact]
+    public void Le_contrat_daudit_repond_aux_cinq_questions_par_acte_sur_les_116_actes_de_W0()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var hypotheses = HypothesesOracle(modele, referentiel);
+        var w = AssemblerW0(modele, referentiel, hypotheses);
+
+        Assert.Equal(116, w.Actes.Count);
+
+        foreach (var acte in w.Actes)
+        {
+            var chaine = acte.Type == TypeActe.Election
+                ? RestitutionDAudit.PourquoiCetteElection(acte, hypotheses)
+                : RestitutionDAudit.PourquoiCeRefus(acte, hypotheses);
+            Assert.NotEmpty(chaine.Maillons);
+            Assert.Equal(acte.Type == TypeActe.Election, chaine.ManqueNomme is null);
+
+            RestitutionDAudit.DeQuellesConventionsDependCetActe(acte);
+            RestitutionDAudit.DeQuellesObservationsDependIl(acte, hypotheses);
+            Assert.Empty(RestitutionDAudit.QuALonEcarte(acte, hypotheses)); // consensus dégénéré (003 § 9)
+            Assert.Single(RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(acte).EnsemblesMinimaux);
+        }
+    }
+
     // --- déterminisme, stabilité, indépendance de l'ordre ---
 
     [Fact]
