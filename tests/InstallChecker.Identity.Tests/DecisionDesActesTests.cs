@@ -30,11 +30,11 @@ public class DecisionDesActesTests
     private static IReadOnlyList<Hypothese> HypothesesOracle() =>
         ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(ModeleOracle(), ReferentielReel()));
 
+    private static IReadOnlyList<long> IdentifiantsOracle() =>
+        ModeleOracle().Actes.Select(a => a.Identifiant).ToList();
+
     private static Convention Eq01 => new(
         "EQ-01", 1, Famille.Interpretation, "t", "t", [], "R1", "t", "t", "t", "t", "t", new DateOnly(2026, 7, 5), "t");
-
-    private static Convention Ce01 => new(
-        "CE-01", 1, Famille.Election, "t", "t", [new ConventionRef("EQ-01", 1)], "R1", "t", "t", "t", "t", "t", new DateOnly(2026, 7, 5), "t");
 
     private static string Cle(ActeElection e) =>
         $"E:{e.Strate}:{string.Join(",", e.Domaine)}:{e.ContenuPropositionnel}:{e.Niveau}:{e.Motif}:" +
@@ -49,7 +49,7 @@ public class DecisionDesActesTests
     // --- aucune convention d'élection ⇒ uniquement des refus ---
 
     [Fact]
-    public void Absence_de_CE01_ne_produit_que_des_refus()
+    public void Absence_de_CE01_ne_produit_que_des_refus_de_contenu_et_de_strates_superieures()
     {
         var type = new TypeDeSignal("contenu-identique", new ConventionRef("EQ-01", 1));
         IReadOnlyList<InstanceDeSignal> signaux =
@@ -58,26 +58,39 @@ public class DecisionDesActesTests
         ];
         var hyps = ConstructionDesHypotheses.Construire(signaux);
 
-        var actes = DecisionDesActes.Decider(hyps, new Referentiel([Eq01])); // CE-01 absent
+        var actes = DecisionDesActes.Decider(hyps, new Referentiel([Eq01]), [1, 2]); // CE-01 absent
 
         Assert.Empty(actes.Elections);
-        var refus = Assert.Single(actes.Refus);
-        Assert.Equal(Espece.Normatif, refus.Espece);
-        Assert.Equal("licenciable-non-licencié", refus.Motif);
-        Assert.Equal([1L, 2L], refus.Domaine);
-        Assert.Equal(Strate.Contenu, refus.Strate);
+        Assert.Equal(5, actes.Refus.Count); // 1 refus de contenu + 4 refus de strates supérieures
+
+        var refusContenu = Assert.Single(actes.Refus, r => r.Strate == Strate.Contenu);
+        Assert.Equal(Espece.Normatif, refusContenu.Espece);
+        Assert.Equal("licenciable-non-licencié", refusContenu.Motif);
+        Assert.Equal([1L, 2L], refusContenu.Domaine);
+
+        foreach (var strate in new[] { Strate.Variante, Strate.Version, Strate.Identite })
+        {
+            var refus = Assert.Single(actes.Refus, r => r.Strate == strate);
+            Assert.Equal(Espece.Normatif, refus.Espece);
+            Assert.Equal("aucune-convention-strate", refus.Motif);
+            Assert.Equal([1L, 2L], refus.Domaine);
+        }
+
+        var refusFamille = Assert.Single(actes.Refus, r => r.Strate == Strate.Famille);
+        Assert.Equal(Espece.Normatif, refusFamille.Espece);
+        Assert.Equal("préalable-absent", refusFamille.Motif);
     }
 
-    // --- CE-01 élit exactement les hypothèses prévues ---
+    // --- CE-01 élit exactement les hypothèses prévues, refuse les strates supérieures ---
 
     [Fact]
-    public void CE01_elit_exactement_les_hypotheses_de_la_strate_contenu()
+    public void CE01_elit_le_contenu_et_refuse_les_strates_superieures()
     {
         var hypotheses = HypothesesOracle();
 
-        var actes = DecisionDesActes.Decider(hypotheses, ReferentielReel());
+        var actes = DecisionDesActes.Decider(hypotheses, ReferentielReel(), IdentifiantsOracle());
 
-        Assert.Empty(actes.Refus);
+        Assert.Equal(4, actes.Refus.Count);
         Assert.Equal(112, actes.Elections.Count);
         Assert.Equal(108, actes.Elections.Count(e => e.Domaine.Count == 2));
         Assert.Equal(4, actes.Elections.Count(e => e.Domaine.Count == 3));
@@ -90,6 +103,10 @@ public class DecisionDesActesTests
             Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], e.Dependances);
             Assert.Empty(e.Dette);
         });
+
+        Assert.All(actes.Refus, r => Assert.Equal(497, r.Domaine.Count));
+        Assert.Equal(3, actes.Refus.Count(r => r.Motif == "aucune-convention-strate"));
+        Assert.Single(actes.Refus, r => r.Motif == "préalable-absent" && r.Strate == Strate.Famille);
     }
 
     // --- déterminisme ---
@@ -99,9 +116,10 @@ public class DecisionDesActesTests
     {
         var hypotheses = HypothesesOracle();
         var referentiel = ReferentielReel();
+        var identifiants = IdentifiantsOracle();
 
-        var premiere = DecisionDesActes.Decider(hypotheses, referentiel);
-        var seconde = DecisionDesActes.Decider(hypotheses, referentiel);
+        var premiere = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var seconde = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
 
         Assert.Equal(Cles(premiere), Cles(seconde));
     }
@@ -111,8 +129,8 @@ public class DecisionDesActesTests
     [Fact]
     public void Deux_executions_independantes_depuis_loracle_et_le_registre_produisent_le_meme_resultat()
     {
-        var premiere = DecisionDesActes.Decider(HypothesesOracle(), ReferentielReel());
-        var seconde = DecisionDesActes.Decider(HypothesesOracle(), ReferentielReel());
+        var premiere = DecisionDesActes.Decider(HypothesesOracle(), ReferentielReel(), IdentifiantsOracle());
+        var seconde = DecisionDesActes.Decider(HypothesesOracle(), ReferentielReel(), IdentifiantsOracle());
 
         Assert.Equal(Cles(premiere), Cles(seconde));
     }
@@ -128,10 +146,10 @@ public class DecisionDesActesTests
                 [new ObservationConsommee(5, "empreinte"), new ObservationConsommee(6, "empreinte")]),
         ]);
 
-        var actes = DecisionDesActes.Decider(hyps, new Referentiel([Eq01])); // sans CE-01
+        var actes = DecisionDesActes.Decider(hyps, new Referentiel([Eq01]), [5, 6]); // sans CE-01
 
         Assert.Empty(actes.Elections);
-        Assert.Single(actes.Refus);
+        Assert.Equal(5, actes.Refus.Count);
     }
 
     // --- indépendance de l'ordre d'entrée ---
@@ -141,9 +159,10 @@ public class DecisionDesActesTests
     {
         var hypotheses = HypothesesOracle();
         var referentiel = ReferentielReel();
+        var identifiants = IdentifiantsOracle();
 
-        var direct = DecisionDesActes.Decider(hypotheses, referentiel);
-        var inverse = DecisionDesActes.Decider(hypotheses.Reverse().ToList(), referentiel);
+        var direct = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var inverse = DecisionDesActes.Decider(hypotheses.Reverse().ToList(), referentiel, identifiants.Reverse().ToList());
 
         Assert.Equal(Cles(direct), Cles(inverse));
     }
@@ -159,7 +178,8 @@ public class DecisionDesActesTests
 
         var actes = DecisionDesActes.Decider(
             ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel)),
-            referentiel);
+            referentiel,
+            modele.Actes.Select(a => a.Identifiant).ToList());
 
         Assert.Equal(112, actes.Elections.Count);
         Assert.All(actes.Elections, e =>
@@ -178,14 +198,17 @@ public class DecisionDesActesTests
     {
         var modele = ModeleOracle();
         var referentiel = ReferentielReel();
+        var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var source = new SourceObservationsEnMemoire(modele, []);
 
         var directs = DecisionDesActes.Decider(
             ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel)),
-            referentiel);
+            referentiel,
+            identifiants);
         var viaAdaptateur = DecisionDesActes.Decider(
             ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(source.ProjeterModele(), referentiel)),
-            referentiel);
+            referentiel,
+            identifiants);
 
         Assert.Equal(Cles(directs), Cles(viaAdaptateur));
     }

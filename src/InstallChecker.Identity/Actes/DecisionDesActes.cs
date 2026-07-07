@@ -19,30 +19,55 @@ namespace InstallChecker.Identity.Actes;
 /// En l'absence de CE-01 en vigueur, aucune élection n'est de plein droit (I27, 007 § 3) : chaque
 /// hypothèse formulable retombe en refus normatif — « configuration licenciable, aucune convention
 /// adoptée » (motif normalisé `licenciable-non-licencié`, 014 § 7.4).
+///
+/// Sous ℛ₀, aucune convention d'interprétation ou de stratification n'existe au-delà de la strate
+/// contenu (009 § 6) : les strates variante, version et identité n'ont donc jamais de signal ni de
+/// licence qui les fonde — refus normatif `aucune-convention-strate` (014 § 7.4, § 8). La strate
+/// famille exige des identités déjà retenues (aucune ne l'est jamais ici) — refus normatif
+/// `préalable-absent`. Ces quatre refus sont un fait structurel de ℛ₀ (aucune autre famille de
+/// convention n'existe dans ce registre) : ils ne dépendent d'aucune hypothèse ni d'aucune
+/// comparaison, et couvrent toujours le domaine maximal (la totalité des actes d'Ω, seule
+/// information nécessaire ici — Obs(h) et le contenu des actes restent hors de portée de C5, I51).
 /// </summary>
 public static class DecisionDesActes
 {
     private const string IdentifiantCE01 = "CE-01";
     private const string MotifUniqueMaximale = "unique-maximale";
     private const string MotifLicenciableNonLicencie = "licenciable-non-licencié";
+    private const string MotifAucuneConventionStrate = "aucune-convention-strate";
+    private const string MotifPrealableAbsent = "préalable-absent";
 
-    public static EnsembleDesActes Decider(IReadOnlyList<Hypothese> hypotheses, Referentiel referentiel)
+    public static EnsembleDesActes Decider(
+        IReadOnlyList<Hypothese> hypotheses, Referentiel referentiel, IReadOnlyList<long> identifiantsDesActes)
     {
         var ce01 = referentiel.ConventionsEnVigueur.SingleOrDefault(
             c => c.Identifiant == IdentifiantCE01 && c.Famille == Famille.Election);
 
         var hypothesesTriees = hypotheses.OrderBy(h => h.Domaine[0]).ToList();
+        var refusDesStratesSuperieures = RefusDesStratesSuperieures(identifiantsDesActes);
 
         if (ce01 is null)
         {
-            var refus = hypothesesTriees
-                .Select(h => new Refus(h.Strate, h.Domaine, Espece.Normatif, MotifLicenciableNonLicencie))
-                .ToList();
-            return new EnsembleDesActes([], refus);
+            var refusContenu = hypothesesTriees
+                .Select(h => new Refus(h.Strate, h.Domaine, Espece.Normatif, MotifLicenciableNonLicencie));
+            return new EnsembleDesActes([], [.. refusContenu, .. refusDesStratesSuperieures]);
         }
 
         var elections = hypothesesTriees.Select(h => Elire(h, ce01)).ToList();
-        return new EnsembleDesActes(elections, []);
+        return new EnsembleDesActes(elections, refusDesStratesSuperieures);
+    }
+
+    private static IReadOnlyList<Refus> RefusDesStratesSuperieures(IReadOnlyList<long> identifiantsDesActes)
+    {
+        var domaineMaximal = identifiantsDesActes.Distinct().OrderBy(id => id).ToList();
+
+        return
+        [
+            new Refus(Strate.Variante, domaineMaximal, Espece.Normatif, MotifAucuneConventionStrate),
+            new Refus(Strate.Version, domaineMaximal, Espece.Normatif, MotifAucuneConventionStrate),
+            new Refus(Strate.Identite, domaineMaximal, Espece.Normatif, MotifAucuneConventionStrate),
+            new Refus(Strate.Famille, domaineMaximal, Espece.Normatif, MotifPrealableAbsent),
+        ];
     }
 
     private static ActeElection Elire(Hypothese hypothese, Convention ce01)

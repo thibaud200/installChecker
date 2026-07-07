@@ -1,0 +1,261 @@
+using System.Security.Cryptography;
+using System.Text;
+using InstallChecker.Identity.Access.Observations;
+using InstallChecker.Identity.Access.Registre;
+using InstallChecker.Identity.Actes;
+using InstallChecker.Identity.Conventions;
+using InstallChecker.Identity.Etat;
+using InstallChecker.Identity.Hypotheses;
+using InstallChecker.Identity.Observations;
+using InstallChecker.Identity.Signaux;
+
+namespace InstallChecker.Identity.Tests;
+
+public class AssemblageDeLetatTests
+{
+    private static string RacineDuDepot()
+    {
+        var repertoire = new DirectoryInfo(AppContext.BaseDirectory);
+        while (repertoire is not null && !File.Exists(Path.Combine(repertoire.FullName, "InstallChecker.slnx")))
+        {
+            repertoire = repertoire.Parent;
+        }
+
+        return repertoire?.FullName ?? throw new InvalidOperationException("racine du dépôt introuvable");
+    }
+
+    private static Referentiel ReferentielReel() =>
+        new LecteurDeRegistreMarkdown(Path.Combine(RacineDuDepot(), "registre")).Projeter();
+
+    private static ModeleObservations ModeleOracle() =>
+        new LecteurDObservationsSqlite(Path.Combine(RacineDuDepot(), "tests", "oracle", "corpus1-postA1.db")).ProjeterModele();
+
+    private static W AssemblerDepuisOracle(ModeleObservations modele, Referentiel referentiel)
+    {
+        var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
+        var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
+        var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        return AssemblageDeLetat.Assembler(actes, index);
+    }
+
+    private static W AssemblerW0() => AssemblerDepuisOracle(ModeleOracle(), ReferentielReel());
+
+    private static string JoinRefs(IReadOnlyList<ConventionRef>? refs) => refs is null ? "-" : string.Join(";", refs);
+
+    private static string Cle(ActeW a) =>
+        $"{a.Type}:{a.Strate}:[{string.Join(",", a.Domaine)}]:{a.Contenu}:{a.Niveau}:{a.Motif}:{a.Espece}:" +
+        $"lic=[{JoinRefs(a.Licences)}]:dep=[{JoinRefs(a.Dependances)}]:dette=[{JoinRefs(a.Dette)}]";
+
+    private static string Cle(W w) =>
+        $"omega={w.Index.Omega.Version}:{w.Index.Omega.NombreActes}:{w.Index.Omega.EmpreinteEtat}|" +
+        $"registre=[{string.Join(";", w.Index.Registre)}]|" +
+        string.Join("||", w.Actes.Select(Cle));
+
+    // --- conformité exacte à W₀ (116 actes, 014 § 8) ---
+
+    [Fact]
+    public void Le_pipeline_complet_produit_exactement_W0()
+    {
+        var w = AssemblerW0();
+
+        Assert.Equal(1, w.Index.Omega.Version);
+        Assert.Equal(497, w.Index.Omega.NombreActes);
+        Assert.Matches("^[0-9a-f]{64}$", w.Index.Omega.EmpreinteEtat);
+        Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], w.Index.Registre);
+
+        Assert.Equal(116, w.Actes.Count);
+
+        var elections = w.Actes.Where(a => a.Type == TypeActe.Election).ToList();
+        var refus = w.Actes.Where(a => a.Type == TypeActe.Refus).ToList();
+        Assert.Equal(112, elections.Count);
+        Assert.Equal(4, refus.Count);
+        Assert.Equal(108, elections.Count(a => a.Domaine.Count == 2));
+        Assert.Equal(4, elections.Count(a => a.Domaine.Count == 3));
+        Assert.All(elections, a =>
+        {
+            Assert.Equal(Strate.Contenu, a.Strate);
+            Assert.Equal(Niveau.Certaine, a.Niveau);
+            Assert.Equal("unique-maximale", a.Motif);
+            Assert.Equal([new ConventionRef("CE-01", 1)], a.Licences);
+            Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], a.Dependances);
+            Assert.Empty(a.Dette!);
+        });
+
+        Assert.Equal([Strate.Variante, Strate.Version, Strate.Identite, Strate.Famille], refus.Select(r => r.Strate));
+        Assert.All(refus.Take(3), r => Assert.Equal("aucune-convention-strate", r.Motif));
+        Assert.Equal("préalable-absent", refus[3].Motif);
+        Assert.All(refus, r =>
+        {
+            Assert.Equal(Espece.Normatif, r.Espece);
+            Assert.Equal(497, r.Domaine.Count);
+        });
+    }
+
+    // --- conformité bit-à-bit entre deux calculs indépendants ---
+
+    [Fact]
+    public void Conformite_bit_a_bit_entre_deux_calculs_independants_de_W0()
+    {
+        var premier = AssemblerDepuisOracle(ModeleOracle(), ReferentielReel());
+        var second = AssemblerDepuisOracle(ModeleOracle(), ReferentielReel());
+
+        Assert.Equal(Cle(premier), Cle(second));
+    }
+
+    // --- déterminisme de l'assemblage sur les mêmes actes ---
+
+    [Fact]
+    public void Deux_assemblages_sur_le_meme_ensemble_dactes_produisent_le_meme_W()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
+        var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
+        var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+
+        var premier = AssemblageDeLetat.Assembler(actes, index);
+        var second = AssemblageDeLetat.Assembler(actes, index);
+
+        Assert.Equal(Cle(premier), Cle(second));
+    }
+
+    // --- indépendance de l'ordre des actes en entrée ---
+
+    [Fact]
+    public void Lordre_des_actes_en_entree_ne_change_pas_le_W_assemble()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
+        var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
+        var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var actesMelanges = new EnsembleDesActes(actes.Elections.Reverse().ToList(), actes.Refus.Reverse().ToList());
+        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+
+        var direct = AssemblageDeLetat.Assembler(actes, index);
+        var melange = AssemblageDeLetat.Assembler(actesMelanges, index);
+
+        Assert.Equal(Cle(direct), Cle(melange));
+    }
+
+    // --- ordre canonique des actes (014 § 7.3) ---
+
+    [Fact]
+    public void Lordre_canonique_est_strate_puis_type_puis_plus_petit_identifiant()
+    {
+        var w = AssemblerW0();
+
+        var elections = w.Actes.Take(112).ToList();
+        var refus = w.Actes.Skip(112).ToList();
+
+        Assert.All(elections, a => Assert.Equal(TypeActe.Election, a.Type));
+        Assert.Equal(elections.Select(a => a.Domaine[0]), elections.Select(a => a.Domaine[0]).OrderBy(id => id));
+        Assert.Equal([Strate.Variante, Strate.Version, Strate.Identite, Strate.Famille], refus.Select(r => r.Strate));
+    }
+
+    // --- absence de champs réservés à l'autre type (014 § 7.3 : « — ») ---
+
+    [Fact]
+    public void Les_champs_reserves_a_lautre_type_sont_absents()
+    {
+        var w = AssemblerW0();
+
+        Assert.All(w.Actes.Where(a => a.Type == TypeActe.Election), a =>
+        {
+            Assert.NotNull(a.Contenu);
+            Assert.NotNull(a.Niveau);
+            Assert.Null(a.Espece);
+            Assert.NotNull(a.Licences);
+            Assert.NotNull(a.Dependances);
+            Assert.NotNull(a.Dette);
+        });
+
+        Assert.All(w.Actes.Where(a => a.Type == TypeActe.Refus), a =>
+        {
+            Assert.Null(a.Contenu);
+            Assert.Null(a.Niveau);
+            Assert.NotNull(a.Espece);
+            Assert.Null(a.Licences);
+            Assert.Null(a.Dependances);
+            Assert.Null(a.Dette);
+        });
+    }
+
+    // --- empreinte d'état conforme à 014 § 7.2 (même fonction que les empreintes de contenu) ---
+
+    [Fact]
+    public void Lempreinte_detat_est_la_fonction_dempreinte_du_support_sur_la_concatenation_canonique()
+    {
+        var modele = ModeleOracle();
+
+        var attendue = Convert.ToHexStringLower(SHA256.HashData(
+            Encoding.UTF8.GetBytes(string.Concat(modele.Actes.OrderBy(a => a.Identifiant).Select(a => a.Empreinte)))));
+
+        Assert.Equal(attendue, IndexOmegaCalculateur.Calculer(modele).EmpreinteEtat);
+    }
+
+    // --- reconstruction complète depuis Ω et ℛ via le pipeline ---
+
+    [Fact]
+    public void W_se_reconstruit_integralement_depuis_Omega_et_le_registre_reel()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var actesParId = modele.Actes.ToDictionary(a => a.Identifiant);
+
+        var w = AssemblerDepuisOracle(modele, referentiel);
+
+        Assert.All(w.Actes.Where(a => a.Type == TypeActe.Election), a =>
+        {
+            foreach (var acteId in a.Domaine)
+            {
+                Assert.Equal(a.Contenu, actesParId[acteId].Empreinte);
+            }
+        });
+    }
+
+    // --- équivalence adaptateur mémoire / SQLite ---
+
+    [Fact]
+    public void Ladaptateur_memoire_produit_le_meme_W_que_le_modele_direct()
+    {
+        var modele = ModeleOracle();
+        var referentiel = ReferentielReel();
+        var source = new SourceObservationsEnMemoire(modele, []);
+
+        var direct = AssemblerDepuisOracle(modele, referentiel);
+        var viaAdaptateur = AssemblerDepuisOracle(source.ProjeterModele(), referentiel);
+
+        Assert.Equal(Cle(direct), Cle(viaAdaptateur));
+    }
+
+    // --- calcul correct de τ (006 § 7, 014 § 7.5) ---
+
+    [Fact]
+    public void Tau_classe_correctement_conserve_abandonne_et_nouveau()
+    {
+        var indexAvant = new IndexEtat(new IndexOmega(1, 3, "empreinte-avant"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+        var indexApres = new IndexEtat(new IndexOmega(1, 5, "empreinte-apres"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+
+        var electionConservee = new ActeW(TypeActe.Election, Strate.Contenu, [1, 2], "A", Niveau.Certaine, "unique-maximale",
+            null, [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+        var refusVariante = new ActeW(TypeActe.Refus, Strate.Variante, [1, 2, 3], null, null, "aucune-convention-strate",
+            Espece.Normatif, null, null, null);
+        var electionNouvelle = new ActeW(TypeActe.Election, Strate.Contenu, [4, 5], "B", Niveau.Certaine, "unique-maximale",
+            null, [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+
+        var avant = new W(indexAvant, [electionConservee, refusVariante]);
+        var apres = new W(indexApres, [electionConservee, electionNouvelle]);
+
+        var tau = AssemblageDeLetat.CalculerTransition(avant, apres, new Cause(TypeCause.Omega, "ajout des actes 4 et 5"));
+
+        Assert.Equal([new ReferenceActe(Strate.Contenu, 1)], tau.Correspondance.Conserves);
+        Assert.Equal([new ReferenceActe(Strate.Variante, 1)], tau.Correspondance.Abandonnes);
+        Assert.Equal([new ReferenceActe(Strate.Contenu, 4)], tau.Correspondance.Nouveaux);
+        Assert.Empty(tau.Correspondance.Continuites);
+        Assert.Equal(indexAvant, tau.IndexAvant);
+        Assert.Equal(indexApres, tau.IndexApres);
+    }
+}
