@@ -4,12 +4,15 @@ namespace InstallChecker.Identity.Conventions;
 
 /// <summary>
 /// Le prédicat de cohérence du registre (008 § 4), appliqué aux seules versions en vigueur (014 § 5.3) :
-/// toute dépendance déclarée doit elle-même être en vigueur, et le graphe de dépendances est acyclique.
+/// au plus une version par identifiant est simultanément en vigueur, toute dépendance déclarée doit
+/// elle-même être en vigueur, et le graphe de dépendances est acyclique.
 /// </summary>
 public static class PredicatDeCoherence
 {
     public static void Verifier(IReadOnlyList<Convention> conventionsEnVigueur)
     {
+        VerifierUniciteDeLidentifiant(conventionsEnVigueur);
+
         var enVigueur = conventionsEnVigueur.ToDictionary(c => c.Ref);
 
         foreach (var convention in conventionsEnVigueur)
@@ -26,6 +29,20 @@ public static class PredicatDeCoherence
         }
 
         VerifierAcyclicite(conventionsEnVigueur, enVigueur);
+    }
+
+    private static void VerifierUniciteDeLidentifiant(IReadOnlyList<Convention> conventionsEnVigueur)
+    {
+        var doublon = conventionsEnVigueur
+            .GroupBy(c => c.Identifiant, StringComparer.Ordinal)
+            .FirstOrDefault(groupe => groupe.Count() > 1);
+
+        if (doublon is not null)
+        {
+            var versions = string.Join(", ", doublon.Select(c => $"v{c.Version}").OrderBy(v => v, StringComparer.Ordinal));
+            throw new RegistreIncoherentException(
+                $"plusieurs versions de {doublon.Key} sont simultanément en vigueur : {versions}");
+        }
     }
 
     private static void VerifierAcyclicite(

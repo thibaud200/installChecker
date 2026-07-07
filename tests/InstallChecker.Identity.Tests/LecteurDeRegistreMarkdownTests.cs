@@ -113,4 +113,13 @@ public class LecteurDeRegistreMarkdownTests
         Assert.Throws<RegistreIncoherentException>(
             () => new LecteurDeRegistreMarkdown(CheminFixture("RegistreIncoherent")).Projeter());
     }
+
+    // --- Divergence 1 (revue de clôture) : deux versions d'un même identifiant en vigueur simultanément ---
+
+    [Fact]
+    public void Deux_versions_dun_meme_identifiant_en_vigueur_sont_refusees_comme_incoherentes()
+    {
+        Assert.Throws<RegistreIncoherentException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("DeuxVersionsMemeIdentifiant")).Projeter());
+    }
 }
