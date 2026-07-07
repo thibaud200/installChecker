@@ -10,20 +10,14 @@ namespace InstallChecker.Identity.Etat;
 /// deux telles formes (τ, 014 § 7.5).
 ///
 /// La seule transformation qu'elle opère sur le contenu des actes est l'agrégation canonique des
-/// refus de même (strate, espèce, motif) en un refus de domaine maximal (014 § 7.3) — une mise en
-/// forme, jamais un jugement sur ce qui est refusé ou pourquoi.
+/// refus de même (strate, espèce, motif) *que rien d'autre dans l'état ne distingue* en un refus de
+/// domaine maximal (014 § 7.3) — une mise en forme, jamais un jugement sur ce qui est refusé ou pourquoi.
 /// </summary>
 public static class AssemblageDeLetat
 {
     public static W Assembler(EnsembleDesActes actes, IndexEtat index)
     {
-        var refusAgreges = actes.Refus
-            .GroupBy(r => (r.Strate, r.Espece, r.Motif))
-            .Select(g => new Refus(
-                g.Key.Strate,
-                g.SelectMany(r => r.Domaine).Distinct().OrderBy(id => id).ToList(),
-                g.Key.Espece,
-                g.Key.Motif));
+        var refusAgreges = AgregerLesRefus(actes);
 
         var tousLesActes = actes.Elections.Select(ActeW.DepuisElection)
             .Concat(refusAgreges.Select(ActeW.DepuisRefus))
@@ -33,6 +27,44 @@ public static class AssemblageDeLetat
             .ToList();
 
         return new W(index, tousLesActes);
+    }
+
+    /// <summary>
+    /// Applique littéralement 014 § 7.3 : deux refus de même (strate, espèce, motif) ne fusionnent
+    /// que si aucun autre acte de l'état (élection, ou refus d'une autre espèce/d'un autre motif) —
+    /// à la même strate — ne porte sur un domaine qui recoupe le leur. Un recoupement signalerait
+    /// qu'un acte distingue déjà une partie de ce que la fusion prétendrait indistinct ; le groupe
+    /// reste alors non fusionné, chaque refus conservé tel que C5 l'a produit.
+    /// </summary>
+    private static IReadOnlyList<Refus> AgregerLesRefus(EnsembleDesActes actes)
+    {
+        var resultat = new List<Refus>();
+
+        foreach (var groupe in actes.Refus.GroupBy(r => (r.Strate, r.Espece, r.Motif)))
+        {
+            var (strate, espece, motif) = groupe.Key;
+            var domaineDuGroupe = groupe.SelectMany(r => r.Domaine).Distinct().ToHashSet();
+
+            var autresActesDeLaStrate = actes.Elections
+                .Where(e => e.Strate == strate)
+                .Select(e => e.Domaine)
+                .Concat(actes.Refus
+                    .Where(r => r.Strate == strate && (r.Espece != espece || r.Motif != motif))
+                    .Select(r => r.Domaine));
+
+            var distingue = autresActesDeLaStrate.Any(domaine => domaine.Any(domaineDuGroupe.Contains));
+
+            if (distingue)
+            {
+                resultat.AddRange(groupe);
+            }
+            else
+            {
+                resultat.Add(new Refus(strate, domaineDuGroupe.OrderBy(id => id).ToList(), espece, motif));
+            }
+        }
+
+        return resultat;
     }
 
     public static Transition CalculerTransition(W avant, W apres, Cause cause)

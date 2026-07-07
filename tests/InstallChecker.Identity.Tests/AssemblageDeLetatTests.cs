@@ -3,6 +3,7 @@ using System.Text;
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
+using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
