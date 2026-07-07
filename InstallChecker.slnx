@@ -2,8 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/InstallChecker/InstallChecker.csproj" />
     <Project Path="src/InstallChecker.Core/InstallChecker.Core.csproj" />
+    <Project Path="src/InstallChecker.Identity/InstallChecker.Identity.csproj" />
+    <Project Path="src/InstallChecker.Identity.Access/InstallChecker.Identity.Access.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InstallChecker.Tests/InstallChecker.Tests.csproj" />
+    <Project Path="tests/InstallChecker.Identity.Tests/InstallChecker.Identity.Tests.csproj" />
   </Folder>
 </Solution>
