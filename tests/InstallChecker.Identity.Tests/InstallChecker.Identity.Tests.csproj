@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\InstallChecker.Identity\InstallChecker.Identity.csproj" />
     <ProjectReference Include="..\..\src\InstallChecker.Identity.Access\InstallChecker.Identity.Access.csproj" />
+    <ProjectReference Include="..\..\src\InstallChecker\InstallChecker.csproj" />
   </ItemGroup>
 
   <ItemGroup>
