@@ -51,7 +51,10 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
             using var lecteur = commande.ExecuteReader();
             while (lecteur.Read())
             {
-                contextes.Add(new ContexteObservation(lecteur.GetInt64(0), lecteur.GetString(1), lecteur.GetString(2)));
+                contextes.Add(new ContexteObservation(
+                    lecteur.GetInt64(0),
+                    LireTexteObligatoire(lecteur, 1, "scan_observations", "path"),
+                    LireTexteObligatoire(lecteur, 2, "scan_observations", "scanned_at")));
             }
         }
         catch (SqliteException ex)
@@ -108,7 +111,9 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
             using var lecteur = commande.ExecuteReader();
             while (lecteur.Read())
             {
-                actes.Add(lecteur.GetInt64(0), (lecteur.GetInt64(1), lecteur.GetString(2)));
+                actes.Add(lecteur.GetInt64(0), (
+                    LireEntierObligatoire(lecteur, 1, "scan_observations", "size"),
+                    LireTexteObligatoire(lecteur, 2, "scan_observations", "sha256")));
             }
         }
         catch (SqliteException ex)
@@ -175,6 +180,20 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
                 $"{table} : aucune ligne pour l'observation {manquant[0]} (invariant 1:1 rompu)");
         }
     }
+
+    // --- Lecture des colonnes obligatoires de scan_observations (014 § 6 : taille et empreinte de
+    //     contenu toujours portées) — réutilise le garde IsDBNull/type de LireValeur plutôt que de
+    //     le dupliquer ; une valeur absente ou de type inattendu y est « structure inattendue » (Ω invalide).
+
+    private static long LireEntierObligatoire(SqliteDataReader lecteur, int index, string table, string colonne) =>
+        LireValeur(lecteur, index, table, colonne) is ValeurObservee.Entier entier
+            ? entier.Valeur
+            : throw new OmegaInvalideException($"{table}.{colonne} : valeur obligatoire absente (014 § 6)");
+
+    private static string LireTexteObligatoire(SqliteDataReader lecteur, int index, string table, string colonne) =>
+        LireValeur(lecteur, index, table, colonne) is ValeurObservee.Texte texte
+            ? texte.Valeur
+            : throw new OmegaInvalideException($"{table}.{colonne} : valeur obligatoire absente (014 § 6)");
 
     private static ValeurObservee LireValeur(SqliteDataReader lecteur, int index, string table, string colonne)
     {

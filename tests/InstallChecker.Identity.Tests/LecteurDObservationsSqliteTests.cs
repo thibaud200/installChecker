@@ -227,6 +227,100 @@ public class LecteurDObservationsSqliteTests : IDisposable
             () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
     }
 
+    // --- D2 (audit final) : aucune exception .NET ne doit fuiter sur une colonne obligatoire absente ---
+
+    [Fact]
+    public void Sha256_absent_dans_scan_observations_est_refuse_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER PRIMARY KEY, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (1, 'a.txt', 1, NULL, '2026-01-01T00:00:00Z');
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+    }
+
+    [Fact]
+    public void Size_absent_dans_scan_observations_est_refuse_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER PRIMARY KEY, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (1, 'a.txt', NULL, 'sha-a', '2026-01-01T00:00:00Z');
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+    }
+
+    [Fact]
+    public void Path_absent_dans_scan_observations_est_refuse_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER PRIMARY KEY, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (1, NULL, 1, 'sha-a', '2026-01-01T00:00:00Z');
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterContexte());
+    }
+
+    [Fact]
+    public void Scanned_at_absent_dans_scan_observations_est_refuse_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER PRIMARY KEY, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (1, 'a.txt', 1, 'sha-a', NULL);
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterContexte());
+    }
+
+    // --- D5 (audit final) : fichier présent mais non-SQLite → refusé comme absent, jamais une exception .NET ---
+
+    [Fact]
+    public void Fichier_present_mais_non_sqlite_est_refuse_comme_absent()
+    {
+        var chemin = NouveauCheminDeBase();
+        File.WriteAllBytes(chemin, "ceci n'est pas une base SQLite"u8.ToArray());
+
+        Assert.Throws<OmegaAbsentException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+    }
+
     // --- Substituabilité du port (I42) ---
 
     private static int CompterActes(IObservationsSource source) => source.ProjeterModele().Actes.Count;

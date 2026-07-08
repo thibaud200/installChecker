@@ -171,6 +171,18 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
         }
     }
 
+    // --- Garde partagée : aucun titre de section dupliqué avant tout ToDictionary (même niveau de
+    //     robustesse que LireConvention, qui l'obtient via SequenceEqual sur l'ensemble attendu) ---
+
+    private static void VerifierAucunTitreDuplique(IReadOnlyList<(string Titre, string Contenu)> sections, string contexte)
+    {
+        var doublon = sections.GroupBy(s => s.Titre).FirstOrDefault(g => g.Count() > 1);
+        if (doublon is not null)
+        {
+            throw new RegistreMalformeException($"{contexte} : section « {doublon.Key} » dupliquée");
+        }
+    }
+
     // --- Journal (historique.md) — 015 § 6, 014 § 5.2 ---
 
     private static readonly string[] ChampsEntreeHistorique = ["type", "convention", "justification de l'acte", "autorité"];
@@ -186,7 +198,9 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
 
         foreach (var (titre, contenu) in SectionParser.ExtraireSections(File.ReadAllText(chemin)))
         {
-            var champs = SectionParser.ExtraireSections(contenu, "### ").ToDictionary(s => s.Titre, s => s.Contenu);
+            var sousSections = SectionParser.ExtraireSections(contenu, "### ");
+            VerifierAucunTitreDuplique(sousSections, $"historique.md : entrée « {titre} »");
+            var champs = sousSections.ToDictionary(s => s.Titre, s => s.Contenu);
 
             foreach (var attendu in ChampsEntreeHistorique)
             {
@@ -250,7 +264,9 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
             throw new RegistreMalformeException($"etat.md introuvable : {chemin}");
         }
 
-        var sections = SectionParser.ExtraireSections(File.ReadAllText(chemin)).ToDictionary(s => s.Titre, s => s.Contenu);
+        var sectionsBrutes = SectionParser.ExtraireSections(File.ReadAllText(chemin));
+        VerifierAucunTitreDuplique(sectionsBrutes, "etat.md");
+        var sections = sectionsBrutes.ToDictionary(s => s.Titre, s => s.Contenu);
 
         foreach (var titre in TitresAttendusEtat)
         {

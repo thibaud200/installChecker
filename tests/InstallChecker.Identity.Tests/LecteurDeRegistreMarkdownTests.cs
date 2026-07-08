@@ -122,4 +122,20 @@ public class LecteurDeRegistreMarkdownTests
         Assert.Throws<RegistreIncoherentException>(
             () => new LecteurDeRegistreMarkdown(CheminFixture("DeuxVersionsMemeIdentifiant")).Projeter());
     }
+
+    // --- D1 (audit final) : aucune exception .NET ne doit fuiter sur une section dupliquée ---
+
+    [Fact]
+    public void Section_dupliquee_dans_etat_md_est_refusee_comme_malformee()
+    {
+        Assert.Throws<RegistreMalformeException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("SectionEtatDupliquee")).Projeter());
+    }
+
+    [Fact]
+    public void Sous_section_dupliquee_dans_une_entree_dhistorique_est_refusee_comme_malformee()
+    {
+        Assert.Throws<RegistreMalformeException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("SousSectionHistoriqueDupliquee")).Projeter());
+    }
 }
