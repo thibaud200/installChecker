@@ -1,0 +1,219 @@
+Prompt — Document 015 : Registre normatif — première instanciation
+  Contexte
+
+  Les documents 000→014 sont désormais figés.
+
+  Le 015 clôt définitivement la phase documentaire.
+
+  À sa validation, il ne restera plus aucune décision théorique ou normative empêchant le début du développement.
+
+  Le document ne décrit plus la théorie.
+
+  Il rédige le registre lui-même.
+
+  Autrement dit, il définit la forme normative exacte des premières conventions.
+
+  Après ce document, É1 pourra être réalisée sans interprétation.
+
+  Document à produire
+  docs/identity/015 - Registre normatif.md
+  Contraintes absolues
+
+  Aucun code.
+
+  Aucun pseudo-code.
+
+  Aucun parseur.
+
+  Aucune structure C#.
+
+  On rédige le registre exactement comme une norme.
+
+  Le document doit pouvoir servir directement de référence de gouvernance.
+
+  1. Le registre comme document normatif
+
+  Définir le registre comme objet documentaire.
+
+  Expliquer :
+
+  ce qu'il contient ;
+  ce qu'il ne contient jamais ;
+  ce qui constitue une modification ;
+  ce qui constitue une nouvelle version ;
+  ce qui constitue une nouvelle convention ;
+  ce qui constitue une erreur documentaire.
+
+  Montrer que le registre reste indépendant du moteur.
+
+  2. Structure logique définitive
+
+  Définir définitivement :
+
+  etat.md
+  historique.md
+  EQ-01/v1.md
+  CE-01/v1.md
+
+  Chaque document doit avoir :
+
+  son rôle ;
+  son contenu logique ;
+  son identité ;
+  ses contraintes ;
+  son cycle de vie.
+  3. Grammaire normative
+
+  Le 014 définit les champs.
+
+  Le 015 définit maintenant leur matérialisation.
+
+  Définir précisément :
+
+  sections ;
+  ordre obligatoire ;
+  titres ;
+  unicité des champs ;
+  représentation des versions ;
+  représentation des dépendances ;
+  représentation des références documentaires.
+
+  Le moteur ne lit jamais la prose.
+
+  Le moteur ne lit que les champs normatifs.
+
+  Définir explicitement cette séparation.
+
+  4. Texte normatif complet de EQ-01
+
+  Rédiger intégralement le contenu logique de :
+
+  EQ-01/v1.md
+
+  Sous forme normative.
+
+  Tous les champs.
+
+  Toutes les justifications.
+
+  Toutes les limites.
+
+  Toutes les dépendances.
+
+  Aucune partie laissée implicite.
+
+  5. Texte normatif complet de CE-01
+
+  Même exigence.
+
+  Le document doit produire intégralement :
+
+  CE-01/v1.md
+
+  Comme si ce fichier existait déjà.
+
+  6. historique.md
+
+  Définir complètement :
+
+  les deux premières entrées ;
+  leur représentation ;
+  leur identité ;
+  leurs références ;
+  leurs liens avec les commits.
+
+  Le commit n'est jamais l'identité.
+
+  Il est uniquement une trace.
+
+  7. etat.md
+
+  Définir exactement :
+
+  ℛ₀ ;
+  conventions en vigueur ;
+  conventions retirées ;
+  version du registre ;
+  date logique ;
+  index documentaire.
+
+  Aucune ambiguïté ne doit subsister.
+
+  8. Validation documentaire
+
+  Définir la procédure complète de validation d'É1.
+
+  Avant qu'un registre puisse être considéré valide :
+
+  tout doit être vérifié.
+
+  Établir une check-list exhaustive.
+
+  Chaque cause de rejet du 014 doit apparaître.
+
+  9. Gouvernance
+
+  Définir :
+
+  qui peut proposer ;
+  qui adopte ;
+  qui retire ;
+  comment une justification évolue ;
+  comment une convention devient obsolète.
+
+  Toujours sans architecture logicielle.
+
+  Uniquement la gouvernance documentaire.
+
+  10. Compatibilité future
+
+  Montrer que :
+
+  EQ-02 ;
+  CE-02 ;
+  A-01 ;
+  futures conventions ;
+
+  pourront être ajoutées sans modifier aucun document existant.
+
+  Le registre doit être démontré extensible.
+
+  11. Clôture documentaire
+
+  Le document doit déclarer explicitement :
+
+  que la phase documentaire fondatrice est terminée.
+
+  Que toute évolution future passera :
+
+  soit par une évolution de registre ;
+  soit par une évolution de théorie (nouvelle série documentaire) ;
+  soit par une implémentation.
+
+  Le moteur n'a plus aucune liberté normative.
+
+  12. Nouveaux invariants
+
+  Introduire et démontrer :
+
+  I53 — Toute convention possède une représentation documentaire complète.
+
+  I54 — Toute évolution du registre est traçable sans ambiguïté.
+
+  I55 — Toute lecture normative est indépendante de la prose justificative.
+
+  I56 — Toute convention future est exprimable sans modifier la structure du registre.
+
+  Livrable attendu
+
+  Un unique fichier :
+
+  docs/identity/015 - Registre normatif.md
+
+  Un seul commit.
+
+  À la fin du rapport, fournir :
+
+  le résumé des nouveaux objets documentaires introduits ;
+  les raffinements éventuels par rapport aux documents 000→014 ;
+  une conclusion indiquant que la phase documentaire fondatrice est officiellement close et que le projet entre dans la phase É1 d'implémentation (matérialisation de ℛ₀), suivie de l'implémentation incrémentale du moteur conformément au plan É1→É9 défini dans le document 013.

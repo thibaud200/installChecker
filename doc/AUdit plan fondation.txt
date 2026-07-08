@@ -1,0 +1,69 @@
+Audit de fondation — le pipeline d'observation comme socle du futur moteur d'identité
+
+1. Verdict sur l'architecture actuelle
+
+Propre aux coutures, chargée au centre. Le diagnostic en deux phrases : les six extracteurs sont exemplaires (statiques, purs, autonomes, records immuables, zéro dépendance croisée — exactement les coutures dont le moteur d'identité aura besoin) ; en revanche, tout ce qui n'est pas un extracteur s'est accumulé dans ScanCommand.Run, devenu une fonction-dieu d'environ 300 lignes qui cumule six responsabilités : parcours du système de fichiers, calcul SHA-256 (seule « capacité » jamais extraite en classe — une asymétrie héritée de l'étape 3), définition du schéma SQL, sept insertions préparées, projection JSON et sortie TSV.
+
+Ce n'est pas un défaut tant que le projet n'a qu'un seul consommateur (la commande scan). Ça le devient au moment précis où vous basculez vers l'analyse : le moteur d'identité devra lire le même schéma, les mêmes types, la même base — et aujourd'hui tout cela vit à l'intérieur d'une commande de CLI. Rien n'exige de réécriture ; l'extraction est mécanique. C'est la bonne nouvelle de l'audit : la dette est de la dette de placement, pas de conception.
+
+Points sains à préserver tels quels : modèle append-only, observation_id transversal, invariant 1:1, NULL = absence, indépendance stricte des capacités, tests à oracles indépendants (37), dépendances réduites à Microsoft.Data.Sqlite.
+
+Trois faiblesses réelles à traiter avant d'analyser :
+- le schéma n'existe qu'en tant qu'effet de bord du scan (DDL embarqué dans la commande) ;
+- aucun versionnage de schéma — acceptable tant que les bases étaient jetables, intenable dès que les observations deviennent le corpus que le moteur d'identité consomme ;
+- aucune mesure réelle — le pipeline n'a jamais tourné sur une vraie bibliothèque d'installateurs ; or le moteur d'identité doit être conçu à partir des distributions réelles (proportion de fichiers avec VersionInfo, signés, MSI…), pas d'hypothèses. C'était le signal le plus robuste de tout votre pipeline d'audit IA (S6 : « aucune décision valide sans mesure »).
+
+2. Points à extraire avant le moteur d'identité
+
+┌───────────────────────────────────┬──────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│            À extraire             │                   Vers où                    │                                       Pourquoi le moteur d'identité en a besoin                                       │
+├───────────────────────────────────┼──────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Les 5 extracteurs + leurs records │ Bibliothèque de classes                      │ Référencer les types d'observation sans référencer un exécutable                                                      │
+├───────────────────────────────────┼──────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ DDL + logique d'insertion         │ Module stockage dans la même bibliothèque    │ Le schéma est le contrat entre collecte et analyse ; il doit avoir un propriétaire unique                             │
+├───────────────────────────────────┼──────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Projection JSON                   │ Même module (c'est une projection du stocké) │ Le moteur d'identité produira ses propres projections sur le même modèle                                              │
+├───────────────────────────────────┼──────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Rien d'autre                      │ —                                            │ Deux assemblies (lib + CLI) + tests suffisent ; multiplier les projets maintenant serait de la modularité spéculative │
+└───────────────────────────────────┴──────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+3. Plan d'évolution — étapes indépendantes
+
+Étape A — Extraire la bibliothèque InstallChecker.Core
+- Objectif : déplacer les 5 extracteurs et leurs records dans un projet bibliothèque ; la CLI la référence.
+- Justification : le futur moteur d'identité est un consommateur de types et de schéma, pas de CLI ; c'est la coupure de dépendance fondatrice.
+- Composants : nouveau csproj, déplacement de fichiers, namespaces inchangés, ScanCommand/Program restent dans la CLI.
+- Risques : quasi nuls (mécanique) ; seul piège : en profiter pour « améliorer » au passage — interdit, déplacement pur.
+- Validation : build 0 warning, 37/37 tests, et sortie TSV/JSON octet pour octet identique sur un dossier de référence scanné avant/après.
+
+Étape B — Extraire le stockage (ObservationStore)
+- Objectif : sortir DDL, insertions préparées et projection JSON de ScanCommand, qui redevient pure orchestration (parcourir → extraire → stocker → projeter).
+- Justification : c'est le démontage de la fonction-dieu ; le schéma acquiert un propriétaire unique que la phase d'analyse pourra référencer en lecture.
+- Composants : ScanCommand (réduit à ~60 lignes), nouveau module stockage dans Core.
+- Risques : le seul refactor non trivial du plan — risque de régression d'insertion. Mitigation : comparaison de dumps SQLite avant/après sur le même dossier de référence.
+- Validation : dumps identiques (à scanned_at près), 37/37 tests, invariant 1:1 intact.
+
+Étape C — Versionner le schéma
+- Objectif : estampiller chaque base (PRAGMA user_version = 1) ; à l'ouverture, refuser avec message clair toute base d'une autre version.
+- Justification : dès la phase d'analyse, les bases cessent d'être jetables — elles deviennent le corpus. Mélanger silencieusement des schémas serait une corruption de données différée. Refus explicite plutôt que migration : pré-1.0, re-scanner coûte moins cher qu'un système de migration (à réévaluer quand un corpus vaudra plus qu'un re-scan).
+- Composants : module stockage uniquement.
+- Risques : aucun fonctionnel ; une décision de politique à acter (refus vs migration).
+- Validation : base neuve estampillée ; base version inconnue → erreur explicite, code de sortie fatal ; tests dédiés.
+
+Étape D — Figer les décisions en ADR
+- Objectif : remplir enfin la section 17 de CLAUDE.md — les décisions structurantes (C#/.NET, SQLite append-only, règle des capacités autonomes, règle transactionnelle différée, choix de l'API Authenticode obsolète, refus du statut failed) n'existent aujourd'hui que dans l'historique de conversation et les messages de commit.
+- Justification : la phase d'analyse s'appuiera sur ces règles ; non tracées, elles seront réinventées ou violées. C'est aussi une exigence explicite de votre CLAUDE.md.
+- Composants : documentation seule, format ADR de CLAUDE.md §17 (contexte / décision / alternatives / conséquences).
+- Risques : aucun.
+- Validation : ADR relus et intégrés par vous.
+
+Étape E — Campagne de mesure sur corpus réel
+- Objectif : premier scan à l'échelle réelle (votre bibliothèque d'installateurs, ou un volume représentatif) ; collecter durée, débit, erreurs, taille de base, et surtout les distributions : % de fichiers avec VersionInfo, avec certificat, par conteneur, propriétés MSI/AppX présentes.
+- Justification : double — (1) c'est la validation empirique jamais faite, exigée par vos propres règles de performance ; (2) ces distributions sont l'entrée de conception du moteur d'identité (quels signaux existent réellement, à quelle fréquence, avec quelle qualité). Concevoir le moteur avant de les connaître reviendrait à optimiser un modèle mental.
+- Composants : aucun code — Measure-Command + requêtes SQL sur la base produite ; livrable = rapport de mesures versionné dans le dépôt.
+- Risques : c'est l'étape qui peut invalider des choix (mono-thread + hash intégral trop lent à l'échelle, base trop volumineuse) — c'est sa fonction. Toute optimisation qui en découlerait serait alors justifiée par une mesure, conformément à la règle absolue.
+- Critères de validation : scan complet sans crash, rapport chiffré archivé, aucune anomalie d'intégrité (invariants 1:1 vérifiés sur le corpus complet).
+
+Ordre recommandé : A → B → C → D, puis E (E ne dépend que de C ; D peut se faire en parallèle). Au terme de ces cinq étapes, le moteur d'identité pourra naître comme second consommateur de InstallChecker.Core — un module de lecture pure sur une base versionnée, informé par des distributions mesurées — sans toucher une ligne du pipeline d'observation.
+
+Aucun code n'a été généré ni modifié. En attente de votre arbitrage sur le plan.

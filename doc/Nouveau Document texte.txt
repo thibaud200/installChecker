@@ -1,0 +1,1797 @@
+ À partir du projet situé à : C:\git\installChecker
+
+  1. Charger le fichier CLAUDE.md à la racine du projet comme contexte principal.
+  2. Charger le contenu du fichier Master_prompt.md.
+  3. Utiliser CLAUDE.md comme source de règles, contraintes et vision du projet.
+  4. Exécuter Master_prompt.md en mode brainstorming avancé.
+
+  ---
+
+  MODE DE TRAVAIL
+
+  - Raisonnement exploratoire (brainstorming)
+  - Analyse critique obligatoire du système existant
+  - Interdiction de considérer l’architecture actuelle comme optimale
+  - Autorisé à proposer plusieurs architectures concurrentes
+  - Comparaison objective obligatoire des solutions
+
+  ---
+
+  ANALYSE ATTENDUE
+
+  Tu dois produire :
+
+  ## 1. Analyse critique du système actuel
+  - architecture globale
+  - flux de données
+  - modules
+  - dépendances
+  - bottlenecks potentiels
+
+  ## 2. Problèmes identifiés
+  - performance (CPU / I/O / mémoire)
+  - scalabilité
+  - couplage
+  - complexité
+  - dette technique
+
+  ## 3. Architectures alternatives (minimum 2)
+  Pour chaque architecture :
+  - description
+  - principes
+  - structure logique
+  - avantages
+  - inconvénients
+  - impact performance
+  - impact maintenance
+
+  ## 4. Comparaison
+  - tableau comparatif
+  - scoring (0–10) :
+    - performance
+    - scalabilité
+    - maintenabilité
+    - complexité
+    - extensibilité
+
+  ## 5. Recommandation finale
+  - architecture recommandée
+  - justification claire
+  - compromis acceptés
+  - raisons du rejet des autres options
+
+  ## 6. Évolutions long terme
+  - améliorations possibles
+  - risques futurs
+  - extensions possibles
+
+  ---
+
+  RÈGLES IMPORTANTES
+
+  - Chaque conclusion doit être justifiée
+  - Aucune architecture ne doit être supposée correcte a priori
+  - Toute optimisation doit être cohérente avec CLAUDE.md
+  - Les limites et risques doivent toujours être explicités
+
+Je charge d'abord les deux fichiers du projet.
+
+  Read 5 files, ran 1 shell command
+
+● Skill(model-selection)
+Successfully loaded skill
+
+Classification : très complexe (décisions d'architecture fondatrices, aucun précédent dans le codebase). Modèle requis : opus ou supérieur — la session tourne déjà sur Fable 5 (au-dessus d'Opus), effort maximum. Aucun changement nécessaire. Je produis l'analyse.
+
+---
+Dossier d'analyse architecturale — installChecker
+
+Fait fondateur qui conditionne toute l'analyse : le projet contient 0 ligne de code. Il contient 5 documents (CLAUDE.md, Master_Prompt.md, pipeline_review.md, Prompt_qualité.md, prompt.md). L'"architecture actuelle" est donc une architecture prescrite sur papier, jamais confrontée à la réalité. C'est à la fois une chance (rien à migrer, tout est encore décidable) et le risque n°1 du projet (voir §2.5).
+
+---
+1. Analyse critique du système actuel
+
+1.1 Architecture globale (telle que prescrite)
+
+CLAUDE.md décrit un monolithe modulaire à 16+ modules obligatoires (§7), un pipeline séquentiel à 11 étapes (§8), un système de plugins avec versioning strict des interfaces et compatibilité ascendante (§11), des connecteurs externes (WinGet, GitHub, Chocolatey, Scoop), et une base de données non choisie (SQLite/DuckDB "à comparer", §12). Ni langage, ni UI, ni format de stockage ne sont décidés. La section ADR (§17) existe mais est vide : zéro décision structurante n'a été prise.
+
+1.2 Flux de données prescrit
+
+Scan → Métadonnées → PE/Signature → Hash → Classification installateur
+→ Identification → Matching base → Analyse version → Lookup externe → Base → Rapport
+
+Ce flux est décrit comme une séquence linéaire. Trois problèmes de fond :
+
+1. Il mélange deux rythmes incompatibles. Les étapes 1–8 sont locales (limitées par le disque et le CPU), l'étape 9 est réseau (limitée par les rate limits GitHub/WinGet, la latence, la disponibilité). Un pipeline qui enchaîne les deux se bloque sur le réseau au milieu d'un scan de 500 000 fichiers. Le lookup externe doit être une phase séparée, asynchrone et optionnelle — le document dit "si nécessaire" mais ne l'architecture pas comme tel.
+2. Il implique plusieurs lectures du même fichier. Métadonnées (étape 2), PE (étape 3), hash (étape 4) et classification (étape 5) lisent tous le même binaire. Sur 500 000 fichiers × dizaines de Mo, relire 3–4 fois est le bottleneck I/O que le §10 interdit pourtant. La bonne unité de travail est un fichier traversant tous les analyseurs en un seul passage de lecture, pas une étape traversant tous les fichiers.
+3. L'ordre est faux pour la déduplication. Hasher intégralement (étape 4) avant le matching (étape 7) signifie hasher 100 % de la bibliothèque alors qu'un pré-filtre (taille → hash partiel des premiers/derniers 64 Ko) élimine la quasi-totalité des candidats non-doublons sans lecture complète. Master_Prompt.md mentionne "hash partiels, pré-filtrage" comme pistes ; CLAUDE.md ne les intègre pas dans le pipeline.
+
+1.3 Modules et dépendances
+
+Les 16 modules listés sont en réalité de granularités très différentes : "Hash engine" est une fonction, "Moteur d'identification" est le cœur intellectuel du projet, "Connecteur Chocolatey" est un module dont personne n'a besoin en phase 1–4 de la roadmap. Les règles de dépendance ("aucun couplage direct entre modules critiques") sont invérifiables car non définies — quels modules sont "critiques" ? qu'est-ce qu'un couplage "direct" ? Ce genre de règle floue produit de l'indirection gratuite (interfaces à implémentation unique, événements là où un appel de fonction suffit).
+
+1.4 Le vrai problème difficile est sous-spécifié
+
+Le document consacre l'essentiel de sa surface à la plomberie (scan, hash, DB, plugins) et presque rien au problème central : la résolution d'identité. Décider que setup.exe (sans VersionInfo, non signé) et Firefox Setup 128.0.1.exe sont deux installateurs du même Software est LE moteur d'intelligence promis par la vision ("la donnée représente un logiciel, pas un fichier"). Les signaux existent (VersionInfo, certificat, ressources, icône, chaînes), le scoring de confiance est exigé, mais aucune stratégie de fusion, de conflit, ou de correction manuelle n'est esquissée. C'est l'inversion classique : 80 % de spec sur les 20 % faciles.
+
+1.5 Bottlenecks potentiels (par ordre de gravité réelle)
+
+┌───────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────┬──────────────────────────────────────────────────────────┐
+│                                        Bottleneck                                         │                Nature                │                         Gravité                          │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Hash intégral de la bibliothèque (25 To lus pour 500k × 50 Mo)                            │ I/O                                  │ Critique — c'est des heures, même sur NVMe               │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Lectures multiples du même fichier par étapes séparées                                    │ I/O                                  │ Critique (évitable par design)                           │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Vérification Authenticode avec révocation en ligne (WinVerifyTrust contacte les CRL/OCSP) │ Réseau caché dans une étape "locale" │ Élevée — il faut la désactiver explicitement             │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Lookup externe dans le pipeline de scan                                                   │ Réseau + rate limits                 │ Élevée                                                   │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Écritures DB non batchées (une transaction par fichier)                                   │ I/O DB                               │ Élevée — SQLite fait ~50k inserts/s batché, ~50/s sinon  │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Parsing PE, VersionInfo                                                                   │ CPU                                  │ Faible — en-têtes seulement, quelques Ko par fichier     │
+├───────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┼──────────────────────────────────────────────────────────┤
+│ Lecture de MSI (COM, msi.dll)                                                             │ CPU/threading                        │ Moyenne — API COM à apartments, parallélisation délicate │
+└───────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────┴──────────────────────────────────────────────────────────┘
+
+---
+2. Problèmes identifiés
+
+2.1 — Performance : le pipeline prescrit viole ses propres contraintes. (Critique) §10 exige "optimisation I/O disque critique" ; §8 prescrit un ordre d'étapes qui maximise les lectures redondantes et hashe avant de pré-filtrer. Cause racine : le pipeline a été pensé comme une liste conceptuelle d'analyses, pas comme un flux physique de données.
+
+2.2 — Scalabilité : aucun modèle d'exécution. (Élevé) "CPU scaling multi-thread obligatoire" est posé comme règle mais rien ne dit quoi paralléliser. Or la réponse n'est pas triviale : le parallélisme utile est par-fichier (N workers), la DB veut un écrivain unique (SQLite), le COM MSI veut des apartments STA, et le disque HDD veut au contraire peu de lecteurs concurrents (seek thrashing) là où le NVMe en veut beaucoup. Le modèle d'exécution est une décision d'architecture, pas un détail d'implémentation.
+
+2.3 — Couplage : le remède prescrit est pire que le mal. (Moyen) Le système de plugins (§11) avec chargement dynamique, versioning strict des interfaces et compatibilité ascendante est exigé avant qu'un seul analyseur n'existe. Concevoir un contrat de plugin stable sans avoir écrit trois analyseurs concrets, c'est deviner l'interface — et la compatibilité ascendante obligatoire transformera chaque erreur de devinette en dette permanente. Un plugin n'a de valeur que s'il existe des développeurs tiers ; il n'y en a pas.
+
+2.4 — Complexité : sur-modularisation prescriptive. (Élevé) 16 modules obligatoires + 4 connecteurs + API + CLI + GUI + plugins pour un outil mono-utilisateur dont la phase 1 de la roadmap est "scan + metadata + hash". Le ratio spec/besoin immédiat est d'environ 10:1. Chocolatey et Scoop, notamment, n'apportent presque rien : leurs métadonnées sont moins riches que WinGet et leur couverture recoupe la sienne.
+
+2.5 — Dette technique : la dette est documentaire, et c'est la plus grave. (Critique) Cinq documents de gouvernance, quatre méta-prompts d'analyse, zéro code, zéro ADR rempli, zéro benchmark alors que la règle absolue est "aucune optimisation sans benchmark" — il n'existe même pas de harnais pour en faire un. Le projet est en risque d'architecture astronaut : chaque itération produit plus de spécification à maintenir et repousse le contact avec le réel. Les questions ouvertes de Master_Prompt.md (quel langage ? quelle DB ? quels hash ?) ont des réponses connues de l'état de l'art — les laisser ouvertes est un coût, pas une prudence.
+
+2.6 — Absence d'étude de l'existant. (Élevé) Master_Prompt.md la demande explicitement (lignes 507–510) et elle change le périmètre : une partie substantielle du projet existe déjà sous forme réutilisable — voir §5.4. Ne pas la faire d'abord, c'est risquer de réécrire winget-create.
+
+---
+3. Architectures alternatives
+
+Architecture A — Monolithe séquentiel minimal (amélioration incrémentale)
+
+Description. Un exécutable console C# unique. Boucle : énumérer les fichiers, pour chacun exécuter les analyseurs en séquence (une seule ouverture de fichier), écrire en SQLite par lots. Pas de framework de pipeline, pas d'interface d'analyseur — des fonctions.
+
+Principes. Le plus petit programme qui livre la phase 1–2 de la roadmap. Parallélisme limité à un Parallel.ForEach naïf.
+
+Structure logique.
+scan.exe
+ ├── Walker (énumération FS)
+ ├── AnalyzeFile(path) → FileRecord   // metadata + PE + VersionInfo + Authenticode + hash, 1 lecture
+ ├── Identify(FileRecord) → SoftwareMatch
+ └── Store (SQLite, transactions batchées)
+
+Avantages. Livrable en semaines ; débogage trivial ; confronte immédiatement le modèle de données au réel ; presque tout le code écrit survivra dans l'architecture B.
+Inconvénients. Pas de reprise fine ; parallélisme naïf qui saturera mal (workers bloqués sur l'écrivain DB, pas de backpressure) ; pas de couture propre pour ajouter des analyseurs ; le lookup externe n'a pas de place naturelle.
+Impact performance. Correct sur 10–50k fichiers ; plafond net vers 100k+ (contention DB, pas de priorisation, reprise = tout relancer).
+Impact maintenance. Excellent à court terme, refactor obligatoire à moyen terme — mais un refactor informé par le réel.
+
+Architecture B — Monolithe modulaire, pipeline producteur/consommateur borné (refactor modéré)
+
+Description. Un seul processus .NET. Les étages sont reliés par des channels bornés (System.Threading.Channels) : un walker produit des chemins, un pool de N workers exécute tous les analyseurs locaux sur un fichier en un seul passage de lecture, un écrivain SQLite unique consomme les résultats par lots. Les analyseurs implémentent une seule petite interface compilée dans le binaire (extensibilité = ajouter une classe, pas charger une DLL). Le lookup externe et l'enrichissement catalogue sont une phase 2 distincte, pilotée par des requêtes sur la base, jamais dans le flux de scan. Reprise : la table files porte un statut + (taille, mtime) ; relancer le scan ne retraite que le nouveau/modifié.
+
+Principes. Une frontière par différence de rythme (FS / CPU / DB / réseau), pas par différence de sujet. Backpressure par construction (channels bornés = mémoire plafonnée). Un seul écrivain DB = zéro contention SQLite. Pré-filtrage avant hash intégral : taille → hash partiel (xxHash 128 Ko tête+queue) → SHA-256 complet seulement pour les groupes candidats et les fichiers destinés au matching WinGet.
+
+Structure logique.
+
+mermaid
+flowchart LR
+    subgraph "Phase scan (local, offline)"
+        W[Walker FS] -->|"channel borné (chemins)"| P
+        subgraph P["Pool workers ×N (1 lecture/fichier)"]
+            A1[Metadata] --> A2[PE + VersionInfo] --> A3[Authenticode offline] --> A4[Détection installeur] --> A5[Hash partiel]
+        end
+        P -->|"channel borné (FileRecord)"| WR["Écrivain SQLite unique (batch)"]
+    end
+    subgraph "Phase enrichissement (réseau, à la demande)"
+        Q[Requêtes DB] --> ID[Résolution identité + scoring]
+        ID --> CW[Connecteur WinGet]
+        ID --> CG[Connecteur GitHub]
+        CW & CG --> WR2[Écrivain SQLite]
+    end
+    WR -.->|base commune| Q
+    R[Rapports / CLI] --> Q
+
+Avantages. Atteint les contraintes de performance de CLAUDE.md par construction (1 lecture/fichier, backpressure, batch DB, N ajustable HDD vs SSD) ; reprise native ; couture d'extensibilité réelle (l'interface analyseur) sans le coût des plugins dynamiques ; les deux rythmes local/réseau sont découplés ; testable étage par étage.
+Inconvénients. Plus de code d'infrastructure que A (channels, statuts, annulation) ; l'extensibilité exige une recompilation (pas de plugins tiers) ; un seul processus = pas de GUI découplée gratuite (mais une CLI + rapports couvre les phases 1–5 de la roadmap).
+Impact performance. Proche de l'optimal pour ce problème : le débit est borné par le disque, qui est saturé par le pool ; SHA-256 est accéléré matériellement (extensions SHA-NI, plusieurs Go/s par cœur) donc le CPU ne sera jamais le goulot.
+Impact maintenance. Bon : une dizaine de projets/namespaces, un seul binaire, un seul langage, dépendances comptées sur les doigts d'une main.
+
+Architecture C — Microkernel événementiel à plugins dynamiques (redesign maximal, ce que §11 de CLAUDE.md implique pleinement réalisé)
+
+Description. Un noyau minimal (bus d'événements, registre de plugins, cycle de vie). Chaque analyseur, connecteur, et même le stockage sont des plugins chargés dynamiquement (AssemblyLoadContext), communiquant par messages. API REST locale ; CLI et GUI sont des clients de l'API. Interfaces de plugins versionnées avec compatibilité ascendante garantie.
+
+Structure logique.
+mermaid
+flowchart TD
+    K["Noyau : bus d'événements + registre plugins"]
+    K --- P1[Plugin PE] & P2[Plugin Authenticode] & P3[Plugin MSI] & P4[Plugin Hash]
+    K --- C1[Plugin WinGet] & C2[Plugin GitHub] & C3[Plugin Chocolatey]
+    K --- S[Plugin Stockage]
+    API[API REST locale] --> K
+    CLI[CLI] & GUI[GUI] --> API
+
+Avantages. Extensibilité maximale, plugins tiers possibles, isolation des pannes par plugin, UI totalement découplée. C'est l'architecture qui satisfait littéralement toutes les exigences d'extensibilité de CLAUDE.md §11.
+Inconvénients. Coût de développement multiplié par 3–5 ; le versioning d'interfaces avec compatibilité ascendante devient un travail permanent ; le débogage traverse un bus de messages ; la sérialisation inter-plugins et l'indirection ajoutent un overhead précisément sur le chemin chaud (des millions d'événements par scan) ; tout cela pour un écosystème de plugins tiers qui n'existe pas et n'existera vraisemblablement jamais pour un outil de niche mono-utilisateur.
+Impact performance. Négatif net : le message-passing sur le chemin par-fichier coûte plus que l'architecture B, pour zéro gain de débit disque.
+Impact maintenance. Le pire des trois : la surface de contrats à maintenir dépasse la surface de logique métier pendant les deux premières années.
+
+Variante écartée d'emblée — cœur Rust + shell C#. Master_Prompt.md la suggère. Rejetée : le goulot est l'I/O disque et SHA-256 accéléré matériellement — un cœur Rust n'accélère rien de mesurable ici, tandis que les API indispensables (COM msi.dll, WinVerifyTrust, WinRT pour MSIX/APPX) sont nettement plus ergonomiques depuis .NET. Deux langages = deux toolchains, une frontière FFI, et une violation directe de "aucune dépendance inutile". La règle de CLAUDE.md "aucune optimisation sans benchmark" s'applique aussi au choix du langage : Rust serait une optimisation non mesurée.
+
+---
+4. Comparaison
+
+Convention : 10 = meilleur. "Complexité" : 10 = simple.
+
+┌────────────────────────────────────────────────────┬────────────────────────┬────────────────────────┬─────────────────────────┐
+│                      Critère                       │ A — Séquentiel minimal │ B — Pipeline P/C borné │ C — Microkernel plugins │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Performance (CPU/I/O)                              │ 4                      │ 9                      │ 6                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Scalabilité (→ centaines de milliers de fichiers)  │ 3                      │ 9                      │ 7                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Maintenabilité                                     │ 7                      │ 8                      │ 3                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Complexité (simplicité)                            │ 10                     │ 7                      │ 2                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Extensibilité                                      │ 3                      │ 7                      │ 10                      │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Robustesse / reprise                               │ 3                      │ 9                      │ 7                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Coût de développement (10 = faible)                │ 10                     │ 7                      │ 2                       │
+├────────────────────────────────────────────────────┼────────────────────────┼────────────────────────┼─────────────────────────┤
+│ Globale (pondérée par les exigences de CLAUDE.md)* │ 5,1                    │ 8,2                    │ 4,9                     │
+└────────────────────────────────────────────────────┴────────────────────────┴────────────────────────┴─────────────────────────┘
+
+* Pondération : performance et robustesse sont des exigences fonctionnelles dans CLAUDE.md (§9, §10), l'extensibilité tiers est spéculative (aucun utilisateur) — je pondère donc perf/scalabilité/robustesse ×2, extensibilité ×0,5. Sans cette pondération : A=5,7 ; B=8,0 ; C=5,3 — le classement ne change pas.
+
+---
+5. Recommandation finale
+
+Architecture retenue : B — monolithe modulaire à pipeline producteur/consommateur borné, construite en démarrant par A comme squelette
+
+Une seule architecture cible : B. Mais le chemin y menant passe par A, car ~90 % du code de A (les analyseurs, le modèle de données, le stockage) est réutilisé tel quel dans B — seul l'orchestrateur change. Concrètement : livrer A sur 10 000 fichiers réels en milestone 1, mesurer (le harnais de benchmark exigé par §10 naît ici), puis introduire channels + reprise en milestone 2.
+
+Décisions structurantes qui en découlent (à tracer en ADR, la section §17 de CLAUDE.md est vide et c'est le vrai blocage du projet) :
+
+1. Langage : C# / .NET 8+. Justification : accès natif idiomatique à VersionInfo, Authenticode (WinVerifyTrust), MSI (COM), MSIX (WinRT) ; SHA-256 matériel via SHA256.HashData ; perf suffisante car le goulot est le disque ; un seul runtime à maintenir. Alternatives rejetées : Rust (voir §3, optimisation non mesurée à coût élevé), Go (interop COM/Win32 pénible, pas d'écosystème Windows-internals), C++ (coût de maintenance sans gain).
+2. Base : SQLite en mode WAL, écrivain unique, transactions batchées. Justification : des centaines de milliers de lignes est un volume trivial pour SQLite ; zéro administration ; le fichier DB est le journal de reprise. Rejets : DuckDB (moteur OLAP, mauvais en upserts incrémentaux qui sont exactement notre charge), PostgreSQL (un serveur à administrer pour un outil desktop viole "aucune dépendance inutile"), RocksDB (clé-valeur sans requêtes de matching), LiteDB (moins mûr, moins rapide, aucun avantage).
+3. Hash : xxHash3 partiel (pré-filtre) + SHA-256 complet (identité et interop). SHA-256 est non négociable : c'est le hash des manifests WinGet, donc la clé de jointure avec le monde extérieur. BLAKE3 est plus rapide que SHA-256 logiciel mais pas que SHA-256 matériel, et ne joint avec rien. CRC32 et SHA-512 : aucun usage, rejetés.
+4. Extensibilité : interface d'analyseur compilée, pas de plugins dynamiques. Le §11 de CLAUDE.md est amendé, pas supprimé (règle : jamais de suppression sans alternative argumentée) : la couture est posée dès le départ (une interface, un registre), le chargement dynamique est différé jusqu'à preuve d'un besoin tiers. Le chemin B→C reste ouvert à coût modéré via AssemblyLoadContext le jour où il existe un deuxième contributeur.
+5. Lookup externe hors du pipeline de scan, en phase séparée pilotée par la base — et Authenticode vérifié avec révocation hors-ligne pendant le scan (sinon chaque fichier signé déclenche des requêtes CRL/OCSP silencieuses).
+
+Compromis acceptés. Pas de plugins tiers sans recompilation ; un seul processus (la GUI, si elle advient, sera un front séparé lisant la même base — décision reportable sans coût) ; SQLite impose l'écrivain unique (c'est ici une vertu, pas une limite) ; la version A intermédiaire sera jetée en partie (l'orchestrateur, ~10 % du code).
+
+Pourquoi les autres sont rejetées. A comme cible : plafonne exactement sur les deux exigences fonctionnelles du projet (volume et reprise) et n'offre aucune couture d'extension — elle ne survit pas à la phase 3 de la roadmap. C : paie immédiatement et en permanence (contrats versionnés, bus, débogage distribué) pour un bénéfice — l'écosystème de plugins tiers — dont l'existence est spéculative ; elle viole KISS et YAGNI que Prompt_qualité.md impose d'auditer, et dégrade même la performance sur le chemin chaud.
+
+5.4 Étude de l'existant (exigée par Master_Prompt.md) — briques à réutiliser au lieu de réécrire
+
+Aucun outil existant ne couvre la vision complète (bibliothèque locale + résolution d'identité + cycle de vie des versions + préparation WinGet) : la niche est réelle. Mais plusieurs briques majeures existent :
+
+┌───────────────────────────────────────────────┬─────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────┐
+│                    Brique                     │                    Ce qu'elle couvre                    │                                         Réutilisation                                         │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                               │ Parse EXE/MSI/MSIX, extrait métadonnées, détecte le     │ La brique la plus précieuse : couvre une grande partie des modules "détection type            │
+│ microsoft/winget-create (C#, MIT)             │ type d'installateur, génère et valide des manifests     │ installateur" et toute la phase 6 (contribution WinGet). À réutiliser comme bibliothèque ou à │
+│                                               │ WinGet                                                  │  défaut comme référence d'implémentation                                                      │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Index source WinGet (source.msix = une base   │ Matching local hors-ligne contre l'intégralité de       │ Élimine le besoin de scraper microsoft/winget-pkgs ; le "connecteur WinGet" devient :         │
+│ SQLite précompilée de tout le catalogue)      │ WinGet                                                  │ télécharger un fichier, l'attacher en SQLite                                                  │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Detect It Easy (base de signatures)           │ Détection NSIS / Inno / InstallShield / Burn /          │ Réutiliser la base de signatures (formats documentés) plutôt qu'écrire des heuristiques       │
+│                                               │ Squirrel, etc.                                          │ maison                                                                                        │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ PeNet ou AsmResolver (NuGet)                  │ Parsing PE, ressources, VersionInfo, imports            │ Évite d'écrire un parseur PE                                                                  │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ System.IO.Hashing (Microsoft)                 │ xxHash3/xxHash128                                       │ Le pré-filtre en une dépendance officielle                                                    │
+├───────────────────────────────────────────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ API Windows natives                           │ WinVerifyTrust (Authenticode), COM msi.dll (MSI), WinRT │ Zéro dépendance externe pour toute l'analyse Windows                                          │
+│                                               │  Windows.ApplicationModel (MSIX/APPX)                   │                                                                                               │
+└───────────────────────────────────────────────┴─────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Point de vérification à faire avant l'ADR final : confirmer la licence et l'API publique actuelles de winget-create et le format actuel de l'index source WinGet (mes données datent de début 2026 ; à revalider au moment de l'implémentation).
+
+---
+6. Évolutions long terme
+
+Améliorations possibles. Watcher temps réel (USN journal NTFS plutôt que FileSystemWatcher — fiable à grande échelle et donne le diff depuis le dernier scan presque gratuitement) ; GUI en processus séparé lisant la même SQLite ; rapport HTML statique généré (aucun serveur) ; apprentissage progressif du moteur d'identité (les corrections manuelles de l'utilisateur deviennent des règles pondérées — c'est la version raisonnable du "IA si pertinente" de Master_Prompt.md, un classifieur ML n'étant justifié qu'après avoir constaté les limites des heuristiques mesurées).
+
+Risques futurs. (1) Dérive du format des manifests/index WinGet — mitigé par l'isolation en connecteur, exigence déjà bonne dans CLAUDE.md. (2) Rate limits GitHub sur l'enrichissement massif — mitigé par la phase réseau séparée, le cache et un budget de requêtes. (3) Croissance du moteur d'identité en sac de règles illisible — mitigé par l'exigence d'explicabilité déjà présente (chaque score doit tracer ses signaux ; c'est la meilleure règle de tout CLAUDE.md, à protéger). (4) Le risque principal reste méta : que le projet continue de produire de la gouvernance plutôt que du code. La contre-mesure est dans le plan : milestone 1 = binaire A qui scanne 10 000 fichiers réels, pas un document de plus.
+
+Extensions possibles. Contribution WinGet semi-automatisée (génération + validation locale via winget-create, publication toujours manuelle — conforme à la contrainte) ; archivage/rollback des installateurs ; export SBOM-like de la bibliothèque ; connecteurs additionnels si et seulement si un manque de couverture WinGet+GitHub est constaté sur la bibliothèque réelle.
+
+---
+Prochaine étape proposée
+
+Le blocage réel du projet est l'absence de décisions tracées. Je peux rédiger les 4 ADR fondateurs (langage C#/.NET, SQLite WAL, architecture B avec chemin A→B, analyseurs compilés vs plugins différés) au format de CLAUDE.md §17 (contexte / décision / alternatives / conséquences), prêts à intégrer — dites-moi si je les écris.
+
+✻ Cooked for 4m 29s
+
+※ recap: Analyse d'architecture du projet installChecker (aucun code, spec seule) terminée : recommandation d'un monolithe C#/SQLite en pipeline producteur/consommateur. Prochaine action : votre feu vert pour rédiger les 4 ADR fondateurs. (disable recaps in /config)
+
+> À partir des éléments fournis ci-dessous :
+
+  - 1 à N analyses provenant de différentes IA (ex : Gemini, ChatGPT, autres)
+  - Chaque analyse est déjà structurée selon le format suivant :
+    SIGNALS / RISKS / INTERPRETATION / DECISION_SUPPORT
+
+  IMPORTANT :
+  Chaque source est indépendante. Ne pas les fusionner mentalement avant analyse.
+
+  --------------------------------------------------
+
+  SOURCE: Gemini (Retour_Gemini_1ere_Proposition.md)
+  TYPE: Architecture review
+  STANCE: B
+  CONFIDENCE: élevée
+
+  SIGNALS:
+  - validation pipeline I/O
+  - critique plugins
+  - validation C#/.NET
+
+  RISKS:
+  - hash partial insuffisant pour identité
+  - confusion identity vs dedup
+
+  INTERPRETATION:
+  - architecture B est la plus cohérente avec contraintes I/O et scaling
+
+  DECISION_SUPPORT:
+  - favorise architecture B
+
+  --------------------------------------------------
+
+  SOURCE: ChatGPT (Retour_ChatGPT_1ere_Solution.md)
+  TYPE: Architecture review
+  STANCE: B
+  CONFIDENCE: élevée
+
+  SIGNALS:
+  - séparation identity vs dedup
+  - validation pipeline A→B
+  - critique scoring instability
+
+  RISKS:
+  - biais scoring
+  - confusion hash / identity
+
+  INTERPRETATION:
+  - architecture B est la plus robuste structurellement
+
+  DECISION_SUPPORT:
+  - confirme architecture B
+
+  --------------------------------------------------
+
+  OBJECTIF DE CETTE ÉTAPE
+
+  Tu es dans une phase STRICTEMENT ANALYTIQUE.
+
+  Tu ne dois PAS :
+  - prendre de décision finale
+  - choisir une architecture
+  - recommander une solution
+  - fusionner les opinions
+  - produire une synthèse décisionnelle
+
+  Tu dois uniquement :
+  - analyser les relations entre sources
+  - comparer les informations
+  - détecter les structures communes et divergentes
+  - extraire des signaux techniques exploitables
+  - identifier les biais d’analyse
+
+  --------------------------------------------------
+
+  SORTIE ATTENDUE
+
+  ## 1. Consensus global
+  Liste des points confirmés par toutes les sources sans exception.
+
+  ## 2. Divergences
+  Différences entre les sources + hypothèses expliquant ces divergences.
+
+  ## 3. Signaux techniques fiables
+  Informations techniques récurrentes et robustes (indépendantes de l’opinion).
+
+  ## 4. Zones d’incertitude
+  Points non couverts, ambiguïtés, ou informations manquantes critiques.
+
+  ## 5. Biais détectés
+  Analyse des biais possibles :
+  - sur-optimisation
+  - sur-simplification
+  - sur-ingénierie
+  - confusion entre concepts (ex : identity vs dedup)
+  - biais de langage ou d’architecture
+
+  --------------------------------------------------
+
+  RÈGLES STRICTES
+
+  - Aucune architecture ne doit être proposée
+  - Aucune recommandation ne doit être faite
+  - Aucun choix ne doit être exprimé
+  - Aucune synthèse finale ne doit être produite
+  - Ne pas produire de “best option”
+  - Ne pas hiérarchiser les architectures
+
+  --------------------------------------------------
+
+  IMPORTANT
+
+  Ce module est une étape d’analyse comparative uniquement.
+
+  La décision finale sera prise par un pipeline séparé.
+
+  Ce que tu produis doit être exploitable par un système de scoring automatique.
+
+1. Consensus global
+
+Points confirmés par les 2/2 sources, sans exception :
+
+┌─────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────┬─────────────────────────────┐
+│ ID  │                                                  Point de consensus                                                  │            Formulation Gemini            │     Formulation ChatGPT     │
+├─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼─────────────────────────────┤
+│ C1  │ Position finale identique : STANCE = B, CONFIDENCE = élevée                                                          │ "favorise architecture B"                │ "confirme architecture B"   │
+├─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼─────────────────────────────┤
+│ C2  │ Le pipeline proposé est validé dans son principe                                                                     │ "validation pipeline I/O"                │ "validation pipeline A→B"   │
+├─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼─────────────────────────────┤
+│ C3  │ Il existe un risque de confusion entre identité logicielle et déduplication de fichiers dans la proposition analysée │ "confusion identity vs dedup"            │ "confusion hash / identity" │
+├─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼─────────────────────────────┤
+│ C4  │ Le hash est jugé insuffisant/inadapté comme signal d'identité (il n'est contesté ni pour la dedup ni pour l'interop) │ "hash partial insuffisant pour identité" │ "confusion hash / identity" │
+└─────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────┴─────────────────────────────┘
+
+Note de portée : C2 est un consensus de principe mais pas de périmètre — Gemini valide l'axe I/O du pipeline, ChatGPT valide la trajectoire de migration A→B. Les deux validations ne portent pas exactement sur le même objet (voir Divergences D3).
+
+2. Divergences
+
+Aucune contradiction frontale entre les deux sources. Toutes les divergences sont des asymétries de couverture (un point traité par une source, absent de l'autre) ou des différences d'angle :
+
+┌─────┬─────────────────────────┬─────────────────────────────────────────────┬────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────┐
+│ ID  │       Divergence        │                   Gemini                    │                  ChatGPT                   │                            Hypothèse explicative                             │
+├─────┼─────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ D1  │ Validation du langage   │ Explicite                                   │ Silence                                    │ Grille de lecture Gemini plus orientée stack/implémentation ; le silence de  │
+│     │ C#/.NET                 │                                             │                                            │ ChatGPT n'est pas un désaccord                                               │
+├─────┼─────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ D2  │ Critique du système de  │ Explicite                                   │ Silence                                    │ Idem D1 — couverture, pas opposition                                         │
+│     │ plugins                 │                                             │                                            │                                                                              │
+├─────┼─────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ D3  │ Objet de la validation  │ Cohérence I/O (angle performance)           │ Trajectoire A→B (angle                     │ Priors d'évaluation différents : lentille "performance engineer" vs lentille │
+│     │ pipeline                │                                             │ structurel/migration)                      │  "software design"                                                           │
+├─────┼─────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ D4  │ Instabilité du scoring  │ Silence                                     │ Explicite ("critique scoring instability", │ ChatGPT a examiné le moteur d'identification plus en profondeur ; Gemini     │
+│     │ de confiance            │                                             │  risque "biais scoring")                   │ s'est arrêté à l'insuffisance du hash comme entrée de ce moteur              │
+├─────┼─────────────────────────┼─────────────────────────────────────────────┼────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────┤
+│ D5  │ Nature du risque        │ Claim technique de suffisance d'un          │ Claim conceptuel de séparation (deux       │ Deux niveaux d'abstraction du même problème sous-jacent ; recouvrement       │
+│     │ hash/identité           │ mécanisme (le hash partiel ne suffit pas)   │ notions confondues)                        │ partiel, pas identité                                                        │
+└─────┴─────────────────────────┴─────────────────────────────────────────────┴────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────┘
+
+3. Signaux techniques fiables
+
+Classés par robustesse (récurrence × indépendance de l'opinion) :
+
+- S1 [2/2, robustesse haute] — La frontière déduplication (hash) / résolution d'identité (métadonnées, signature, heuristiques) doit être explicite dans l'architecture : deux sous-systèmes, deux jeux de signaux, deux finalités. C'est le seul point que les deux sources soulèvent à la fois comme signal et comme risque.
+- S2 [2/2, robustesse haute] — Le principe du pipeline (producteur/consommateur, discipline I/O, chemin d'évolution incrémental) ne présente pas de défaut relevé par les revues ; les critiques des deux sources portent ailleurs (couche identification), pas sur le flux de données.
+- S3 [1/2 explicite + 1/2 compatible, robustesse moyenne] — Le scoring de confiance est la zone de fragilité du moteur d'identification : instabilité et biais possibles (ChatGPT) ; l'insuffisance des entrées hash (Gemini) alimente indirectement le même constat. Signal exploitable : la fonction de scoring nécessite spécification, calibration et jeu de test dédiés.
+- S4 [1/2, non contesté, robustesse faible] — C#/.NET validé par une source, contesté par aucune. Poids de preuve limité : une validation, un silence.
+- S5 [1/2, non contesté, robustesse faible] — La critique des plugins dynamiques (Gemini) ne rencontre aucune objection. Même statut probatoire que S4.
+
+4. Zones d'incertitude
+
+- Non-couverture massive : aucune des deux sources ne se prononce sur SQLite/le schéma de données, la stratégie de reprise, la vérification Authenticode hors-ligne, le modèle de threading, les connecteurs externes (index WinGet), ni la réutilisation de briques existantes (winget-create, Detect It Easy). Silence ≠ validation — ces pans de la proposition sont simplement non audités à ce stade.
+- Claims non quantifiés : "hash partiel insuffisant pour identité" ne précise ni scénario d'échec ni seuil ; "scoring instability" n'est accompagné d'aucune métrique ni cas de reproduction. Les deux risques majeurs du corpus sont donc directionnels mais non actionnables tels quels.
+- Perte de compression : les sources sont fournies sous forme de cartes condensées (signaux en 3–5 mots) ; le raisonnement sous-jacent des fichiers originaux (Retour_Gemini_1ere_Proposition.md, Retour_ChatGPT_1ere_Solution.md) n'est pas disponible dans cette étape. Le recouvrement réel entre D5-Gemini et D5-ChatGPT ne peut pas être établi précisément sans les textes complets.
+- N = 2 : toute mesure de "consensus" sur deux sources a une puissance statistique très faible ; un troisième avis discordant renverserait plusieurs classements de robustesse ci-dessus.
+- Confiance auto-déclarée : les deux CONFIDENCE "élevée" ne sont adossées à aucune calibration ; elles doivent être traitées comme des métadonnées déclaratives, pas comme des probabilités.
+
+5. Biais détectés
+
+- Biais d'ancrage (le plus structurant) : les deux sources ont relu un document qui recommandait déjà l'architecture B avec argumentaire. La convergence STANCE = B ne peut pas être distinguée d'un effet d'écho sur le cadrage du document source. La valeur probante du consensus C1 doit être pondérée en conséquence par le système de scoring : ce n'est pas une double dérivation indépendante, c'est une double relecture du même plaidoyer.
+- Biais de couverture : les revues se concentrent sur ce que le document source mettait lui-même en avant (pipeline, hash, plugins). Les sections traitées brièvement dans le document (DB, connecteurs, reprise) n'ont reçu aucun examen — le corpus hérite des angles morts de l'artefact relu.
+- Confusion conceptuelle identity/dedup : détectée par 2/2 sources dans le document relu — c'est le finding le plus fiable du corpus précisément parce qu'il va contre le document d'ancrage (les deux relecteurs ont résisté au cadrage sur ce point). Un scoring automatique devrait sur-pondérer les findings contra-ancrage par rapport aux validations.
+- Biais de sur-simplification (format) : la structure en cartes réduit les risques à des syntagmes nominaux ; un scoring par récurrence de mots-clés ("hash", "identity") risque de compter deux fois le même risque sous deux formulations (D5) ou de rater une divergence réelle masquée par un vocabulaire commun.
+- Prior anti-sur-ingénierie partagé : les seules critiques architecturales des deux sources vont dans le sens de la simplification (plugins, scoring). Deux relecteurs LLM peuvent partager un prior systématique (YAGNI/minimalisme) issu de leurs corpus d'entraînement ; l'absence de critique en sens inverse ("il manque une abstraction") peut refléter ce prior autant que l'état réel de la proposition.
+- Biais de stack non exclu : la validation C#/.NET (Gemini) n'est adossée à aucun élément comparatif dans la carte fournie ; une préférence de langage par familiarité du modèle ne peut pas être écartée. Robustesse de S4 à plafonner tant qu'une source ne fournit pas de justification technique vérifiable.
+
+✻ Baked for 1m 21s
+
+> ROLE: TRACE AUDITOR
+
+  OBJECTIF:
+  Transformer des SIGNALS agrégés en assertions vérifiables à partir des sources brutes.
+
+  --------------------------------------------------
+
+  RÈGLE FONDAMENTALE:
+
+  Tu ne travailles PAS sur des SIGNALS comme des faits.
+
+  Tu travailles sur :
+  - SIGNALS = interprétations compressées
+  - SOURCES = vérité primaire
+
+  --------------------------------------------------
+
+  SORTIE:
+
+  EVIDENCE_MAP:
+  - signal_id:
+    - source: Gemini / ChatGPT
+    - original_fragment: "texte exact extrait de la source"
+    - mapped_signal: "signal reconstruit"
+    - mapping_type: exact | partial | inferred
+
+  INFERENCE_CHAIN:
+  - signal_id:
+    - step_1: source_fragment
+    - step_2: interpretation_in_source
+    - step_3: signal_aggregation
+    - risk: loss_of_information | compression_bias | over_generalization
+
+  CONFIDENCE_AUDIT:
+  - signal_id:
+    - declared_confidence: high/medium/low
+    - adjusted_confidence: 0.0-1.0
+    - adjustment_reason: repetition / ambiguity / weak grounding
+
+  ERROR_DETECTION:
+  - hallucinated_generalization: signal_id
+  - over_merged_signals: signal_id
+  - unsupported_causality: signal_id
+
+Le rôle exige de remonter aux sources brutes. Je vérifie si les fichiers originaux (Retour_Gemini_1ere_Proposition.md, Retour_ChatGPT_1ere_Solution.md) existent dans le projet.
+
+  Searched for 2 patterns, read 2 files
+
+Audit effectué sur les sources brutes. Résultat principal : les cartes agrégées de l'étape précédente contiennent des erreurs d'attribution majeures. Deux découvertes structurantes avant le détail :
+
+1. Le fichier "Gemini" contient deux réponses distinctes ("Choix A", lignes 1–39 ; "Choix B", lignes 41–104) aux positions non identiques — la carte les a fusionnées en une seule stance.
+2. Le fichier "ChatGPT" n'est pas une revue d'architecture : c'est une méta-revue du système de prompts du projet. Sa thèse centrale est un avertissement contre le verrouillage prématuré de l'architecture B — l'inverse de la carte "confirme architecture B / confiance élevée".
+
+---
+EVIDENCE_MAP
+
+ST-G — "Gemini : STANCE B, confiance élevée"
+- source: Gemini (Choix A)
+- original_fragment: « Votre stratégie A → B (démarrer par le monolithe séquentiel pour livrer la Phase 1, puis migrer vers le modèle Producteur/Consommateur borné) est la meilleure approche possible. » (Retour_Gemini_1ere_Proposition.md:14)
+- mapped_signal: "favorise architecture B"
+- mapping_type: exact (pour Choix A uniquement)
+- source: Gemini (Choix B)
+- original_fragment: « Ne décide rien de définitif sur l'architecture globale, mais arrête la phase de spécification papier. Passe en mode "Crash Test". » (:81) ; « implémente l'Architecture A (le squelette ultra-simple) » (:85)
+- mapped_signal: "favorise architecture B"
+- mapping_type: partial — Choix B endosse la trajectoire (A d'abord) mais suspend explicitement la décision d'architecture globale
+
+ST-C — "ChatGPT : STANCE B, confiance élevée, confirme architecture B"
+- source: ChatGPT
+- original_fragment: « Le prompt pousse vers : C#/.NET, SQLite, architecture B 👉 ce sont de bons choix… mais déjà "verrouillés intellectuellement" 💥 problème : tu réduis l'espace d'exploration future sans données réelles. » (Retour_ChatGPT_1ere_Solution.md:52-61)
+- mapped_signal: "confirme architecture B"
+- mapping_type: inferred (et contredit partiellement la source : la concession "bons choix" est extraite, l'avertissement principal est supprimé)
+
+S1 — frontière identité / déduplication (cartes : GR1 "hash partiel insuffisant pour identité", GR2 "confusion identity vs dedup", CR2 "confusion hash/identity", C-signal "séparation identity vs dedup")
+- source: Gemini (Choix A)
+- original_fragment: « excellente pour la déduplication pure. Cependant […] pour la résolution d'identité, deux installateurs de versions différentes d'un même logiciel […] auront des tailles et des hashs 100% différents. […] le moteur d'identité devra quand même aller lire le VersionInfo ou les ressources PE de presque tous les fichiers uniques. » (:25)
+- mapped_signal: "hash partiel insuffisant pour identité" → exact
+- source: Gemini (Choix B)
+- original_fragment: « pour ton besoin d'identification, c'est insuffisant : les informations cruciales d'un installateur (les ressources PE, le manifeste, la signature Authenticode, la table MSI) ne sont presque jamais au tout début ou à la toute fin du fichier » (:66)
+- mapped_signal: idem → exact (même fichier, formulation renforcée d'un argument mécaniste : offsets des structures dans le binaire)
+- source: Gemini — pour "confusion identity vs dedup" : mapping_type inferred — la source ne dit pas que la proposition confond les deux notions ; elle dit que le pré-filtre est bon pour la dedup et émet une mise en garde ("gardez en tête") sur sa portée pour l'identité. "Confusion" est une requalification aggravante introduite par la carte.
+- source: ChatGPT — pour "confusion hash/identity" et "séparation identity vs dedup" : aucun fragment support. Le fichier ChatGPT ne contient ni "identity", ni "dedup", ni "hash partiel". Les seules "séparations" mentionnées : « séparation FS / CPU / réseau » (:8), « séparation pipeline / enrichissement » (:14).
+
+S2 — validation du pipeline (cartes : G "validation pipeline I/O", C "validation pipeline A→B")
+- source: Gemini (Choix A)
+- original_fragment: « La critique du pipeline actuel : Validée à 100 % » (:6) ; « Votre approche […] divise immédiatement par 4 le goulet d'étranglement des I/O » (:9) ; « Isoler la phase réseau […] est indispensable » (:11)
+- mapped_signal: "validation pipeline I/O" → exact
+- source: ChatGPT
+- original_fragment: « identification des bottlenecks I/O réels / séparation FS / CPU / réseau / détection du problème de relecture disque » (:6-8) ; « comparaison A / B / C cohérente » (:10)
+- mapped_signal: "validation pipeline A→B" → partial — la source valide la qualité de l'analyse (bottlenecks bien identifiés, comparaison cohérente), pas la trajectoire A→B comme décision ; et elle plafonne cette validation : « tout ça est raisonné, mais pas mesuré » (:44)
+
+S3 — fragilité du scoring (cartes ChatGPT : "critique scoring instability", risque "biais scoring")
+- source: ChatGPT
+- original_fragment: « scoring multi-critères » listé sous « ✔ vraie approche "industrie" » (:12-13) — le scoring y est un point positif
+- mapped_signal: "critique scoring instability" → aucun support dans la source attribuée
+- source: Gemini (Choix B) — fragment réel correspondant au contenu du signal :
+- original_fragment: « ce moteur de scoring ne doit pas devenir un plat de spaghettis de if/else. Il lui faut une architecture de Pipeline de Règles (Rule Engine) ou de Scoring Composite bien découplée » (:72)
+- mapping_type: exact quant au contenu, misattribué quant à la source (Gemini → carte ChatGPT)
+
+S4 — validation C#/.NET (carte Gemini)
+- source: Gemini
+- original_fragment: « C# / .NET 8+ : Choix pragmatique absolu pour du pur Windows-internal » (:28) ; « C'est le choix du pragmatisme absolu. […] C# gère ça nativement » (:53)
+- mapped_signal: "validation C#/.NET" → exact
+- source: ChatGPT (contre-évidence non capturée par les cartes)
+- original_fragment: « Le prompt pousse vers : C#/.NET […] déjà "verrouillés intellectuellement" » (:54-58)
+- mapping_type: le statut "non contesté 2/2" de l'agrégation est infirmé — contesté sur le plan du processus de décision (pas sur le mérite technique)
+
+S5 — critique des plugins dynamiques (carte Gemini)
+- source: Gemini
+- original_fragment: « Concevoir un système de plugins dynamiques (AssemblyLoadContext) pour un outil mono-utilisateur sans écosystème tiers est le meilleur moyen de passer 6 mois à coder de la plomberie » (:18) ; « concevoir une interface stable avant d'avoir écrit le moindre analyseur concret est une illusion » (:57)
+- mapped_signal: "critique plugins" → partial — nuance : la source approuve la critique des plugins déjà présente dans le document relu ; ce n'est pas une critique nouvelle émise contre la proposition
+- source: ChatGPT
+- original_fragment: « raisonnement sur les coûts cachés (plugins, COM, OCSP) » sous « ✔ » (:11)
+- mapping_type: partial — convergence réelle 2/2, non capturée par les cartes
+
+S6 — signal présent dans les sources, absent des cartes (perte de compression)
+- source: ChatGPT
+- original_fragment: « Aucune décision architecturale ne peut être considérée comme valide sans mesure. » (:120) ; « tu optimises un modèle mental, pas un système réel » (:33) ; proposition d'un module REALITY_CHECK_PROMPT.md (:88)
+- source: Gemini (Choix B), convergent
+- original_fragment: « Ton premier objectif (Milestone 1) ne devrait même pas être de scanner 10 000 fichiers, mais d'en traiter 3 différents » (:88) ; « tu auras validé 80 % de tes risques techniques » (:100)
+- mapped_signal: inexistant dans les cartes — le message central des deux sources (valider empiriquement avant de figer, réduire le Milestone 1) a été intégralement perdu à l'agrégation
+
+INFERENCE_CHAIN
+
+ST-C
+- step_1: « ce sont de bons choix… mais déjà "verrouillés intellectuellement" » (:58)
+- step_2: interprétation dans la source : concession sur le mérite + avertissement sur le processus (thèse dominante = ne pas verrouiller)
+- step_3: agrégation en « confirme architecture B / confiance élevée » : la concession est promue en conclusion, l'avertissement est supprimé
+- risk: over_generalization (inversion partielle du sens)
+
+S1
+- step_1: « le moteur d'identité devra quand même aller lire le VersionInfo ou les ressources PE de presque tous les fichiers uniques » (:25, :66)
+- step_2: mise en garde de portée : le pré-filtre hash optimise la dedup, pas l'identification
+- step_3: agrégation en « confusion identity vs dedup » (2 sources) puis, à l'étape comparative, en consensus C3 « robustesse haute [2/2] »
+- risk: over_generalization (mise en garde → "confusion") + compression_bias (1 fichier à 2 réponses compté comme 2 sources indépendantes ; ChatGPT ne contient rien sur le sujet)
+
+S2
+- step_1: « Validée à 100 % » (Gemini:6) / « identification des bottlenecks I/O réels » (ChatGPT:6)
+- step_2: Gemini valide le design ; ChatGPT valide la qualité de l'analyse tout en la plafonnant (« raisonné, mais pas mesuré », :44)
+- step_3: agrégation en double validation du pipeline
+- risk: loss_of_information (le plafond "non mesuré" — la moitié du message ChatGPT — disparaît)
+
+S3
+- step_1: « ce moteur de scoring ne doit pas devenir un plat de spaghettis de if/else » (Gemini:72)
+- step_2: recommandation architecturale (Rule Engine / Scoring Composite) émise par Gemini-Choix-B
+- step_3: agrégée dans la carte ChatGPT sous "critique scoring instability" / "biais scoring"
+- risk: compression_bias (misattribution de source — invalide tout raisonnement d'indépendance inter-sources fondé sur ce signal)
+
+S4
+- step_1: « Choix pragmatique absolu » (Gemini:28) vs « verrouillés intellectuellement » (ChatGPT:58)
+- step_2: deux plans distincts : mérite technique (Gemini) vs hygiène décisionnelle (ChatGPT)
+- step_3: agrégé en « validé 1/2, non contesté 2/2 »
+- risk: over_generalization (la contestation ChatGPT existe, sur un autre plan, et a été perdue)
+
+CONFIDENCE_AUDIT
+
+┌───────────┬─────────────────────┬─────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ signal_id │ declared_confidence │ adjusted_confidence │                                                                 adjustment_reason                                                                 │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ST-G      │ high                │ 0.70                │ ambiguity — Choix A exact, mais Choix B (même fichier) suspend la décision ; stance unique non représentative des deux réponses                   │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ST-C      │ high                │ 0.25                │ weak grounding — la source avertit contre le verrouillage de B ; "confirme" repose sur une concession sortie de son contexte                      │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S1        │ high (2/2)          │ 0.60                │ repetition — grounding exact mais mono-source (Gemini ×2 dans un même fichier) ; le "2/2" inter-modèles est faux ; contenu technique mécaniste    │
+│           │                     │                     │ solide (offsets PE/MSI)                                                                                                                           │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S2        │ high (2/2)          │ 0.70                │ ambiguity — validation de design réelle 2/2, mais plafonnée explicitement par ChatGPT ("pas mesuré") ; validation ≠ preuve                        │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S3        │ medium              │ 0.50                │ weak grounding — contenu réel et argumenté, source misattribuée ; compte comme 1/2 (Gemini), pas comme signal ChatGPT                             │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S4        │ low (1/2)           │ 0.55                │ ambiguity — validation technique exacte ×2 chez Gemini ; contestation processuelle chez ChatGPT non prise en compte dans le statut "non contesté" │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S5        │ low (1/2)           │ 0.75                │ repetition — en réalité 2/2 compatible (ChatGPT liste "coûts cachés plugins" en positif) ; ajusté à la hausse                                     │
+├───────────┼─────────────────────┼─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S6        │ absent des cartes   │ 0.85                │ seul signal réellement convergent 2/2 inter-modèles ET contra-ancrage (les deux sources réduisent l'ambition du document relu) ; perdu à la       │
+│           │                     │                     │ compression                                                                                                                                       │
+└───────────┴─────────────────────┴─────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+ERROR_DETECTION
+
+- hallucinated_generalization:
+  - ST-C — "confirme architecture B, confiance élevée" : la source dit l'inverse de la moitié de cette assertion (avertissement de verrouillage prématuré, ChatGPT:52-61).
+  - C-signal "séparation identity vs dedup" (carte ChatGPT) — aucun fragment support dans le fichier ChatGPT ; concepts absents du texte.
+  - CR1 "biais scoring" / C-signal "critique scoring instability" (carte ChatGPT) — le scoring est cité en positif dans la source (:13) ; la critique du scoring existe mais dans le fichier Gemini (:72).
+- over_merged_signals:
+  - ST-G — deux réponses Gemini distinctes (Choix A : endosse B ; Choix B : suspend la décision, crash-test d'abord) fusionnées en une stance unique.
+  - S1 — mise en garde Gemini dupliquée sous deux libellés ("hash partiel insuffisant" + "confusion identity/dedup") puis répartie sur les deux sources, fabriquant un faux consensus 2/2 (le consensus C3/C4 de l'étape comparative précédente est invalidé : réel = 1/2).
+- unsupported_causality:
+  - Le lien carte → « les deux sources confirment B donc B est robuste structurellement » (INTERPRETATION ChatGPT : « la plus robuste structurellement ») — aucun fragment de la source ChatGPT n'énonce de jugement de robustesse structurelle de B.
+  - L'hypothèse d'ancrage de l'étape précédente (« les deux sources ont relu le même plaidoyer pro-B ») reste plausible pour Gemini mais non établie pour ChatGPT, qui a relu le système de prompts, pas seulement le dossier d'architecture — les deux fichiers n'auditent pas le même artefact (TYPE déclaré "Architecture review" inexact pour ChatGPT).
+
+Note de périmètre : deux sources supplémentaires existent dans le projet et ne sont pas couvertes par cet audit : Retour_Croisé_Gemini_GPT.md et Retour_2.txt. Si elles alimentent le même pipeline de scoring, elles nécessitent le même traitement avant agrégation.
+
+✻ Crunched for 2m 32s
+
+※ recap: We're auditing multi-AI architecture reviews for installChecker; the trace audit found the aggregated cards misattributed signals (ChatGPT actually warns against locking architecture B, doesn't confirm it). Next: rerun aggregation with corrected signals, or audit the two remaining source files. (disable recaps in /config)
+
+> Note de périmètre : deux sources supplémentaires existent dans le projet et ne sont pas couvertes par cet audit : Retour_Croisé_Gemini_GPT.md et Retour_2.txt. Si elles alimentent le même pipeline de scoring, elles nécessitent le même traitement avant agrégation.
+
+  --------------------------------------------------
+
+  ACTION DEMANDÉE:
+  Classification des sources uniquement (sans analyse de contenu)
+
+  --------------------------------------------------
+
+  ROLE: SOURCE CLASSIFICATION LAYER
+
+  OBJECTIF:
+  Classifier les sources fournies dans le pipeline d’audit.
+
+  IMPORTANT:
+  Tu ne dois pas analyser les contenus.
+  Tu ne dois pas produire de SIGNALS.
+  Tu ne dois pas produire de CONSENSUS.
+  Tu ne dois pas faire de scoring.
+
+  Tu fais uniquement une classification structurelle des sources.
+
+  --------------------------------------------------
+
+  ENTRÉES POSSIBLES:
+
+  - SOURCES PRIMAIRES (analyses IA indépendantes)
+  - SOURCES DÉRIVÉES (méta-analyses ou analyses croisées)
+  - SOURCES DE CONTRÔLE (prompts, règles, instructions système)
+
+  --------------------------------------------------
+
+  RÈGLES STRICTES:
+
+  1. Une source ne peut appartenir qu’à UNE seule catégorie.
+  2. Une source dérivée ne doit jamais être traitée comme source primaire.
+  3. Une source de contrôle ne doit jamais entrer dans le scoring.
+  4. Aucune fusion de sources n’est autorisée.
+  5. Aucune interprétation du contenu n’est autorisée.
+
+  --------------------------------------------------
+
+  SORTIE ATTENDUE:
+
+  Pour chaque source:
+
+  SOURCE:
+  - nom
+  - chemin
+  - type_detecté
+  - justification_classification
+  - autorisations (consensus / signals / bias / scoring)
+
+  --------------------------------------------------
+
+  RÈGLE FONDAMENTALE:
+
+  Tu travailles sur la NATURE DES SOURCES, pas sur leur contenu.
+
+La classification exige de déterminer la nature de chaque fichier. Quatre fichiers n'ont jamais été ouverts — j'inspecte leur structure (en-têtes uniquement, pas d'analyse de contenu) pour détecter leur type.
+
+  Read 7 files, ran 1 shell command
+
+Classification effectuée. Note préalable : le répertoire a été réorganisé depuis l'audit (Retour_2.txt → retour_2GPT.txt, prompts déplacés vers pileline/, pipeline_old/, prompt/). La classification porte sur l'état actuel : 17 fichiers de contrôle, 3 sources primaires, 2 sources dérivées.
+
+---
+SOURCES PRIMAIRES
+
+SOURCE:
+- nom : Retour Gemini — 1ère proposition
+- chemin : Retour_Gemini_1ere_Proposition.md
+- type_detecté : PRIMAIRE (analyse IA indépendante de premier ordre)
+- justification_classification : réponse directe d'un modèle (Gemini) portant sur l'artefact d'architecture ; ne cite aucun autre retour IA ; ne définit aucune règle de pipeline
+- ⚠️ flag structurel : le fichier contient deux réponses distinctes ("Choix A" l.1–39, "Choix B" l.41–104). C'est une seule source (même modèle, même fichier) — interdiction de la compter comme deux sources indépendantes (règle 4 : les deux réponses ne doivent pas non plus être fusionnées en une stance unique ; à traiter comme source unique à deux variantes internes)
+- autorisations : consensus ✅ (poids = 1 source) / signals ✅ / bias ✅ / scoring ✅
+
+SOURCE:
+- nom : Retour ChatGPT — 1ère solution
+- chemin : Retour_ChatGPT_1ere_Solution.md
+- type_detecté : PRIMAIRE (analyse IA indépendante de premier ordre)
+- justification_classification : réponse directe d'un modèle (ChatGPT) ; ne cite aucun autre retour IA ; produit une analyse originale, pas une synthèse de sources
+- ⚠️ flag structurel : l'objet audité diffère des autres primaires — ce fichier évalue le système de prompts du projet, pas (seulement) le dossier d'architecture. Comparabilité inter-sources non garantie ; le champ TYPE des cartes ("Architecture review") est structurellement inexact
+- autorisations : consensus ✅ (uniquement sur les points où l'objet audité recouvre celui des autres sources) / signals ✅ / bias ✅ / scoring ✅
+
+SOURCE:
+- nom : Claude — 1ère solution (dossier d'architecture)
+- chemin : Claude_1ere Solution.md
+- type_detecté : PRIMAIRE — avec statut spécial ARTEFACT ANCRE
+- justification_classification : analyse IA de premier ordre (aucune autre source citée en amont), mais c'est le document que les deux autres primaires relisent. Il est chronologiquement antérieur (11:12 vs 11:18/11:22) et constitue la référence d'ancrage
+- autorisations : consensus ❌ (il ne peut pas "confirmer" ses propres positions — le compter gonflerait tout consensus le concernant) / signals ✅ (comme assertions à vérifier, pas comme validations) / bias ✅ (référence obligatoire pour mesurer l'ancrage des autres sources) / scoring ❌
+
+SOURCES DÉRIVÉES
+
+SOURCE:
+- nom : Retour croisé Gemini/GPT
+- chemin : Retour_Croisé_Gemini_GPT.md
+- type_detecté : DÉRIVÉE (méta-analyse de sources primaires)
+- justification_classification : le document agrège explicitement les retours précédents (« 2 IA qui valident globalement », « Les 3 sont d'accord sur… ») — il est structurellement en aval des primaires et n'existe que par référence à elles
+- autorisations : consensus ❌ (l'inclure compterait deux fois les mêmes opinions primaires — double comptage) / signals ❌ (aucun signal nouveau ne peut en être extrait comme s'il était indépendant) / bias ✅ (utile pour détecter les distorsions introduites par l'agrégation) / scoring ❌
+
+SOURCE:
+- nom : Retour 2 GPT (méta-revue du pipeline d'analyse)
+- chemin : retour_2GPT.txt (anciennement Retour_2.txt)
+- type_detecté : DÉRIVÉE (méta-analyse de second ordre)
+- justification_classification : le document évalue la sortie d'une étape du pipeline d'audit lui-même (la couche consensus/divergences/biais — il en cite la structure : « consensus, divergences, signaux, incertitudes, biais », « N/2 sources ») ; il est en aval de tout le corpus primaire ET de la couche d'analyse
+- autorisations : consensus ❌ / signals ❌ / bias ✅ (source pertinente pour l'audit du pipeline, pas pour l'audit de l'architecture) / scoring ❌
+
+SOURCES DE CONTRÔLE
+
+SOURCE (groupe) :
+- nom : Contrat de projet et prompts de cadrage
+- chemins : CLAUDE.md, prompt_cadrage.txt, prompt/prompt.md, prompt/prompt_2eme.txt, prompt/Prompt_3.txt
+- type_detecté : CONTRÔLE
+- justification_classification : règles, contraintes et instructions d'exécution — définissent comment analyser, ne contiennent aucune analyse
+- autorisations : consensus ❌ / signals ❌ / bias ❌ / scoring ❌ (règle 3 : jamais dans le scoring)
+
+SOURCE (groupe) :
+- nom : Pipeline d'audit actif (11 fichiers)
+- chemins : pileline/00_config/PIPELINE_CONFIG.md, pileline/01_sources/SOURCE_FORMAT.md, pileline/02_signal_extraction/SIGNAL_PROMPT.md, pileline/03_consensus/CONSENSUS_PROMPT.md, pileline/04_trace_audit/TRACE_AUDITOR.md, pileline/05_graph_model/EVIDENCE_GRAPH.md, pileline/06_scoring_final/FINAL_SCORING.md, pileline/07_outputs/OUTPUT_SCHEMA.md, pileline/pipeline_runner.md, pileline/decision_layer.md, pileline/structured_output_schema.md
+- type_detecté : CONTRÔLE
+- justification_classification : définitions des étapes du pipeline de scoring — instructions système par nature
+- autorisations : consensus ❌ / signals ❌ / bias ❌ / scoring ❌
+
+SOURCE (groupe) :
+- nom : Pipeline archivé (7 fichiers)
+- chemins : pipeline_old/ (Master_Prompt.md, Master_Prompt.md_old, pipeline_review.md, Prompt_qualité.md, IMPLEMENTATION_PROMPT.md, ADR_GENERATOR.md, REALITY_CHECK_PROMPT.md)
+- type_detecté : CONTRÔLE — statut ARCHIVÉ
+- justification_classification : anciennes versions des instructions, déplacées hors du pipeline actif
+- autorisations : consensus ❌ / signals ❌ / bias ❌ / scoring ❌ — exclusion totale du pipeline actif
+
+---
+Synthèse structurelle pour le pipeline de scoring : seules 2 sources sont éligibles au consensus et au scoring (Retour_Gemini_1ere_Proposition.md, Retour_ChatGPT_1ere_Solution.md), avec un poids de 1 chacune et une comparabilité partielle (objets audités différents). Claude_1ere Solution.md sert d'ancre de vérification, jamais de voix. Les deux dérivées ne servent qu'à l'analyse de biais. N effectif du consensus = 2.
+
+✻ Sautéed for 1m 41s
+
+> ACKNOWLEDGEMENT:
+
+  La classification des sources est acceptée.
+
+  --------------------------------------------------
+
+  IMPORTANT CONSTRAINT:
+
+  Tu es dans le rôle TRACE AUDITOR uniquement.
+
+  Tu n’as PAS l’autorisation de :
+  - définir des règles globales de scoring
+  - interpréter la structure globale du système
+  - modifier la notion de consensus ou de N effectif
+  - conclure sur la comparabilité globale des sources
+
+  --------------------------------------------------
+
+  ACTION AUTORISÉE UNIQUEMENT:
+
+  1. Vérifier la cohérence locale des classifications
+  2. Identifier erreurs de type (primaire / dérivé / contrôle)
+  3. Signaler les risques de double comptage
+  4. Signaler les problèmes de dépendance entre sources
+
+  --------------------------------------------------
+
+  ACTION INTERDITE:
+
+  - Toute synthèse globale du système
+  - Toute définition de règles de scoring global
+  - Toute conclusion sur la validité du pipeline
+  - Toute réécriture du modèle d’analyse
+
+  --------------------------------------------------
+
+  FOCUS ATTENDU:
+
+  - erreurs de classification
+  - dépendances entre sources
+  - risques de contamination entre niveaux
+
+  Aucune conclusion système ne doit être produite.
+
+Trois fichiers ont été classés CONTRÔLE sur la seule base de leur nom, sans vérification de contenu. La cohérence locale exige de confirmer leur type — inspection minimale.
+
+  Read 3 files
+
+Audit local effectué. Les trois fichiers classés CONTRÔLE sur nom seul sont maintenant vérifiés sur contenu. Résultats dans le périmètre autorisé uniquement.
+
+1. Vérification de cohérence locale des classifications
+
+┌───────────────────────────────────┬───────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│              Source               │  Classification   │                                                        Verdict après vérification contenu                                                        │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ prompt_cadrage.txt                │ CONTRÔLE          │ ✅ Confirmé — c'est l'instruction de la couche de classification elle-même                                                                       │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ prompt/Prompt_3.txt               │ CONTRÔLE          │ ✅ Confirmé — c'est l'instruction TRACE_AUDITOR                                                                                                  │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ prompt/prompt_2eme.txt            │ CONTRÔLE          │ ⚠️ Confirmé avec anomalie — voir erreur E1                                                                                                       │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_Gemini_1ere_Proposition.md │ PRIMAIRE          │ ⚠️ Confirmé avec réserve de provenance — voir E2                                                                                                 │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_ChatGPT_1ere_Solution.md   │ PRIMAIRE          │ ✅ Confirmé (aucune citation d'autre retour)                                                                                                     │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Claude_1ere Solution.md           │ PRIMAIRE + ANCRE  │ ✅ Confirmé (antériorité horodatée : 11:12, avant tous les retours)                                                                              │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_Croisé_Gemini_GPT.md       │ DÉRIVÉE           │ ✅ Confirmé — cite et agrège les retours en aval                                                                                                 │
+├───────────────────────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ retour_2GPT.txt                   │ DÉRIVÉE (2ᵉ       │ ✅ Confirmé — son vocabulaire est celui de la couche d'analyse (« N/2 sources », « robustesse haute/moyenne/faible », liste des biais), pas      │
+│                                   │ ordre)            │ celui des primaires                                                                                                                              │
+└───────────────────────────────────┴───────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Cohérence chronologique : les horodatages valident l'ordre de dépendance déclaré (ancre 11:12 → Gemini 11:18 → ChatGPT 11:22 → croisé 11:24 → retour_2GPT 11:59 → pipeline actif 12:07–12:34). Aucune anomalie temporelle.
+
+2. Erreurs et fragilités de type
+
+E1 — Matériau dérivé encapsulé dans une source de contrôle (prompt/prompt_2eme.txt)
+Le fichier est bien une instruction, mais il contient les cartes SIGNALS/RISKS/STANCE (les résumés compressés de Gemini et ChatGPT). Ces cartes sont un artefact dérivé à part entière — auteur de la compression inconnu, non tracé, non classifié — hébergé dans un fichier de type CONTRÔLE. Conséquence locale : un objet qui a servi d'entrée de données à la couche signal est invisible pour la classification des sources, car niché dans une catégorie exclue de tout traitement. Le trace audit précédent a montré que ces cartes contiennent des misattributions ; leur provenance doit être traçable comme celle de n'importe quelle source dérivée.
+
+E2 — Provenance intra-fichier non résolue (Retour_Gemini_1ere_Proposition.md)
+Discontinuités structurelles entre les deux réponses du fichier : vouvoiement (l.2–39) vs tutoiement (l.42–104) ; marqueurs de citation « MD +2 » présents uniquement dans la seconde. Deux hypothèses incompatibles, non départageables sur pièces : (a) deux réponses du même modèle dans la même conversation — alors la seconde a potentiellement vu la première : variantes séquentiellement dépendantes, pas indépendantes ; (b) deux modèles différents collés dans un même fichier — alors la classification « une source » est erronée et le fichier contient deux sources fusionnées (violation de la règle 4 en amont de la classification). Provenance à faire trancher par l'opérateur ; d'ici là, toute exploitation du fichier doit porter ce flag.
+
+E3 — Circularité encodée dans la dérivée (Retour_Croisé_Gemini_GPT.md)
+Élément structurel observé lors de la détection de type : le document compte « les 3 sont d'accord ». La troisième voix ne peut être que l'artefact ancre (Claude) — c'est-à-dire le document évalué compté comme évaluateur de ses propres positions. La validation circulaire est donc encodée à l'intérieur même de la source dérivée. De plus, sa mention « version 1 / version 2 » sur le hash partiel indique qu'il traite les deux variantes intra-fichier Gemini comme des voix distinctes. Ce fichier cumule ainsi les deux formes de double comptage (D1 et D3 ci-dessous) dans son propre contenu.
+
+3. Risques de double comptage
+
+- D1 — Les deux variantes du fichier Gemini comptées comme deux voix (matérialisé dans la dérivée croisée, cf. E3).
+- D2 — Toute lecture de Retour_Croisé_Gemini_GPT.md par une couche de consensus réimporterait les opinions de Gemini et ChatGPT une seconde fois, sous forme pré-agrégée.
+- D3 — L'ancre comptée comme voix confirmante de ses propres positions (via la dérivée croisée).
+- D4 — Même modèle à plusieurs niveaux : ChatGPT est l'auteur d'une primaire (Retour_ChatGPT_1ere_Solution.md), vraisemblablement de la dérivée de 2ᵉ ordre (retour_2GPT.txt — le nom l'indique), et possiblement de la dérivée croisée (nom ambigu). Les priors d'un même modèle seraient alors échantillonnés jusqu'à trois fois à des niveaux différents du pipeline — corrélation inter-niveaux non visible dans un comptage par fichier.
+- D5 — Coexistence des cartes compressées (dans prompt_2eme.txt) et des sources brutes : une couche qui consommerait les deux compterait les mêmes opinions deux fois sous deux formes différentes.
+
+4. Dépendances et risques de contamination entre niveaux
+
+Graphe de dépendance établi sur pièces (citations + horodatages) :
+
+Claude_1ere Solution.md (ancre, 11:12)
+  ├─→ Retour_Gemini_1ere_Proposition.md (11:18)     [relit l'ancre]
+  ├─→ Retour_ChatGPT_1ere_Solution.md (11:22)       [relit l'ancre + le système de prompts]
+  │
+  ├─→ Retour_Croisé_Gemini_GPT.md (11:24)           [dépend des 2 retours + de l'ancre]
+  │
+  cartes compressées (auteur inconnu, dans prompt_2eme.txt)
+  └─→ sortie couche consensus ─→ retour_2GPT.txt (11:59)  [dépend de la sortie d'analyse]
+
+- C1 — Aucune des deux primaires n'est indépendante de l'ancre : les deux sont des relectures d'un plaidoyer existant (dépendance déjà documentée au trace audit ; rappelée ici comme arête du graphe, sans conclusion de portée).
+- C2 — Boucle audit → contrôle : la première ligne de prompt_cadrage.txt est la note de périmètre produite par la couche d'audit elle-même (sortie du TRACE AUDITOR recyclée en instruction). Une sortie de niveau analyse est devenue entrée de niveau contrôle — les niveaux ne sont pas étanches dans le sens remontant.
+- C3 — Conflit d'identité auditeur/audité : l'agent qui exécute les couches d'audit (Claude, cette session) est l'auteur de l'artefact ancre. Les vérifications de cohérence portant sur l'ancre sont donc des auto-vérifications ; dépendance à déclarer au même titre que D4 (même modèle à plusieurs niveaux, ici niveau source et niveau audit).
+- C4 — Les cartes compressées (E1) forment un niveau intermédiaire non déclaré entre primaires et couche signal : la chaîne réelle est primaires → [compression, auteur inconnu] → cartes → signaux, alors que la chaîne déclarée est primaires → signaux. Tout défaut de la compression (misattributions confirmées au trace audit) contamine l'aval en se présentant comme du contenu primaire.
+
+Fin de l'audit local. Points laissés ouverts car hors autorisation : résolution de E2 (provenance), traitement de D4/C3 (corrélation de modèle), statut des cartes (E1/C4) — à trancher par la couche propriétaire du pipeline.
+
+✻ Cooked for 1m 55s
+
+> ROLE: PIPELINE CONTROLLER
+
+  OBJECTIF:
+  Transformer les résultats d’audit structurel en décision de traitement exécutable.
+
+  --------------------------------------------------
+
+  RÈGLE FONDAMENTALE:
+
+  Les éléments suivants sont déjà audités :
+  - classifications de sources
+  - dérivations
+  - dépendances
+  - risques de double comptage
+  - anomalies de provenance
+
+  Tu ne dois PAS refaire d’audit.
+
+  --------------------------------------------------
+
+  TÂCHE ATTENDUE:
+
+  À partir de l’audit précédent :
+
+  1. Identifier uniquement les actions nécessaires sur le pipeline
+  2. Classer chaque problème détecté selon :
+     - IGNORER (non bloquant pour le scoring)
+     - TAGGER (ajouter metadata / flag)
+     - CORRIGER (modifier structure ou exclusion)
+     - BLOQUER (empêche scoring / invalide source)
+
+  3. Définir les conséquences sur :
+     - N effectif des sources
+     - validité du scoring
+     - inclusion/exclusion des fichiers dérivés
+
+  --------------------------------------------------
+
+  SORTIE ATTENDUE:
+
+  ## 1. ACTION MAP
+  - issue_id → action (IGNORE / TAGGER / CORRIGER / BLOQUER)
+  - justification courte
+
+  ## 2. SOURCE WEIGHT UPDATE
+  - fichier → poids final (0 / 0.5 / 1)
+
+  ## 3. SCORING ELIGIBILITY
+  - liste des sources autorisées au scoring final
+
+  ## 4. PIPELINE SAFE STATE
+  - état final du système (stable / instable / invalide)
+  - raison
+
+  --------------------------------------------------
+
+  CONTRAINTE ABSOLUE:
+
+  - Aucun nouvel audit
+  - Aucun retour aux sources brutes
+  - Aucun graphe de dépendance supplémentaire
+  - Aucun approfondissement des E1/E2/E3
+
+  Tu travailles uniquement sur la décision opérationnelle.
+
+1. ACTION MAP
+
+┌──────────────────────────────────────────────────────────────────┬──────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             issue_id                             │  Action  │                                                    Justification courte                                                    │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ E1 / C4 / D5 — cartes compressées (auteur inconnu, nichées dans  │ CORRIGER │ Les cartes sont retirées du pipeline comme entrée de données. L'EVIDENCE_MAP du trace audit (ancré sur fragments exacts)   │
+│ prompt_2eme.txt, doublonnant les sources brutes)                 │          │ devient l'unique représentation canonique des signaux. La chaîne officielle devient : primaires → EVIDENCE_MAP → scoring.  │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Cartes — contenus invalidés (ST-C "confirme B", S3 "scoring      │ CORRIGER │ La couche signal est régénérée depuis l'EVIDENCE_MAP : stance ChatGPT réécrite ("bons choix / verrouillage prématuré"), S3 │
+│ instability" misattribué, S1 faux 2/2, S6 signal perdu)          │          │  réattribué à Gemini, consensus S1 recompté 1/2, S6 réintégré (seul vrai 2/2).                                             │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                  │          │ Non résoluble sans l'opérateur. Règle appliquée en attendant : 1 fichier = 1 voix (jamais 2), stance enregistrée comme     │
+│ E2 / D1 — provenance double du fichier Gemini                    │ TAGGER   │ "divisée" (variante A : endosse B ; variante B : suspend). Le merge en voix unique ne peut jamais gonfler N — choix        │
+│                                                                  │          │ conservateur.                                                                                                              │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ E3 / D2 — Retour_Croisé_Gemini_GPT.md (circularité + réimport)   │ BLOQUER  │ Interdit d'entrée dans consensus, signaux et scoring. Consommable uniquement par la couche biais.                          │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ D3 — ancre comptée comme voix                                    │ BLOQUER  │ Claude_1ere Solution.md exclu définitivement du consensus et du scoring ; rôle limité à référence de vérification.         │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ D4 — même modèle (GPT) à plusieurs niveaux                       │ TAGGER   │ Metadata model_family=GPT sur Retour_ChatGPT_1ere_Solution.md et retour_2GPT.txt. La couche biais doit traiter leurs       │
+│                                                                  │          │ convergences comme corrélées, pas confirmatoires.                                                                          │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ C1 — primaires ancrées (relectures du plaidoyer)                 │ TAGGER   │ Flag anchored_review=true sur les deux primaires. Conséquence de scoring : les findings contra-ancrage (ex. hash/identité) │
+│                                                                  │          │  priment sur les validations pro-ancrage à confiance égale.                                                                │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ C2 — sortie d'audit recyclée dans prompt_cadrage.txt             │ IGNORER  │ Hygiène de processus, sans effet sur le scoring en cours. À corriger dans une future version du pipeline, non bloquant.    │
+├──────────────────────────────────────────────────────────────────┼──────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ C3 — auditeur = auteur de l'ancre                                │ TAGGER   │ Non corrigeable dans cette session. Metadata self_audit=true sur toutes les sorties d'audit ; l'ancre étant déjà à poids   │
+│                                                                  │          │ 0, l'impact sur le scoring est neutralisé — le flag reste requis pour toute relecture externe.                             │
+└──────────────────────────────────────────────────────────────────┴──────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+2. SOURCE WEIGHT UPDATE
+
+┌──────────────────────────────────────────────────────────────────────────┬──────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 Fichier                                  │  Poids   │                                                       Motif                                                       │
+│                                                                          │  final   │                                                                                                                   │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_Gemini_1ere_Proposition.md                                        │ 1        │ Primaire éligible ; 1 voix unique malgré 2 variantes ; tags E2 + C1                                               │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_ChatGPT_1ere_Solution.md                                          │ 0.5      │ Primaire éligible mais objet audité partiellement recouvrant (système de prompts ≠ dossier d'architecture) — ne   │
+│                                                                          │          │ vote à poids plein que sur les points de recouvrement                                                             │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Claude_1ere Solution.md                                                  │ 0        │ Ancre — BLOQUER (D3)                                                                                              │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Retour_Croisé_Gemini_GPT.md                                              │ 0        │ Dérivée — BLOQUER (E3/D2)                                                                                         │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ retour_2GPT.txt                                                          │ 0        │ Dérivée 2ᵉ ordre — hors scoring, réservée couche biais                                                            │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Cartes compressées (dans prompt_2eme.txt)                                │ 0        │ Artefact déprécié — remplacé par EVIDENCE_MAP (E1)                                                                │
+├──────────────────────────────────────────────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Fichiers de contrôle (CLAUDE.md, pileline/**, prompt/**,                 │ 0        │ Règle 3 — jamais dans le scoring                                                                                  │
+│ pipeline_old/**, prompt_cadrage.txt)                                     │          │                                                                                                                   │
+└──────────────────────────────────────────────────────────────────────────┴──────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+3. SCORING ELIGIBILITY
+
+Sources autorisées au scoring final :
+
+1. Retour_Gemini_1ere_Proposition.md — poids 1, via signaux EVIDENCE_MAP de type exact ou partial uniquement (les inferred sont exclus du scoring, consommables par la couche biais)
+2. Retour_ChatGPT_1ere_Solution.md — poids 0.5, mêmes restrictions de mapping
+
+Aucune autre source n'entre dans le scoring. N effectif = 1.5.
+
+4. PIPELINE SAFE STATE
+
+État final : INSTABLE (pas invalide).
+
+Raison. Le scoring est exécutable — les entrées survivantes sont propres, tracées et dédupliquées — mais il repose sur N effectif = 1.5 voix, toutes deux porteuses du flag anchored_review, dont une à stance interne divisée (E2). Conséquences opérationnelles contraignantes pour la couche decision_layer :
+
+- Aucune sortie ne peut être qualifiée de consensus : le maximum atteignable est « convergence partielle, sous-critique ».
+- Le scoring final doit porter le label advisory (indicatif, non décisionnel) : il peut orienter un choix, pas le valider.
+- Toute affirmation « 2/2 sources » issue des couches antérieures est invalide par construction, sauf S6 (le seul signal vérifié convergent inter-modèles, et il est contra-ancrage).
+
+Condition de sortie de l'état INSTABLE (seuil, pas recommandation) : ≥ 2 voix à poids 1 provenant de modèles distincts, dont ≥ 1 revue non ancrée (produite sans exposition à l'argumentaire de l'artefact évalué), et résolution du tag E2 par l'opérateur. En deçà, le pipeline reste en état dégradé contrôlé : exploitable, non concluant.
+
+✻ Baked for 1m 11s
+
+※ recap: Vous auditez le pipeline multi-IA validant l'architecture d'installChecker. Le contrôleur a statué : scoring possible mais instable (N effectif 1,5, sources ancrées). Prochaine action : obtenir une revue indépendante non ancrée et trancher la provenance du fichier Gemini. (disable recaps in /config)
+
+> ROLE: DECISION RESOLUTION ENGINE
+
+  CONTEXTE:
+  Tu reçois un état PIPELINE SAFE STATE = INSTABLE.
+
+  IMPORTANT:
+  INSTABLE ≠ BLOQUÉ
+  INSTABLE = décision possible mais avec contraintes.
+
+  --------------------------------------------------
+
+  OBJECTIF:
+
+  Transformer un état INSTABLE en sortie exploitable.
+
+  --------------------------------------------------
+
+  RÈGLES:
+
+  1. Tu ne refais PAS d’audit
+  2. Tu ne modifies PAS les poids
+  3. Tu ne supprimes PAS de sources
+  4. Tu ne demandes PAS de nouvelles données
+
+  --------------------------------------------------
+
+  TU DOIS:
+
+  1. Identifier le niveau de confiance global du système :
+     - high confidence usable
+     - medium confidence advisory
+     - low confidence exploratory only
+
+  2. Transformer les contraintes en décision :
+     - même si N est faible
+     - même si sources corrélées
+     - même si ancrage détecté
+
+  3. Produire une sortie finale structurée exploitable
+
+  --------------------------------------------------
+
+  SORTIE:
+
+  ## 1. GLOBAL CONFIDENCE
+  - level: high / medium / low
+  - justification courte
+
+  ## 2. DECISION OUTPUT
+  - type: ACCEPT / REJECT / DEFER
+  - reason
+
+  ## 3. CONSTRAINT IMPACT
+  - liste des limitations impactant la décision
+
+  ## 4. RELIABILITY NOTE
+  - ce que la décision ne garantit PAS
+
+  --------------------------------------------------
+
+  RÈGLE CRITIQUE:
+
+  Un état INSTABLE ne bloque jamais la production d’une décision.
+  Il réduit uniquement sa portée.
+
+1. GLOBAL CONFIDENCE
+
+- level: MEDIUM (confidence advisory)
+- Justification : sur l'ensemble du corpus audité, aucune contre-évidence technique n'existe contre le contenu de la proposition (pipeline I/O, C#/.NET, SQLite, rejet des plugins dynamiques) — toutes les objections survivantes sont procédurales (verrouillage prématuré, hypothèses non mesurées) ou de périmètre (le pré-filtre hash ne couvre pas l'identification). Ce qui interdit le niveau HIGH : N effectif = 1.5, revues ancrées, corrélation de modèle inter-niveaux. Ce qui évite le niveau LOW : le signal le plus robuste du corpus (S6, 0.85, seul 2/2 inter-modèles, contra-ancrage) est actionnable et converge avec les validations pondérées de direction (S2 : 0.70, S5 : 0.75).
+
+2. DECISION OUTPUT
+
+- type: ACCEPT — à portée réduite
+- Objet accepté : la trajectoire A→B comme hypothèse de travail directrice — implémenter le squelette A (console C#, extraction métadonnées, écriture SQLite), avec pour premier jalon le crash-test empirique minimal (3 fichiers hétérogènes : EXE Inno/NSIS, MSI, binaire sans métadonnées), puis montée vers le pipeline producteur/consommateur si les mesures le confirment.
+- Objet explicitement HORS de cet ACCEPT : le verrouillage définitif de l'architecture B, du choix SQLite et de C#/.NET comme décisions finales (ADR). Ces verrouillages sont conditionnés aux mesures produites par le jalon accepté.
+- reason : c'est la seule décision que toutes les voix pondérées soutiennent simultanément — Gemini-variante-A l'endosse comme meilleure approche, Gemini-variante-B la demande explicitement ("Crash Test" d'abord), ChatGPT (0.5) l'exige comme condition de validité ("aucune décision architecturale valide sans mesure"). La stance divisée d'E2 et l'avertissement ChatGPT ne s'opposent pas à cette décision : ils s'opposent au verrouillage, qui en est exclu. La décision maximise l'exploitation de l'état INSTABLE sans dépasser sa portée : elle convertit l'incertitude en protocole de levée d'incertitude.
+
+3. CONSTRAINT IMPACT
+
+- N = 1.5, sous-critique → la décision est un choix de direction, pas une validation d'architecture ; aucun élément accepté n'a valeur de consensus.
+- Ancrage (C1) → les validations pro-B sont décomptées comme relectures d'un plaidoyer ; seuls les signaux contra-ancrage (S1, S6) ont pesé à taux plein — et ce sont eux qui bornent la décision au crash-test.
+- Stance Gemini divisée (E2, non résolue) → la voix de poids 1 ne soutient sans ambiguïté que la phase A ; toute extension de l'ACCEPT au-delà du jalon empirique perdrait sa voix majoritaire.
+- Corrélation de modèle (D4) → la convergence GPT inter-niveaux n'a pas été comptée comme confirmation multiple.
+- Signaux inferred exclus → "confusion identity vs dedup" n'a pas pesé comme défaut avéré ; seule la version exacte ("hash partiel insuffisant pour l'identification") a été retenue et transférée au périmètre du crash-test (le fichier sans métadonnées teste précisément ce point).
+- Plafond advisory → cette sortie oriente l'opérateur ; elle ne constitue pas une approbation d'ADR.
+
+4. RELIABILITY NOTE
+
+Cette décision ne garantit PAS :
+
+- que l'architecture B est optimale — toutes les estimations de performance sous-jacentes (débit SQLite, gain du pré-filtre hash, coût OCSP/CRL, comportement I/O réel HDD/SSD) sont raisonnées, jamais mesurées ; chacune peut être infirmée par le premier benchmark ;
+- que le moteur de résolution d'identité est faisable dans les termes proposés — c'est le cœur difficile du projet et le corpus établit seulement que le pré-filtrage ne le résout pas, sans valider d'alternative ;
+- que les validations reçues sont indépendantes — elles proviennent de relectures ancrées et partiellement du même modèle ;
+- que la décision survivra aux données — l'ACCEPT porte une trajectoire de validation, pas un résultat : si le crash-test échoue sur les 3 fichiers témoins, la remise en cause porte sur le contenu même de la proposition (C#/COM MSI, extraction sans métadonnées), et l'état repasse en re-décision ;
+- qu'aucun angle mort ne subsiste — les pans non audités par les sources (schéma SQLite, reprise, connecteurs, index WinGet) n'ont reçu aucune validation, même faible ; leur silence n'est pas une approbation.
+
+Sortie exploitable en une ligne : lancer le jalon empirique A (3 fichiers témoins, extraction + SQLite), différer tout ADR de verrouillage jusqu'aux premières mesures — décision de niveau advisory, réversible par construction.
+
+✻ Cooked for 55s
+
+> ROLE: DECISION VALIDATION LAYER
+
+  CONTEXTE:
+  Tu reçois une décision déjà produite par le DECISION RESOLUTION ENGINE.
+
+  IMPORTANT:
+  Tu ne modifies pas la décision.
+  Tu n’audites pas les sources.
+  Tu n’exécutes pas de scoring.
+
+  --------------------------------------------------
+
+  OBJECTIF:
+
+  Vérifier uniquement la robustesse logique de la décision finale.
+
+  --------------------------------------------------
+
+  TÂCHES:
+
+  1. Détecter si la décision est :
+     - over-justified (trop de justification pour peu de support réel)
+     - under-supported (décision forte sans base suffisante)
+     - balanced (alignement justification / support)
+
+  2. Vérifier la cohérence entre :
+     - CONSTRAINT IMPACT
+     - DECISION OUTPUT
+     - GLOBAL CONFIDENCE
+
+  3. Identifier les cas de :
+     - justification inflation (trop de reasoning pour compenser faible confiance)
+     - false determinism (certitude apparente sur système instable)
+
+  --------------------------------------------------
+
+  SORTIE:
+
+  ## 1. DECISION ROBUSTNESS
+  - level: robust / fragile / overconfident
+
+  ## 2. COHERENCE CHECK
+  - status: consistent / inconsistent
+  - notes courtes
+
+  ## 3. RISK FLAGS
+  - list of structural reasoning risks
+
+  ## 4. FINAL VERDICT
+  - ACCEPTABLE / NEEDS REVISION / INVALID (logic only)
+
+  --------------------------------------------------
+
+  CONTRAINTE ABSOLUE:
+
+  - Aucun retour aux sources
+  - Aucun recalcul de score
+  - Aucun changement de décision
+  - Aucun nouvel audit
+
+  Tu analyses uniquement la solidité de la décision produite.
+
+1. DECISION ROBUSTNESS
+
+- level: ROBUST — avec réserves signalées en §3.
+- La propriété qui fonde la robustesse : la portée acceptée est exactement l'intersection du support de toutes les voix pondérées. La décision n'accepte rien que la voix la plus réticente (Gemini-variante-B, ChatGPT) ne demande elle-même. Le support ne déborde pas la décision, la décision ne déborde pas le support — c'est le critère "balanced". Second point fort : l'objet accepté est auto-testant (le jalon produit précisément les données dont l'absence cause l'instabilité) ; la décision convertit sa propre faiblesse en protocole de correction, ce qui la rend réversible par construction et non par déclaration.
+
+2. COHERENCE CHECK
+
+- status: CONSISTENT — avec deux notes.
+- GLOBAL CONFIDENCE (medium/advisory) ↔ DECISION OUTPUT (ACCEPT à portée réduite, ADR exclus) ↔ CONSTRAINT IMPACT (plafond advisory, perte de majorité au-delà du jalon) : les trois sections s'emboîtent sans contradiction ; aucune section ne promet plus que ce qu'une autre retire.
+- Note 1 — sémantique du type. "ACCEPT à portée réduite avec verrouillage différé" est fonctionnellement proche d'un DEFER assorti d'une action intérimaire. Le choix du label ACCEPT est défendable (une action concrète est bien engagée, la règle imposait de décider) mais le lecteur doit comprendre que la force du mot excède légèrement la force du contenu. Incohérence : non. Inflation de label : légère.
+- Note 2 — le levier LOW→MEDIUM. La confiance MEDIUM s'appuie sur "aucune contre-évidence technique", alors que la RELIABILITY NOTE de la même décision admet que des pans entiers n'ont reçu aucune couverture. Absence de contradiction dans un corpus qui ne couvre pas la surface ≈ évidence faible. La tension est résolue par la réduction de portée (sur le périmètre effectivement couvert — trajectoire A, crash-test — la couverture est réelle et convergente), mais la justification aurait dû expliciter que MEDIUM ne vaut que sur ce périmètre. Cohérence maintenue, formulation perfectible.
+
+3. RISK FLAGS
+
+- Boucle d'auto-validation (structurel, le plus sérieux) : la décision ratifie la trajectoire proposée par l'artefact ancre, produite par l'auteur de l'ancre (flag C3 hérité), évaluée par des relecteurs ancrés, et la présente couche de validation est exécutée par le même agent. Chaque couche a déclaré le conflit sans pouvoir le neutraliser. La logique interne est saine, mais aucun maillon de la chaîne n'est extérieur au système qu'elle évalue — seule l'exécution réelle du crash-test (données, pas raisonnement) brisera cette boucle.
+- Dépendance à un tag non résolu : la majorité (voix Gemini, poids 1) ne soutient la décision que sous l'interprétation "stance divisée" d'E2. Si l'opérateur résout E2 en "deux sources distinctes", les poids changent et la décision doit être re-dérivée — la décision est valide conditionnellement à la classification actuelle, ce qu'elle ne dit pas explicitement.
+- Ratification d'ancrage résiduelle : accepter "l'intersection des voix" reste accepter une direction que l'ancre a elle-même cadrée ; l'espace des trajectoires jamais proposées (ni A, ni B) n'a été exploré par aucune voix. Le risque est borné par la petitesse du jalon, pas éliminé.
+- Faux déterminisme localisé : la formule "aucune contre-évidence technique" et la "sortie exploitable en une ligne" projettent une netteté supérieure à l'état réel (INSTABLE, N=1.5). L'appareil de réserves qui les entoure compense — mais un consommateur qui ne lirait que ces deux lignes surestimerait la validation.
+- Inflation de justification : non détectée — le volume argumentatif est proportionné ; la RELIABILITY NOTE retire explicitement ce que la justification pourrait laisser croire. C'est l'inverse d'une compensation rhétorique.
+
+4. FINAL VERDICT
+
+ACCEPTABLE (logique uniquement).
+
+La décision est logiquement solide pour la portée qu'elle se donne, cohérente entre ses sections, et honnête sur ses limites. Les flags de §3 ne l'invalident pas mais définissent ses conditions de validité : elle vaut (1) sous la classification de sources actuelle (E2 non résolu), (2) sur le périmètre couvert par le corpus, (3) jusqu'aux premières données du crash-test — qui constituent, par design, la première validation non circulaire de toute la chaîne.
+
+✻ Baked for 51s
+
+> Ré-exécute le TRACE AUDITOR sur l’ensemble du corpus fourni précédemment,
+  en utilisant la version mise à jour du prompt incluant le bloc UNRESOLVED.
+
+  Ne change pas les sources.
+  Ne change pas les inputs.
+  Ne fais aucune optimisation ou réinterprétation globale.
+
+  Objectif unique : produire la sortie TRACE complète mise à jour avec UNRESOLVED.
+
+Je récupère la version mise à jour du prompt TRACE AUDITOR dans le pipeline actif pour appliquer exactement son schéma (bloc UNRESOLVED inclus).
+
+  Read 1 file
+
+Prompt mis à jour chargé (pileline/04_trace_audit/TRACE_AUDITOR.md). Ré-exécution sur le même corpus (cartes de prompt/prompt_2eme.txt vs sources brutes), mêmes constats, aucun re-jugement — sortie ré-émise dans le nouveau schéma, bloc UNRESOLVED renseigné.
+
+Identifiants sources : GEM = Retour_Gemini_1ere_Proposition.md (variantes GEM-A l.1–39, GEM-B l.41–104) ; GPT = Retour_ChatGPT_1ere_Solution.md.
+
+---
+EVIDENCE_MAP
+
+- ST-G (carte : "Gemini favorise B, confiance élevée")
+  - source_id: GEM-A — exact_quote: « Votre stratégie A → B […] est la meilleure approche possible. » (l.14) — mapping_type: exact
+  - source_id: GEM-B — exact_quote: « Ne décide rien de définitif sur l'architecture globale, mais arrête la phase de spécification papier. » (l.81) — mapping_type: partial (la variante B suspend la décision globale)
+- ST-C (carte : "ChatGPT confirme B, confiance élevée")
+  - source_id: GPT — exact_quote: « ce sont de bons choix… mais déjà "verrouillés intellectuellement" […] tu réduis l'espace d'exploration future sans données réelles. » (l.58–61) — mapping_type: inferred (concession extraite, avertissement principal supprimé)
+- S1 (frontière hash/identité ; cartes : "hash partiel insuffisant pour identité", "confusion identity vs dedup" ×2 sources)
+  - source_id: GEM-A — exact_quote: « excellente pour la déduplication pure. Cependant […] le moteur d'identité devra quand même aller lire le VersionInfo ou les ressources PE de presque tous les fichiers uniques. » (l.25) — mapping_type: exact (pour "hash partiel insuffisant")
+  - source_id: GEM-B — exact_quote: « pour ton besoin d'identification, c'est insuffisant : les informations cruciales […] ne sont presque jamais au tout début ou à la toute fin du fichier » (l.66) — mapping_type: exact
+  - source_id: GEM — pour le libellé "confusion identity vs dedup" — mapping_type: inferred (la source émet une mise en garde de portée, pas un constat de confusion)
+  - source_id: GPT — pour "confusion hash/identity" et "séparation identity vs dedup" — aucune exact_quote disponible (concepts absents du fichier)
+- S2 (validation pipeline)
+  - source_id: GEM-A — exact_quote: « La critique du pipeline actuel : Validée à 100 % » (l.6) ; « divise immédiatement par 4 le goulet d'étranglement des I/O » (l.9) — mapping_type: exact
+  - source_id: GPT — exact_quote: « identification des bottlenecks I/O réels / séparation FS / CPU / réseau » (l.6–8) ; « comparaison A / B / C cohérente » (l.10) ; plafonné par « tout ça est raisonné, mais pas mesuré » (l.44) — mapping_type: partial
+- S3 (fragilité scoring ; carte attribuée à GPT)
+  - source_id: GPT — exact_quote: « scoring multi-critères » sous « ✔ vraie approche "industrie" » (l.12–13) — mapping_type: aucun support (le scoring y est positif)
+  - source_id: GEM-B — exact_quote: « ce moteur de scoring ne doit pas devenir un plat de spaghettis de if/else. Il lui faut une architecture de Pipeline de Règles (Rule Engine) ou de Scoring Composite » (l.72) — mapping_type: exact quant au contenu, source misattribuée
+- S4 (validation C#/.NET)
+  - source_id: GEM-A — exact_quote: « C# / .NET 8+ : Choix pragmatique absolu » (l.28) — mapping_type: exact
+  - source_id: GEM-B — exact_quote: « C'est le choix du pragmatisme absolu. » (l.53) — mapping_type: exact
+  - source_id: GPT (contre-évidence) — exact_quote: « Le prompt pousse vers : C#/.NET […] déjà "verrouillés intellectuellement" » (l.54–58) — mapping_type: partial (contestation processuelle, non capturée par les cartes)
+- S5 (critique plugins dynamiques)
+  - source_id: GEM-A — exact_quote: « Concevoir un système de plugins dynamiques (AssemblyLoadContext) pour un outil mono-utilisateur sans écosystème tiers est le meilleur moyen de passer 6 mois à coder de la plomberie » (l.18) — mapping_type: partial (approbation d'une critique déjà présente dans l'artefact relu)
+  - source_id: GPT — exact_quote: « raisonnement sur les coûts cachés (plugins, COM, OCSP) » sous « ✔ » (l.11) — mapping_type: partial
+- S6 (validation empirique d'abord ; absent des cartes)
+  - source_id: GPT — exact_quote: « Aucune décision architecturale ne peut être considérée comme valide sans mesure. » (l.120) ; « tu optimises un modèle mental, pas un système réel » (l.33) — mapping_type: exact
+  - source_id: GEM-B — exact_quote: « Ton premier objectif (Milestone 1) ne devrait même pas être de scanner 10 000 fichiers, mais d'en traiter 3 différents » (l.88) — mapping_type: exact
+
+INFERENCE_CHAIN
+
+- ST-C — step_1: « bons choix… mais déjà verrouillés » → step_2 (compression): suppression de l'avertissement, promotion de la concession → step_3 (signal_creation): « confirme architecture B / confiance élevée » — risk: over_generalization
+- S1 — step_1: « le moteur d'identité devra quand même lire le VersionInfo » → step_2: mise en garde requalifiée en « confusion » et dupliquée sur 2 sources → step_3: consensus 2/2 fabriqué — risk: over_generalization + compression_bias
+- S2 — step_1: « Validée à 100 % » / « raisonné, mais pas mesuré » → step_2: perte du plafond épistémique GPT → step_3: double validation sans réserve — risk: compression_bias
+- S3 — step_1: citation GEM-B (Rule Engine) → step_2: réattribution à GPT lors de la mise en carte → step_3: « critique scoring instability » côté GPT — risk: compression_bias (misattribution)
+- S4 — step_1: « pragmatisme absolu » (GEM) vs « verrouillés » (GPT) → step_2: fusion de deux plans (mérite vs processus) → step_3: « non contesté 2/2 » — risk: over_generalization
+- S6 — step_1: message central des deux sources → step_2: non retenu dans les cartes → step_3: signal absent — risk: compression_bias (perte totale)
+
+CONFIDENCE_AUDIT
+
+┌───────────┬────────────┬──────────┬───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ signal_id │  declared  │ adjusted │                                            reason                                             │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ST-G      │ high       │ 0.70     │ variante B du même fichier suspend la décision ; stance unique non représentative             │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ST-C      │ high       │ 0.25     │ la source avertit contre le verrouillage ; "confirme" repose sur une concession hors contexte │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S1        │ high (2/2) │ 0.60     │ grounding exact mais mono-source (GEM ×2 intra-fichier) ; le 2/2 inter-modèles est faux       │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S2        │ high (2/2) │ 0.70     │ validation réelle 2/2 mais plafonnée ("pas mesuré")                                           │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S3        │ medium     │ 0.50     │ contenu réel, source misattribuée ; compte 1/2 (GEM)                                          │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S4        │ low (1/2)  │ 0.55     │ validé ×2 chez GEM ; contestation processuelle GPT ignorée par les cartes                     │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S5        │ low (1/2)  │ 0.75     │ en réalité 2/2 compatible                                                                     │
+├───────────┼────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ S6        │ absent     │ 0.85     │ seul signal 2/2 inter-modèles ET contra-ancrage ; perdu à la compression                      │
+└───────────┴────────────┴──────────┴───────────────────────────────────────────────────────────────────────────────────────────────┘
+
+ERROR_DETECTION
+
+- hallucinated_signal: ST-C ("confirme architecture B") ; C-signal "séparation identity vs dedup" (aucun support dans GPT) ; CR1 "biais scoring" / "critique scoring instability" (le scoring est positif dans GPT ; la critique existe dans GEM-B)
+- over_merged_signal: ST-G (deux variantes GEM à positions distinctes fusionnées en une stance) ; S1 (une mise en garde GEM dupliquée sous deux libellés et répartie sur deux sources → faux consensus 2/2)
+- unsupported_inference: INTERPRETATION carte GPT « architecture B est la plus robuste structurellement » (aucun fragment support) ; TYPE carte GPT « Architecture review » (l'objet audité est le système de prompts)
+
+UNRESOLVED
+
+- U1
+  - issue: provenance des deux variantes de GEM (même modèle en séquence ? deux modèles fusionnés dans un fichier ?) — discontinuités : vouvoiement/tutoiement, marqueurs « MD +2 » uniquement dans GEM-B
+  - why_unresolvable: aucune métadonnée de provenance dans le fichier ; indices stylistiques seulement
+  - impact_if_true (deux modèles): la fusion en 1 voix sous-compte N ; D1 devient une erreur de classification ; les poids et la majorité de la décision changent
+  - propagation_targets: ["signal", "scoring", "decision"]
+  - resolution_required_by: operator
+- U2
+  - issue: auteur et procédé de la compression sources → cartes (dans prompt_2eme.txt) inconnus
+  - why_unresolvable: aucune trace du processus de compression dans le corpus
+  - impact_if_true (compression par IA non tracée): les misattributions détectées ne sont probablement pas exhaustives ; d'autres distorsions peuvent subsister dans des champs non audités (INTERPRETATION, CONFIDENCE)
+  - propagation_targets: ["signal", "scoring"]
+  - resolution_required_by: operator
+- U3
+  - issue: identité des modèles auteurs de Retour_Croisé_Gemini_GPT.md et retour_2GPT.txt (déduite des noms de fichiers uniquement)
+  - why_unresolvable: pas de signature de modèle dans les contenus
+  - impact_if_true (tous GPT): la corrélation inter-niveaux D4 est maximale ; toute convergence GPT multi-niveaux doit être comptée une seule fois
+  - propagation_targets: ["scoring"]
+  - resolution_required_by: operator
+- U4
+  - issue: claim technique fondant S1 (« les informations cruciales ne sont presque jamais au tout début ou à la toute fin du fichier », GEM-B l.66) — plausible mais non vérifié sur les installateurs réels de la bibliothèque cible
+  - why_unresolvable: vérifiable uniquement par mesure sur données réelles, hors périmètre de l'audit documentaire
+  - impact_if_true/false: dimensionne le gain réel du pré-filtre hash et le périmètre du crash-test ; si faux, S1 perd sa base mécaniste
+  - propagation_targets: ["signal", "decision"]
+  - resolution_required_by: new_data
+- U5
+  - issue: claim quantitatif GEM-A (« divise immédiatement par 4 le goulet d'étranglement des I/O », l.9) — chiffre non mesuré
+  - why_unresolvable: aucun benchmark n'existe dans le projet (0 ligne de code)
+  - impact_if_true: néant ; impact_if_false: la validation S2 surestime le gain du pipeline mono-lecture
+  - propagation_targets: ["scoring", "decision"]
+  - resolution_required_by: new_data
+- U6
+  - issue: base des CONFIDENCE "élevée" déclarées dans les deux cartes
+  - why_unresolvable: aucune méthode de calibration déclarée ; valeurs auto-rapportées
+  - impact_if_true (confiances arbitraires): les colonnes "declared" du CONFIDENCE_AUDIT n'ont aucune valeur de référence ; seuls les "adjusted" sont exploitables
+  - propagation_targets: ["scoring"]
+  - resolution_required_by: operator
+- U7
+  - issue: les marqueurs « MD +2 » de GEM-B référencent des documents cités non présents dans le corpus
+  - why_unresolvable: les documents référencés sont inaccessibles à l'audit
+  - impact_if_true: certaines affirmations de GEM-B s'appuient sur un contexte que l'audit ne peut pas contre-vérifier
+  - propagation_targets: ["signal"]
+  - resolution_required_by: new_data
+- U8
+  - issue: l'agent exécutant cet audit est l'auteur de l'artefact ancre (conflit C3) — un biais de complaisance dans les mappings est indétectable de l'intérieur
+  - why_unresolvable: structurel à la session ; aucune couche interne ne peut être extérieure à elle-même
+  - impact_if_true: les mapping_type et les adjusted pourraient être systématiquement biaisés en faveur de l'ancre (à noter : les corrections effectives vont majoritairement contre les validations pro-ancre, ce qui borne le risque sans l'éliminer)
+  - propagation_targets: ["signal", "scoring", "decision"]
+  - resolution_required_by: external_verification
+- U9
+  - issue: étendue exacte du recouvrement entre l'objet audité par GPT (système de prompts) et l'objet de scoring (dossier d'architecture)
+  - why_unresolvable: la délimitation point par point exigerait une réinterprétation globale, interdite ; aucun périmètre déclaré dans la source
+  - impact_if_true (recouvrement plus faible que supposé): le poids 0.5 attribué en aval est surestimé ; N effectif < 1.5
+  - propagation_targets: ["scoring", "decision"]
+  - resolution_required_by: operator
+
+---
+Sortie TRACE complète ré-émise. Aucune source ni input modifié ; les valeurs ajustées sont identiques à l'audit initial ; le bloc UNRESOLVED expose désormais formellement ce qui n'était qu'en notes de bas d'audit — dont trois éléments (U1, U8, U9) propagent jusqu'à la couche décision.
+
+✻ Brewed for 1m 33s
+
+※ recap: Vous validez l'architecture d'installChecker via votre pipeline multi-IA. Le trace audit ré-exécuté avec bloc UNRESOLVED est livré : 9 points non résolus, dont U1, U8, U9 touchent la décision. Prochaine action : trancher U1 (provenance des deux variantes Gemini).
+
+> ROLE: PIPELINE ORCHESTRATOR
+
+  OBJECTIF:
+  Exécuter la pipeline complète sans réinterprétation ni ajout de connaissance.
+
+  --------------------------------------------
+
+  CONTRAINTES GLOBALES:
+
+  - Aucune création de nouveaux signaux
+  - Aucune interprétation hors source
+  - Aucun recalcul entre étapes
+  - Chaque étape utilise uniquement la sortie de l’étape précédente
+
+  --------------------------------------------
+
+  ÉTAPE 1 — TRACE_AUDITOR
+
+  INPUT:
+  - sources brutes uniquement
+
+  OUTPUT ATTENDU:
+  - EVIDENCE_MAP
+  - CONFIDENCE_AUDIT
+  - ERROR_DETECTION
+  - UNRESOLVED
+
+  STOP: ne rien faire d’autre à ce stade
+
+  --------------------------------------------
+
+  ÉTAPE 2 — FINAL_SCORING
+
+  INPUT:
+  - EVIDENCE_MAP
+  - CONFIDENCE_AUDIT
+  - SOURCE_WEIGHTS
+
+  RÈGLES:
+  - utiliser uniquement les signal_ids existants
+  - aucun consensus implicite
+  - aucun regroupement non présent dans TRACE
+
+  OUTPUT:
+  - architecture_option
+  - score (0–100)
+  - confidence (0–1)
+  - justification (signal_ids uniquement)
+
+  STOP
+
+  --------------------------------------------
+
+  ÉTAPE 3 — DECISION_GATE
+
+  INPUT:
+  - output FINAL_SCORING uniquement
+
+  RÈGLES:
+  - application de règles déterministes uniquement
+  - aucune réinterprétation
+
+  OUTPUT:
+  - DECISION TYPE
+  - selected option
+  - rationale (référence scoring uniquement)
+  - risk flags hérités
+
+  --------------------------------------------
+
+  RÈGLE FINALE:
+
+  TRACE → SCORING → DECISION = CHAÎNE LINÉAIRE STRICTE
+
+  Aucune boucle, aucune rétroaction, aucun enrichissement.
+
+J'exécute la chaîne. D'abord je charge les définitions exactes des étapes 2 et 3 du pipeline actif (scoring, decision gate, schéma de sortie, config des poids).
+
+  Read 4 files
+
+  /remote-control is active · Continue here, on your phone, or at https://claude.ai/code/session_01Pz4qxtv6czWEzkLby1EqtU
+
+Définitions chargées. Deux paramètres ne sont définis nulle part dans pileline/ : la formule de scoring et les seuils du gate. Je les déclare explicitement avant usage (sinon le déterminisme exigé serait fictif). Exécution linéaire stricte.
+
+---
+ÉTAPE 1 — TRACE_AUDITOR
+
+Sortie canonique = celle produite au tour précédent (mêmes sources, mêmes inputs, aucun recalcul). Rappel condensé transmis à l'étape 2 :
+
+EVIDENCE_MAP (condensé) — force probante par signal, avec facteur de mapping (exact=1.0, partial=0.5, inferred=0) :
+
+┌───────────┬──────────────────────────────────────────┬────────────────────────────────┬─────────────────────────────┐
+│ signal_id │          GEM (ancrage vérifié)           │     GPT (ancrage vérifié)      │ adjusted (CONFIDENCE_AUDIT) │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ ST-G      │ exact (GEM-A) + partial (GEM-B) → 0.75   │ —                              │ 0.70                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ ST-C      │ —                                        │ inferred → 0                   │ 0.25                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S1        │ exact ×2 intra-fichier → 1.0 (une voix)  │ aucun support                  │ 0.60                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S2        │ exact → 1.0                              │ partial → 0.5                  │ 0.70                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S3        │ exact (misattribué aux cartes GPT) → 1.0 │ aucun support                  │ 0.50                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S4        │ exact → 1.0                              │ contre-évidence partial → −0.5 │ 0.55                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S5        │ partial → 0.5                            │ partial → 0.5                  │ 0.75                        │
+├───────────┼──────────────────────────────────────────┼────────────────────────────────┼─────────────────────────────┤
+│ S6        │ exact (GEM-B) → 1.0                      │ exact → 1.0                    │ 0.85                        │
+└───────────┴──────────────────────────────────────────┴────────────────────────────────┴─────────────────────────────┘
+
+ERROR_DETECTION : hallucinated_signal = {ST-C, "séparation identity vs dedup"(carte GPT), "critique scoring instability"(carte GPT)} ; over_merged_signal = {ST-G, S1} ; unsupported_inference = {INTERPRETATION carte GPT, TYPE carte GPT}.
+UNRESOLVED : U1–U9 (dont U1, U8, U9 propagent vers decision).
+Contraintes dures pour l'aval : GEM = 1 voix unique ; S1 = 1/2 (pas de consensus) ; ST-C inexploitable ; S3 compté côté GEM ; indépendance GEM↔GPT partielle (ancrage C1) — S6 seul signal inter-modèles vérifié.
+
+STOP.
+
+ÉTAPE 2 — FINAL_SCORING
+
+INPUT : EVIDENCE_MAP + CONFIDENCE_AUDIT ci-dessus + SOURCE_WEIGHTS (couche contrôleur : GEM=1, GPT=0.5, tout le reste=0).
+
+Formule déclarée (transformation numérique pure, aucun ajout d'information) :
+valeur(signal) = adjusted × Σ_sources(poids × facteur_mapping) ; score = 100 × Σ valeurs / Σ max où max par signal = 1.5 (GEM 1×1.0 + GPT 0.5×1.0).
+
+Signaux admis au scoring de l'option (règles 1–2 : evidence-backed, inferred=nul) — ST-C exclu (inferred), S3 exclu du support d'option (porte sur la conception du moteur de scoring, pas sur le choix d'architecture ; conservé en risque), S1 exclu du support (contrainte de périmètre, pas un vote) :
+
+┌───────────┬──────────────────────────────────────────────────────────────────────────────┬──────────────────┐
+│ signal_id │                                force pondérée                                │      valeur      │
+├───────────┼──────────────────────────────────────────────────────────────────────────────┼──────────────────┤
+│ ST-G      │ 1×0.75 = 0.75                                                                │ 0.70×0.75 = 0.53 │
+├───────────┼──────────────────────────────────────────────────────────────────────────────┼──────────────────┤
+│ S2        │ 1×1.0 + 0.5×0.5 = 1.25                                                       │ 0.70×1.25 = 0.88 │
+├───────────┼──────────────────────────────────────────────────────────────────────────────┼──────────────────┤
+│ S4        │ 1×1.0 − 0.5×0.5 = 0.75                                                       │ 0.55×0.75 = 0.41 │
+├───────────┼──────────────────────────────────────────────────────────────────────────────┼──────────────────┤
+│ S5        │ 1×0.5 + 0.5×0.5 = 0.75                                                       │ 0.75×0.75 = 0.56 │
+├───────────┼──────────────────────────────────────────────────────────────────────────────┼──────────────────┤
+│ S6        │ 1×1.0 + 0.5×1.0 = 1.5 (règle 3 : seul boost multi-source autorisé par TRACE) │ 0.85×1.5 = 1.28  │
+└───────────┴──────────────────────────────────────────────────────────────────────────────┴──────────────────┘
+
+FINAL_SCORE:
+- architecture_option: B (au sens strict des preuves : la trajectoire A→B — c'est l'objet exact de ST-G et S6, pas un B verrouillé)
+- score: 49/100 (3.66 / 7.5)
+- confidence: 0.50 (moyenne des adjusted pondérée par la force = 0.68, plafonnée par les contraintes TRACE héritées : C1 ancrage sur les deux sources, U1/U9 propagés — facteur 0.75)
+- justification: support = [ST-G, S2, S5, S6] + [S4 amoindri par contre-évidence] ; exclus = [ST-C (inferred), S1 (contrainte, non-vote), S3 (hors objet)]
+
+STOP.
+
+ÉTAPE 3 — DECISION_GATE
+
+INPUT : FINAL_SCORE uniquement. Règles déterministes appliquées (déclarées, car absentes de la config) : score ≥70 ∧ conf ≥0.7 → ACCEPT ; 40 ≤ score <70 ∨ 0.4 ≤ conf <0.7 → PROVISIONAL_ACCEPT (advisory, gated) ; score <40 ∨ conf <0.4 → DEFER. Filtre decision_layer : confidence >0.6 → retenus {S6: 0.85, S5: 0.75, ST-G: 0.70, S2: 0.70} ; écartés {S1: 0.60, S4: 0.55, S3: 0.50, ST-C: 0.25} (S1 et S4 basculent en risk_map).
+
+- DECISION TYPE: PROVISIONAL_ACCEPT (advisory, gated) — déclenché par score=49 ∈ [40,70) ∧ conf=0.50 ∈ [0.4,0.7)
+- selected option: B — trajectoire A→B, verrouillage exclu du périmètre de la décision
+- rationale (références scoring uniquement) : score 49 porté à 61 % par S6+S2 (2.16/3.66), les deux seuls signaux à force ≥1.25 ; le signal dominant (S6) conditionne l'option à une validation empirique préalable — le gate encode donc cette condition dans le type de décision au lieu de l'ignorer
+- recommended_experiments (contenu de S6, seul signal filtré qui en prescrit) : crash-test minimal — 3 fichiers témoins (EXE Inno/NSIS, MSI, binaire sans métadonnées) → extraction + écriture SQLite
+- risk flags hérités : U1 (provenance GEM — peut re-pondérer la majorité), U8 (auto-audit — invalidable uniquement par vérification externe), U9 (recouvrement GPT — peut réduire N sous 1.5) ; risk_map sous-seuil : S1 (le pré-filtre hash ne couvre pas l'identification — borne le bénéfice attendu de B), S4 (choix C#/.NET contesté processuellement, non verrouillé)
+
+SORTIE FINALE (OUTPUT_SCHEMA)
+
+RESULT:
+  decision: "PROVISIONAL_ACCEPT — architecture B via trajectoire A→B, gated sur crash-test empirique ; verrouillage ADR hors périmètre"
+  confidence: 0.50
+  supporting_evidence: ["S6", "S2", "S5", "ST-G"]
+  rejected_signals: ["ST-C", "S3", "S1", "S4"]
+
+TRACE_SUMMARY:
+  number_of_sources: 2        # éligibles au scoring (GEM poids 1, GPT poids 0.5)
+  number_of_signals: 8        # ST-G, ST-C, S1–S6
+  number_of_invalidated_signals: 3   # ST-C + 2 signaux de cartes sans support (hallucinated)
+
+Chaîne exécutée TRACE → SCORING → DECISION, sans boucle ni enrichissement. Deux paramètres ont dû être déclarés en cours d'exécution faute de définition dans pileline/00_config (formule de scoring, seuils du gate) — à figer dans PIPELINE_CONFIG.md pour que les prochains runs soient réellement déterministes et comparables.
+
+✻ Sautéed for 1m 49s
+
+※ recap: Vous validez l'architecture d'installChecker via votre pipeline multi-IA. La chaîne complète a tourné : décision PROVISIONAL_ACCEPT pour la trajectoire A vers B, confiance 0.50. Prochaine action : le crash-test empirique sur 3 fichiers témoins (EXE, MSI, binaire nu).
+
+> ROLE: PROJECT ORCHESTRATOR
+
+  CHANGEMENT DE PHASE
+
+  Le pipeline d'analyse IA est désormais considéré comme **gelé**.
+  Il constitue une documentation de conception et un système de validation de référence. Sauf découverte d'un problème bloquant lors de l'implémentation, il ne doit plus être modifié.
+  Ne propose pas de nouvelles couches, de nouveaux prompts ou de nouvelles améliorations du pipeline de ta propre initiative.
+
+  ---
+
+  NOUVEL OBJECTIF
+
+  Nous basculons maintenant sur le développement de l'application InstallChecker.
+  Le pipeline n'est plus le produit.
+  Le produit est l'application.
+  Le pipeline ne sert plus qu'à justifier les décisions d'architecture lorsqu'un arbitrage est nécessaire.
+
+  ---
+
+  RÈGLES
+
+  * Ne plus raisonner comme un concepteur de pipeline.
+  * Raisonner comme un architecte logiciel et un développeur.
+  * Les décisions doivent privilégier la simplicité tant qu'aucune mesure ne justifie une optimisation.
+  * Aucun code spéculatif.
+  * Une fonctionnalité à la fois.
+  * Chaque étape doit produire une application exécutable.
+  * Ne jamais casser une fonctionnalité déjà validée.
+
+  ---
+
+  PLAN DE DÉVELOPPEMENT
+
+  Commencer par construire le squelette de la solution.
+
+  Ordre souhaité :
+
+  1. Création de la solution .NET.
+  2. Création des projets.
+  3. Définition des interfaces publiques.
+  4. Implémentation minimale permettant de scanner un dossier.
+  5. Calcul SHA256.
+  6. Stockage SQLite.
+  7. Première exécution complète.
+
+  Aucun parallélisme.
+  Aucune optimisation.
+  Aucune logique d'identité.
+  Aucun moteur de décision.
+  Aucune signature numérique.
+  Aucune lecture PE/MSI/NSIS/Inno tant que la chaîne minimale n'est pas validée.
+
+  ---
+
+  MODE DE TRAVAIL
+
+  Nous travaillons incrémentalement.
+  Tu dois proposer une étape réalisable, la faire implémenter, attendre la validation, puis seulement passer à l'étape suivante.
+  Ne tente jamais d'implémenter plusieurs grandes fonctionnalités en une seule fois.
+  Le dépôt Git est la source de vérité. Base-toi sur son état actuel avant toute proposition.
+
+Phase de développement acceptée. Avant toute proposition, je vérifie l'état réel : le répertoire n'était pas un dépôt Git au démarrage de la session, et je dois connaître le SDK .NET disponible.
+
+  Ran 6 shell commands
+
+● Write(src\InstallChecker\Program.cs)
+Error writing file
+
+  Read 1 file
+
+● Write(src\InstallChecker\Program.cs)
+Added 4 lines, removed 1 line
+Console.WriteLine("Hello, World!");
+// Étape 1 : squelette exécutable. La commande "scan" arrive à l'étape suivante.
+Console.WriteLine("InstallChecker 0.1.0 — squelette");
+Console.WriteLine("Usage à venir : installchecker scan <dossier>");
+return 0;
+
+  Ran 1 shell command
+
+Compilation et exécution vérifiées. Je fige l'étape dans Git (commit initial : documentation gelée du pipeline + squelette).
+
+  Ran 1 shell command
+
+Étape 1 terminée et vérifiée. État du dépôt :
+
+- SDK .NET 10 installé (10.0.301) — il n'y avait aucun SDK sur la machine, seulement le runtime.
+- Dépôt Git initialisé avec un .gitignore .NET standard ; commit initial créé (squelette + documentation de conception gelée, y compris validation_layer.txt que vous avez ajouté entre-temps).
+- Solution InstallChecker.sln + un unique projet console src/InstallChecker (.NET 10). Compile sans avertissement, s'exécute, code retour 0.
+
+Écart assumé par rapport à votre plan : les points 1 et 2 (« solution » et « projets ») sont fusionnés en une étape, car une solution vide ne satisfait pas votre règle « chaque étape produit une application exécutable ». Et « projets » est au singulier — un seul projet console suffit ; un projet de tests sera ajouté à l'étape du scan (première logique à tester), pas avant.
+
+Proposition pour l'étape suivante (points 3–4 du plan, sur validation) : la commande scan <dossier> — énumération récursive séquentielle, filtrage sur les extensions cibles (.exe, .msi, .msix, .appx, .appxbundle, .zip), sortie console chemin + taille, gestion d'erreur par fichier (répertoire inaccessible ≠ crash). Les « interfaces publiques » du point 3 seront réduites au strict besoin de cette étape — vraisemblablement un seul type FileRecord et une fonction d'énumération, rien de plus tant que rien ne les consomme.
+
+J'attends votre validation avant d'implémenter.
+
+✻ Baked for 4m 13s
+
+> /model
+  ⎿  Kept model as Fable 5
+
+> Validation de l'étape suivante avec un ajustement.
+
+  Je souhaite conserver l'approche incrémentale, mais éviter toute logique métier prématurée.
+
+  Pour cette étape, les objectifs sont uniquement :
+
+  * implémenter la commande `scan <directory>`;
+  * parcourir récursivement un répertoire de manière séquentielle ;
+  * ne jamais interrompre le scan lorsqu'un fichier ou un dossier est inaccessible ;
+  * afficher le chemin complet et la taille de chaque fichier rencontré ;
+  * retourner un code de sortie cohérent (0 si le scan s'est terminé, même avec des erreurs locales ; code non nul uniquement en cas d'erreur fatale comme un argument invalide ou un dossier racine inexistant).
+
+  Je ne souhaite **pas** filtrer les extensions à ce stade.
+
+  Le scanner doit parcourir tous les fichiers. Le filtrage des installateurs sera une étape ultérieure, car il constitue une responsabilité différente de l'énumération du système de fichiers.
+
+  Je souhaite également éviter de figer des modèles métier prématurément.
+
+  Ne crée donc pas encore de `FileRecord` si ce type n'est pas immédiatement nécessaire. Préfère une implémentation minimale permettant de valider le parcours du système de fichiers. Les abstractions seront introduites uniquement lorsqu'elles deviendront utiles.
+
+  Une fois cette étape terminée et validée, nous passerons à l'ajout progressif des métadonnées (hash, type de fichier, etc.).
+
+
+Validation reçue, ajustements intégrés (pas de filtre d'extensions, pas de FileRecord). J'implémente le scan minimal — avec un projet de tests xunit, puisque c'est la première logique testable (CLAUDE.md : tests unitaires obligatoires).
+
+Point technique : .NET fournit nativement l'énumération tolérante aux erreurs (EnumerationOptions.IgnoreInaccessible) — aucun code de récursion manuelle à écrire.
+
+● Write(src\InstallChecker\ScanCommand.cs)
+Wrote 41 lines to src\InstallChecker\ScanCommand.cs
+namespace InstallChecker;
+
+public static class ScanCommand
+{
+    /// <summary>Parcourt récursivement <paramref name="root"/> et écrit "chemin complet TAB taille" par fichier.</summary>
+    /// <returns>0 si le scan s'est terminé (même avec erreurs locales), 1 si le dossier racine est invalide.</returns>
+    public static int Run(string root, TextWriter output, TextWriter errors)
+    {
+        if (!Directory.Exists(root))
+        {
+… +31 lines
+
+● Write(src\InstallChecker\Program.cs)
+Added 7 lines, removed 4 lines
+// Étape 1 : squelette exécutable. La commande "scan" arrive à l'étape suivante.
+Console.WriteLine("InstallChecker 0.1.0 — squelette");
+Console.WriteLine("Usage à venir : installchecker scan <dossier>");
+return 0;
+using InstallChecker;
+
+if (args is ["scan", var root])
+    return ScanCommand.Run(root, Console.Out, Console.Error);
+
+Console.Error.WriteLine("Usage : installchecker scan <dossier>");
+return 2;
+
+  Ran 1 shell command
+
+● Write(tests\InstallChecker.Tests\ScanCommandTests.cs)
+Wrote 59 lines to tests\InstallChecker.Tests\ScanCommandTests.cs
+sing InstallChecker;
+
+amespace InstallChecker.Tests;
+
+ublic class ScanCommandTests : IDisposable
+
+   private readonly string _root = Directory.CreateTempSubdirectory("installchecker-test-").FullName;
+
+   public void Dispose() => Directory.Delete(_root, recursive: true);
+… +49 lines
+
+  Ran 4 shell commands
+
+Étape scan terminée, vérifiée et commitée.
+
+Ce qui a été livré, conforme à vos ajustements :
+
+- installchecker scan <dossier> — parcours récursif séquentiel, aucun filtre d'extension, aucun type métier (pas de FileRecord : la sortie est directement chemin<TAB>taille sur stdout, une ligne par fichier).
+- La tolérance aux erreurs est déléguée à la plateforme : EnumerationOptions { IgnoreInaccessible, RecurseSubdirectories } + fichiers cachés/système inclus. Zéro récursion manuelle écrite.
+- Codes de sortie : 0 scan terminé (même avec erreurs locales), 1 racine inexistante, 2 usage invalide. Résumé (N fichiers, M erreurs) sur stderr pour garder stdout machine-parsable.
+- 4 tests unitaires (récursion + tailles, fichiers cachés, dossier vide, racine manquante) — tous verts.
+- Vérifié de bout en bout : 2 754 fichiers listés sous C:\ProgramData\Microsoft malgré ses sous-dossiers à accès refusé, sortie 0, aucune interruption ; cas fatals 1 et 2 confirmés.
+
+Un choix à noter : le cœur est une fonction ScanCommand.Run(root, output, errors) plutôt que du code inline dans Program.cs — uniquement pour la testabilité (injection des flux), pas une abstraction métier.
+
+Proposition d'étape suivante (point 5 du plan) : ajout du SHA-256 — une colonne de plus sur chaque ligne de sortie (chemin<TAB>taille<TAB>sha256), calcul en flux (SHA256.HashData sur le stream, jamais le fichier entier en mémoire), erreur de lecture d'un fichier = ligne d'erreur locale sur stderr et le scan continue. Toujours séquentiel, aucun cache, aucun hash partiel.
+
+J'attends votre validation.

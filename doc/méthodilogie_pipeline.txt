@@ -1,0 +1,205 @@
+Campagne de mesure — validation du pipeline d'observation sur corpus réel
+
+Méthodologie uniquement. Pipeline figé : aucune mesure ci-dessous ne requiert de modification du code — tout s'obtient par chronométrage externe, lecture de la base produite et capture de stderr. Une limitation est actée d'emblée : aucun timing par capacité n'est possible sans instrumenter le code (interdit) ; la campagne mesure le bout-en-bout, et c'est suffisant pour l'objectif.
+
+---
+1. Objectifs de la campagne
+
+┌───────────────────────────────────┬────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│              Mesure               │                        Comment                         │                                                Justification                                                │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Temps total de scan               │ Measure-Command (externe) + recoupement interne        │ Établit la ligne de base de performance — première mesure jamais faite ; toute optimisation future devra se │
+│                                   │ MIN/MAX(scanned_at)                                    │  justifier contre elle (règle absolue de CLAUDE.md)                                                         │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Débit (fichiers/s et Mo/s)        │ Dérivé : nombre d'observations / durée, SUM(size) /    │ Le Mo/s dit si le goulot est bien l'I/O disque (prédiction jamais vérifiée du dossier d'architecture) ; le  │
+│                                   │ durée                                                  │ fichiers/s dimensionne le passage à l'échelle                                                               │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Taille de la base SQLite          │ Taille fichier + PRAGMA page_count × page_size         │ Ratio octets-base / octets-corpus = coût de stockage des observations ; dimensionne la faisabilité sur      │
+│                                   │                                                        │ bibliothèque complète                                                                                       │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Mémoire crête                     │ Échantillonnage externe du WorkingSet du processus     │ Vérifie le comportement streaming revendiqué (hash en flux, channels absents) : la crête doit être          │
+│                                   │ pendant le run                                         │ indépendante de la taille du corpus — c'est mesurable en comparant les trois corpus                         │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Taux d'erreurs locales            │ Comptage des lignes Erreur : de stderr + ligne résumé  │ Quantifie la robustesse réelle (fichiers verrouillés, ACL) ; rappel : ces fichiers sont absents de la base  │
+│                                   │                                                        │ (décision actée), stderr est donc la seule source                                                           │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Répartition des conteneurs        │ SQL (§3, R4)                                           │ Première photographie du corpus réel — proportion de PE/ZIP/OLE/inconnus                                    │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Présence VersionInfo /            │ SQL (R5–R8)                                            │ L'entrée de conception du futur moteur d'identité : quels signaux existent réellement, à quelle fréquence — │
+│ Authenticode / MSI / AppX         │                                                        │  sans ces distributions, le moteur serait conçu sur des suppositions                                        │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Taux de NULL par colonne          │ SQL (R9)                                               │ Mesure la qualité de chaque signal, pas seulement sa présence (ex. VersionInfo présent mais ProductName     │
+│                                   │                                                        │ vide)                                                                                                       │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Multiplicité des sha256           │ SQL (R10)                                              │ Mesure factuelle de la redondance du corpus (aucune déduplication appliquée) : dimensionne le travail futur │
+│                                   │                                                        │  et vérifie l'append-only sous re-scan                                                                      │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Distribution des tailles de       │ SQL (R11)                                              │ Explique le débit (un corpus de gros MSI ne se compare pas à un corpus de petits EXE) et calibre les futurs │
+│ fichiers                          │                                                        │  jeux de test                                                                                               │
+├───────────────────────────────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Reproductibilité                  │ Double scan du même corpus inchangé, comparaison des   │ Exigence explicite de CLAUDE.md (§2) jamais testée à l'échelle ; mesurable par égalité stricte              │
+│                                   │ dumps triés (hors id/scanned_at)                       │                                                                                                             │
+└───────────────────────────────────┴────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+2. Jeux de données
+
+Corpus 1 — validation (~200–500 fichiers, quelques Go max). Mélange contrôlé et connu : quelques installateurs EXE/MSI/MSIX réels, DLL système, fichiers quelconques, un fichier verrouillé volontairement. Avantages : exécution en secondes, permet de roder le protocole complet (commandes, requêtes, rapport) sans coût ; les résultats attendus sont vérifiables à la main. Limites : aucune valeur statistique ; ne teste ni l'échelle ni la diversité.
+
+Corpus 2 — représentatif (~5 000–20 000 fichiers). Un sous-ensemble réel de la bibliothèque cible (par exemple un sous-arbre de téléchargements/installateurs), non trié, non nettoyé. Avantages : distributions statistiquement significatives ; durée encore confortable (minutes) permettant les runs répétés (reproductibilité, cache froid/chaud). Limites : le biais de sélection du sous-arbre peut fausser les proportions de formats ; ne révèle pas les problèmes d'échelle (taille de base, mémoire sur la durée).
+
+Corpus 3 — bibliothèque complète (l'objectif : centaines de milliers de fichiers). Avantages : c'est la seule mesure qui valide réellement la contrainte fondatrice du projet ; révèle ce que les petits corpus cachent (durée totale, croissance de la base, comportement HDD vs SSD, cas pathologiques rares). Limites : coûteux (heures), donc exécuté une fois le protocole rodé sur les corpus 1–2 ; difficile à répéter, donc la reproductibilité se vérifie sur le corpus 2.
+
+Ordre d'exécution : 1 → 2 → 3. Le corpus 2 est celui des runs multiples ; le corpus 3 est le test d'échelle unique.
+
+3. Requêtes SQL d'analyse
+
+R1 — Totaux et durée interne
+SELECT COUNT(*)                                   AS observations,
+       SUM(size)                                  AS octets_corpus,
+       MIN(scanned_at)                            AS debut,
+       MAX(scanned_at)                            AS fin,
+       ROUND((julianday(MAX(scanned_at)) - julianday(MIN(scanned_at))) * 86400, 1) AS duree_s
+FROM scan_observations;
+
+R2 — Invariant 1:1 (les 6 tables de capacités)
+SELECT (SELECT COUNT(*) FROM scan_observations) AS obs,
+       (SELECT COUNT(*) FROM file_headers)      AS headers,
+       (SELECT COUNT(*) FROM pe_info)           AS pe,
+       (SELECT COUNT(*) FROM version_info)      AS version,
+       (SELECT COUNT(*) FROM authenticode)      AS auth,
+       (SELECT COUNT(*) FROM msi_properties)    AS msi,
+       (SELECT COUNT(*) FROM appx_manifest)     AS appx;
+
+R3 — Orphelins (à répéter pour chacune des 6 tables)
+SELECT COUNT(*) FROM file_headers h
+LEFT JOIN scan_observations o ON o.id = h.observation_id
+WHERE o.id IS NULL;
+
+R4 — Répartition des conteneurs
+SELECT COALESCE(container, '(null)') AS conteneur, COUNT(*) AS n,
+       ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM file_headers), 2) AS pct
+FROM file_headers GROUP BY container ORDER BY n DESC;
+
+R5 — Présence des signaux par capacité
+SELECT
+  (SELECT COUNT(*) FROM version_info  WHERE product_name IS NOT NULL OR company_name IS NOT NULL
+                                         OR product_version IS NOT NULL OR file_version IS NOT NULL) AS version_info_present,
+  (SELECT COUNT(*) FROM authenticode  WHERE thumbprint IS NOT NULL)   AS certificats_observes,
+  (SELECT COUNT(*) FROM msi_properties WHERE product_code IS NOT NULL) AS msi_renseignes,
+  (SELECT COUNT(*) FROM appx_manifest WHERE name IS NOT NULL)          AS manifestes_appx;
+
+R6 — Croisement conteneur × signaux (disponibilité des signaux là où le moteur d'identité les attendra)
+SELECT COALESCE(h.container, '(null)') AS conteneur,
+       COUNT(*)                                        AS n,
+       SUM(v.product_name IS NOT NULL)                 AS avec_product_name,
+       SUM(a.thumbprint IS NOT NULL)                   AS avec_certificat,
+       SUM(m.product_code IS NOT NULL)                 AS avec_msi_props,
+       SUM(x.name IS NOT NULL)                         AS avec_appx_manifest
+FROM file_headers h
+JOIN version_info   v ON v.observation_id = h.observation_id
+JOIN authenticode   a ON a.observation_id = h.observation_id
+JOIN msi_properties m ON m.observation_id = h.observation_id
+JOIN appx_manifest  x ON x.observation_id = h.observation_id
+GROUP BY h.container ORDER BY n DESC;
+
+R7 — Structure PE observée
+SELECT machine, optional_header_magic, COUNT(*) AS n
+FROM pe_info WHERE machine IS NOT NULL
+GROUP BY machine, optional_header_magic ORDER BY n DESC;
+
+R8 — Éditeurs signataires observés (fréquences brutes, aucune identification)
+SELECT subject, COUNT(*) AS n FROM authenticode
+WHERE subject IS NOT NULL GROUP BY subject ORDER BY n DESC LIMIT 25;
+
+R9 — Taux de NULL par colonne (exemple version_info ; à décliner par table)
+SELECT COUNT(*) AS n,
+       ROUND(100.0 * SUM(product_name   IS NULL) / COUNT(*), 2) AS pct_null_product_name,
+       ROUND(100.0 * SUM(company_name   IS NULL) / COUNT(*), 2) AS pct_null_company_name,
+       ROUND(100.0 * SUM(product_version IS NULL) / COUNT(*), 2) AS pct_null_product_version,
+       ROUND(100.0 * SUM(file_version   IS NULL) / COUNT(*), 2) AS pct_null_file_version
+FROM version_info;
+
+R10 — Multiplicité des sha256 (mesure de redondance, sans déduplication)
+SELECT COUNT(*) AS observations, COUNT(DISTINCT sha256) AS contenus_distincts FROM scan_observations;
+-- et les plus fréquents :
+SELECT sha256, COUNT(*) AS n FROM scan_observations
+GROUP BY sha256 HAVING n > 1 ORDER BY n DESC LIMIT 10;
+
+R11 — Distribution des tailles
+SELECT CASE WHEN size < 1048576 THEN 'a. < 1 Mo'
+            WHEN size < 10485760 THEN 'b. 1-10 Mo'
+            WHEN size < 104857600 THEN 'c. 10-100 Mo'
+            WHEN size < 1073741824 THEN 'd. 100 Mo - 1 Go'
+            ELSE 'e. > 1 Go' END AS classe,
+       COUNT(*) AS n, ROUND(SUM(size) / 1048576.0) AS mo_total
+FROM scan_observations GROUP BY classe ORDER BY classe;
+
+R12 — Taille de la base
+SELECT page_count * page_size / 1048576.0 AS taille_base_mo
+FROM pragma_page_count(), pragma_page_size();
+
+4. Rapport attendu
+
+Un fichier par corpus : docs/mesures/rapport-AAAA-MM-JJ-corpus<N>.md, archivé dans Git avec ses annexes brutes. Structure exacte :
+
+# Rapport de mesure — corpus <N> (<libellé>)
+## 1. Environnement                ← reproductibilité
+   - commit Git du binaire mesuré (hash complet)
+   - configuration de build (Release), version SDK .NET, version Windows
+   - matériel : CPU, RAM, type de disque du corpus (NVMe/SATA/HDD) et de la base
+   - état du cache disque (froid : premier run après redémarrage / chaud : run n)
+## 2. Corpus
+   - chemin racine, nombre de fichiers attendus, volume total (octets)
+   - mode de constitution (critère de sélection, date de gel)
+## 3. Protocole (commandes exactes, copiables)
+   - commande de scan (base neuve, chemin, redirections stdout/stderr vers fichiers)
+   - commande de chronométrage, commande d'échantillonnage mémoire
+   - liste des requêtes R1–R12 exécutées (référence au fichier .sql versionné)
+## 4. Résultats bruts
+   - tableau : durée externe / durée interne (R1) / débit fichiers/s / débit Mo/s
+   - mémoire crête ; taille base (R12) ; ratio base/corpus
+   - erreurs : total stderr, ligne résumé du scan
+   - sorties complètes R2→R11 (tableaux)
+## 5. Contrôles d'intégrité
+   - R2 : égalité stricte des 7 comptes — PASS/FAIL
+   - R3 ×6 : zéro orphelin — PASS/FAIL
+   - double run (corpus 2) : égalité des dumps triés hors id/scanned_at — PASS/FAIL
+## 6. Anomalies constatées
+   - liste factuelle (fichier, symptôme, ligne stderr) — sans diagnostic ni correctif
+## 7. Verdict par critère (§5 ci-dessous, PASS/FAIL par ligne)
+Annexes (versionnées à côté) : stderr complet, sorties SQL en CSV, script .sql utilisé
+
+Reproductible = un tiers peut relancer les mêmes commandes sur le même commit et le même corpus gelé, et obtenir les mêmes valeurs (aux durées près, qui doivent rester dans le même ordre de grandeur).
+
+5. Critères de validation
+
+Tous mesurables, binaires, sans interprétation :
+
+┌─────┬───────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
+│  #  │        Critère        │                                          Mesure                                          │                                      Seuil                                      │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C1  │ Terminaison           │ Code de sortie du scan sur les 3 corpus                                                  │ = 0 partout, zéro crash                                                         │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C2  │ Complétude            │ Nombre d'observations = nombre de lignes stdout ; chaque fichier énuméré est soit en     │ Écart = 0                                                                       │
+│     │                       │ base, soit dans stderr                                                                   │                                                                                 │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C3  │ Intégrité 1:1         │ R2 : les 7 comptes                                                                       │ Strictement égaux                                                               │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C4  │ Intégrité             │ R3 sur les 6 tables                                                                      │ 0 orphelin partout                                                              │
+│     │ référentielle         │                                                                                          │                                                                                 │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C5  │ Validité des hash     │ SELECT COUNT(*) FROM scan_observations WHERE length(sha256) <> 64                        │ = 0                                                                             │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C6  │ Reproductibilité      │ Double scan du corpus 2 gelé : dumps triés (hors id, scanned_at)                         │ Identiques octet pour octet                                                     │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C7  │ Mémoire bornée        │ Crête WorkingSet sur corpus 1, 2, 3                                                      │ Crête corpus 3 du même ordre que corpus 2 (croissance non proportionnelle au    │
+│     │                       │                                                                                          │ nombre de fichiers)                                                             │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C8  │ Erreurs expliquées    │ Chaque ligne stderr correspond à un fichier précis avec un message d'API                 │ 0 erreur sans fichier identifiable                                              │
+├─────┼───────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ C9  │ Baseline établie      │ Durée, débits, taille de base, distributions R4–R11                                      │ Présents et archivés (pas de seuil : première mesure = référence)               │
+└─────┴───────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
+
+Règle de lecture : C1–C8 tous PASS → le pipeline est déclaré apte à servir de fondation, et les distributions de C9 deviennent le document d'entrée de la phase « moteur d'identité ». Un seul FAIL → la campagne s'arrête, l'anomalie est documentée en §6 du rapport et traitée comme bug réel (seul cas de modification autorisé du pipeline figé) avant toute nouvelle phase.
+
+Aucun code généré, aucun fichier modifié. Prêt à exécuter la campagne sur le corpus 1 dès que vous me fournissez (ou me laissez constituer) le dossier de validation.
