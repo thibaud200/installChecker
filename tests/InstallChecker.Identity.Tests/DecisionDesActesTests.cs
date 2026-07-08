@@ -207,6 +207,17 @@ public class DecisionDesActesTests
         });
     }
 
+    // --- B (audit final, A5) : Ω vide — aucun acte d'observation, aucun domaine-strate non trivial, aucun acte de W (014 C5, 009 § 5) ---
+
+    [Fact]
+    public void Omega_vide_ne_produit_aucun_acte()
+    {
+        var actes = DecisionDesActes.Decider([], ReferentielReel(), []);
+
+        Assert.Empty(actes.Elections);
+        Assert.Empty(actes.Refus);
+    }
+
     // --- adaptateur mémoire identique à SQLite ---
 
     [Fact]

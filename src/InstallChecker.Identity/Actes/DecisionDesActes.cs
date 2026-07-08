@@ -61,6 +61,12 @@ public static class DecisionDesActes
     {
         var domaineMaximal = identifiantsDesActes.Distinct().OrderBy(id => id).ToList();
 
+        // Ω vide : aucun acte d'observation, donc aucun domaine-strate à espace non trivial (014 C5 :
+        // « pour chaque domaine-strate à espace non trivial, exactement un acte » ; 009 § 5, constat de
+        // vacuité). Le domaine d'un acte de W est une énumération d'identifiants couverts (014 § 7.3) —
+        // un refus sur domaine vide ne couvre rien et n'existe pas. W reste entier : simplement sans acte.
+        if (domaineMaximal.Count == 0) return [];
+
         return
         [
             new Refus(Strate.Variante, domaineMaximal, Espece.Normatif, MotifAucuneConventionStrate),

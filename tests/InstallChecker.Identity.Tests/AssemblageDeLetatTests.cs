@@ -259,6 +259,22 @@ public class AssemblageDeLetatTests
         Assert.All(w1.Actes.Where(a => a.Type == TypeActe.Refus), r => Assert.Equal(498, r.Domaine.Count));
     }
 
+    // --- B (audit final, A5) : Ω vide traverse tout le pipeline et produit un W entier, sans acte — jamais une exception (011 §§ 4-5) ---
+
+    [Fact]
+    public void Omega_vide_produit_un_W_entier_sans_acte()
+    {
+        var modele = new ModeleObservations([]);
+        var referentiel = ReferentielReel();
+
+        var w = AssemblerDepuisOracle(modele, referentiel);
+
+        Assert.Equal(0, w.Index.Omega.NombreActes);
+        Assert.Matches("^[0-9a-f]{64}$", w.Index.Omega.EmpreinteEtat);
+        Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], w.Index.Registre);
+        Assert.Empty(w.Actes);
+    }
+
     // --- calcul correct de τ (006 § 7, 014 § 7.5) ---
 
     [Fact]

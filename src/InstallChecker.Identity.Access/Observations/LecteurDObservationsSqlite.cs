@@ -52,7 +52,7 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
             while (lecteur.Read())
             {
                 contextes.Add(new ContexteObservation(
-                    lecteur.GetInt64(0),
+                    LireEntierObligatoire(lecteur, 0, "scan_observations", "id"),
                     LireTexteObligatoire(lecteur, 1, "scan_observations", "path"),
                     LireTexteObligatoire(lecteur, 2, "scan_observations", "scanned_at")));
             }
@@ -111,9 +111,17 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
             using var lecteur = commande.ExecuteReader();
             while (lecteur.Read())
             {
-                actes.Add(lecteur.GetInt64(0), (
+                // « acte sans identifiant » et identifiant dupliqué sont des violations nommées du
+                // contrat de Ω (014 C1, clause « refuse » ; 014 § 6 : « identifiant unique, stable ») :
+                // « Ω invalide », jamais une exception .NET (011 § 5).
+                var id = LireEntierObligatoire(lecteur, 0, "scan_observations", "id");
+                if (!actes.TryAdd(id, (
                     LireEntierObligatoire(lecteur, 1, "scan_observations", "size"),
-                    LireTexteObligatoire(lecteur, 2, "scan_observations", "sha256")));
+                    LireTexteObligatoire(lecteur, 2, "scan_observations", "sha256"))))
+                {
+                    throw new OmegaInvalideException(
+                        $"scan_observations : identifiant d'acte dupliqué : {id} (014 § 6 : identifiant unique)");
+                }
             }
         }
         catch (SqliteException ex)
@@ -145,9 +153,15 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
             var colonnes = Enumerable.Range(0, lecteur.FieldCount).Select(lecteur.GetName).ToList();
             var indexObservationId = colonnes.IndexOf("observation_id");
 
+            if (indexObservationId < 0)
+            {
+                throw new OmegaInvalideException(
+                    $"{table} : colonne observation_id absente (structure inattendue — 011 § 5)");
+            }
+
             while (lecteur.Read())
             {
-                var observationId = lecteur.GetInt64(indexObservationId);
+                var observationId = LireEntierObligatoire(lecteur, indexObservationId, table, "observation_id");
 
                 if (!attributsParActe.TryGetValue(observationId, out var attributs))
                 {
