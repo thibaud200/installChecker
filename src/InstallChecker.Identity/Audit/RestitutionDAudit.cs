@@ -40,7 +40,11 @@ public static class RestitutionDAudit
     {
         if (acte.Type != TypeActe.Election)
         {
-            throw new InvalidOperationException("PourquoiCetteElection ne s'applique qu'à une élection");
+            // La question désigne une élection qui n'existe pas dans le W désigné (l'acte y est un
+            // refus) : c'est exactement la seule clause de refus du contrat de C7 (014 C7) — jamais
+            // une exception générique.
+            throw new ActeInexistantDansWException(
+                $"« pourquoi cette élection ? » : aucune élection (strate={acte.Strate}, domaine=[{string.Join(",", acte.Domaine)}]) dans le W désigné — l'acte y est un refus");
         }
 
         var hypothese = TrouverHypothese(acte, hypotheses)
@@ -66,18 +70,21 @@ public static class RestitutionDAudit
     {
         if (acte.Type != TypeActe.Refus)
         {
-            throw new InvalidOperationException("PourquoiCeRefus ne s'applique qu'à un refus");
+            // Symétrique de PourquoiCetteElection : la question désigne un refus inexistant dans le
+            // W désigné (l'acte y est une élection) — la seule clause de refus du contrat (014 C7).
+            throw new ActeInexistantDansWException(
+                $"« pourquoi ce refus ? » : aucun refus (strate={acte.Strate}, domaine=[{string.Join(",", acte.Domaine)}]) dans le W désigné — l'acte y est une élection");
         }
 
-        if (!RuptureParMotif.TryGetValue(acte.Motif, out var rupture))
-        {
-            throw new InvalidOperationException($"motif de refus non reconnu par C7 : {acte.Motif}");
-        }
+        // Le motif d'un refus appartient au vocabulaire normalisé (014 § 7.4), extensible par les
+        // documents futurs : un motif que cette table n'enrichit pas encore est restitué tel quel —
+        // il EST « le motif exact » que le contrat d'audit exige (011 § 7) — jamais une exception.
+        var manque = RuptureParMotif.TryGetValue(acte.Motif, out var rupture) ? rupture.Manque : acte.Motif;
 
-        var hypothese = TrouverHypothese(acte, hypotheses);
-        var maillons = new List<Maillon> { MaillonObservationsDuDomaine(acte, hypothese) };
+        var hypothesesDuRefus = TrouverHypothesesDuRefus(acte, hypotheses);
+        var maillons = new List<Maillon> { MaillonObservationsDuDomaine(acte, hypothesesDuRefus) };
 
-        if (hypothese is not null)
+        foreach (var hypothese in hypothesesDuRefus)
         {
             var statutSignal = hypothese.Sig.Any(s => s.Regime != Regime.Exact) ? StatutMaillon.PorteRegime : StatutMaillon.Nominal;
             maillons.Add(new Maillon(Couche.C3, hypothese.Obs, hypothese.ConventionsMobilisees,
@@ -85,16 +92,23 @@ public static class RestitutionDAudit
             maillons.Add(new Maillon(Couche.C4, hypothese.Obs, [], $"hypothèse : {hypothese.Justification}", StatutMaillon.Nominal));
         }
 
-        return new Chaine(maillons, rupture.Manque);
+        return new Chaine(maillons, manque);
     }
 
     /// <summary>« De quelles conventions dépend cet acte ? » (011 § 7) : Dep et dette déjà portés par l'acte — jamais recalculés.</summary>
     public static DependancesReponse DeQuellesConventionsDependCetActe(ActeW acte) =>
         new(acte.Dependances ?? [], acte.Dette ?? []);
 
-    /// <summary>« De quelles observations dépend-il ? » (011 § 7) : Obs trié, porté par l'hypothèse qui le fonde — absent si aucune n'existe.</summary>
+    /// <summary>
+    /// « De quelles observations dépend-il ? » (011 § 7) : Obs trié, porté par les hypothèses qui le
+    /// fondent — absent si aucune n'existe. La réponse est une fonction de (acte, index) (014 § 9) :
+    /// pour un refus, elle est identique que C6 ait agrégé ou non les refus élémentaires (l'agrégation
+    /// est une mise en forme, 014 § 7.3) — l'union des Obs des hypothèses couvertes.
+    /// </summary>
     public static IReadOnlyList<ObservationConsommee> DeQuellesObservationsDependIl(ActeW acte, IReadOnlyList<Hypothese> hypotheses) =>
-        TrouverHypothese(acte, hypotheses)?.Obs ?? [];
+        acte.Type == TypeActe.Election
+            ? TrouverHypothese(acte, hypotheses)?.Obs ?? []
+            : ObsDe(TrouverHypothesesDuRefus(acte, hypotheses));
 
     /// <summary>
     /// « Qu'a-t-on écarté ? » (011 § 7) : les hypothèses concurrentes de même strate et de domaine
@@ -105,13 +119,17 @@ public static class RestitutionDAudit
     /// </summary>
     public static IReadOnlyList<HypotheseEcartee> QuALonEcarte(ActeW acte, IReadOnlyList<Hypothese> hypotheses)
     {
-        var retenue = TrouverHypothese(acte, hypotheses);
+        // Les hypothèses propres à l'acte ne sont jamais des « écartées » (014 § 9 : écartée =
+        // concurrente dominée ou incomparable-non-licenciée) : l'élue pour une élection, les
+        // hypothèses refusées elles-mêmes pour un refus — élémentaire ou agrégé, l'agrégation de C6
+        // étant une mise en forme qui ne change pas ce qui a été écarté (014 § 7.3).
+        IReadOnlyList<Hypothese> propres = acte.Type == TypeActe.Election
+            ? TrouverHypothese(acte, hypotheses) is { } retenue ? [retenue] : []
+            : TrouverHypothesesDuRefus(acte, hypotheses);
 
         return hypotheses
             .Where(h => h.Strate == acte.Strate && h.Domaine.Any(id => acte.Domaine.Contains(id)))
-            .Where(h => retenue is null
-                || !h.Domaine.SequenceEqual(retenue.Domaine)
-                || h.ContenuPropositionnel != retenue.ContenuPropositionnel)
+            .Where(h => !propres.Contains(h))
             .Select(h => new HypotheseEcartee(h.ContenuPropositionnel,
                 "non retenue : hors du consensus dégénéré (003 § 9) — aucune comparaison n'a eu lieu"))
             .ToList();
@@ -133,8 +151,41 @@ public static class RestitutionDAudit
             && h.Domaine.SequenceEqual(acte.Domaine)
             && (acte.Type != TypeActe.Election || h.ContenuPropositionnel == acte.Contenu));
 
-    private static Maillon MaillonObservationsDuDomaine(ActeW acte, Hypothese? hypothese) =>
-        hypothese is not null
-            ? new Maillon(Couche.C1, hypothese.Obs, [], $"{hypothese.Domaine.Count} acte(s) projeté(s)", StatutMaillon.Nominal)
-            : new Maillon(Couche.C1, [], [], $"domaine maximal ({acte.Domaine.Count} acte(s) d'Ω), aucun attribut consulté à ce niveau (I51)", StatutMaillon.Nominal);
+    /// <summary>
+    /// Les hypothèses réellement produites par C4 que le refus couvre. Après l'agrégation canonique
+    /// des refus (014 § 7.3), le domaine de l'acte est l'union des domaines des refus fusionnés :
+    /// chaque hypothèse refusée s'y retrouve par inclusion de son domaine — jamais recalculée, jamais
+    /// re-dérivée (lecture seule, 012 § 2). Un refus non agrégé retombe sur l'égalité exacte (cas
+    /// particulier de l'inclusion) ; un refus sans hypothèse (strates supérieures) donne la liste vide.
+    /// </summary>
+    private static IReadOnlyList<Hypothese> TrouverHypothesesDuRefus(ActeW acte, IReadOnlyList<Hypothese> hypotheses)
+    {
+        var domaine = acte.Domaine.ToHashSet();
+
+        return hypotheses
+            .Where(h => h.Strate == acte.Strate && h.Domaine.All(domaine.Contains))
+            .OrderBy(h => h.Domaine[0])
+            .ToList();
+    }
+
+    private static Maillon MaillonObservationsDuDomaine(ActeW acte, IReadOnlyList<Hypothese> hypothesesDuRefus)
+    {
+        if (hypothesesDuRefus.Count == 0)
+        {
+            return new Maillon(Couche.C1, [], [], $"domaine maximal ({acte.Domaine.Count} acte(s) d'Ω), aucun attribut consulté à ce niveau (I51)", StatutMaillon.Nominal);
+        }
+
+        var nombreActes = hypothesesDuRefus.SelectMany(h => h.Domaine).Distinct().Count();
+
+        return new Maillon(Couche.C1, ObsDe(hypothesesDuRefus), [], $"{nombreActes} acte(s) projeté(s)", StatutMaillon.Nominal);
+    }
+
+    /// <summary>L'union triée des Obs d'un ensemble d'hypothèses — le tri de l'Obs (014 § 9), identique à celui de C4.</summary>
+    private static IReadOnlyList<ObservationConsommee> ObsDe(IReadOnlyList<Hypothese> hypotheses) =>
+        hypotheses
+            .SelectMany(h => h.Obs)
+            .Distinct()
+            .OrderBy(o => o.ActeId)
+            .ThenBy(o => o.Attribut, StringComparer.Ordinal)
+            .ToList();
 }

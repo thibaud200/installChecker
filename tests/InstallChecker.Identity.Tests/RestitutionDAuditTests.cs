@@ -105,8 +105,10 @@ public class RestitutionDAuditTests
         }
     }
 
+    // --- B (audit final, A6.2) : une question incohérente produit l'erreur nommée du contrat (014 C7), jamais une exception générique ---
+
     [Fact]
-    public void PourquoiCetteElection_leve_une_exception_sur_un_refus()
+    public void PourquoiCetteElection_sur_un_refus_leve_lerreur_nommee_du_contrat()
     {
         var modele = ModeleOracle();
         var referentiel = ReferentielReel();
@@ -114,7 +116,7 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
         var refus = w.Actes.First(a => a.Type == TypeActe.Refus);
 
-        Assert.Throws<InvalidOperationException>(() => RestitutionDAudit.PourquoiCetteElection(refus, hypotheses));
+        Assert.Throws<ActeInexistantDansWException>(() => RestitutionDAudit.PourquoiCetteElection(refus, hypotheses));
     }
 
     // --- pourquoi ce refus : chaîne interrompue sur les 4 refus de W0 ---
@@ -166,7 +168,7 @@ public class RestitutionDAuditTests
     }
 
     [Fact]
-    public void PourquoiCeRefus_leve_une_exception_sur_une_election()
+    public void PourquoiCeRefus_sur_une_election_leve_lerreur_nommee_du_contrat()
     {
         var modele = ModeleOracle();
         var referentiel = ReferentielReel();
@@ -174,7 +176,59 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
         var election = w.Actes.First(a => a.Type == TypeActe.Election);
 
-        Assert.Throws<InvalidOperationException>(() => RestitutionDAudit.PourquoiCeRefus(election, hypotheses));
+        Assert.Throws<ActeInexistantDansWException>(() => RestitutionDAudit.PourquoiCeRefus(election, hypotheses));
+    }
+
+    // --- B (audit final, A6.1) : un motif du vocabulaire réservé (014 § 7.4) est restitué tel quel, jamais une exception ---
+
+    [Fact]
+    public void PourquoiCeRefus_restitue_tel_quel_un_motif_futur_du_vocabulaire_normalise()
+    {
+        var refus = new ActeW(TypeActe.Refus, Strate.Version, [1, 2], null, null, "incomparables",
+            Espece.Structurel, null, null, null);
+
+        var chaine = RestitutionDAudit.PourquoiCeRefus(refus, []);
+
+        Assert.Equal("incomparables", chaine.ManqueNomme);
+        var maillon = Assert.Single(chaine.Maillons);
+        Assert.Equal(Couche.C1, maillon.Couche);
+        Assert.Empty(maillon.Observations);
+    }
+
+    // --- B (audit final, A6.3) : la chaîne d'un refus agrégé par C6 restitue les maillons de chaque hypothèse couverte ---
+
+    [Fact]
+    public void PourquoiCeRefus_dun_refus_agrege_restitue_les_maillons_de_chaque_classe()
+    {
+        var type = new TypeDeSignal("contenu-identique", new ConventionRef("EQ-01", 1));
+        IReadOnlyList<InstanceDeSignal> signaux =
+        [
+            new(type, "A", Regime.Exact, [new ObservationConsommee(1, "empreinte"), new ObservationConsommee(2, "empreinte")]),
+            new(type, "B", Regime.Exact, [new ObservationConsommee(3, "empreinte"), new ObservationConsommee(4, "empreinte")]),
+        ];
+        var hypotheses = ConstructionDesHypotheses.Construire(signaux);
+        var eq01 = new Convention("EQ-01", 1, Famille.Interpretation, "t", "t", [], "R1", "t", "t", "t", "t", "t", new DateOnly(2026, 7, 5), "t");
+        var actes = DecisionDesActes.Decider(hypotheses, new Referentiel([eq01]), [1, 2, 3, 4]); // CE-01 absent
+        var index = new IndexEtat(new IndexOmega(1, 4, "empreinte-detat-test"), [new ConventionRef("EQ-01", 1)]);
+        var w = AssemblageDeLetat.Assembler(actes, index);
+
+        var refusAgrege = w.Actes.Single(a => a.Type == TypeActe.Refus && a.Strate == Strate.Contenu);
+        Assert.Equal([1L, 2L, 3L, 4L], refusAgrege.Domaine); // C6 a bien fusionné les deux refus de C5 (014 § 7.3)
+
+        var chaine = RestitutionDAudit.PourquoiCeRefus(refusAgrege, hypotheses);
+
+        Assert.Equal("configuration licenciable, aucune convention d'élection en vigueur (007 § 3, I27)", chaine.ManqueNomme);
+        Assert.Equal([Couche.C1, Couche.C3, Couche.C4, Couche.C3, Couche.C4], chaine.Maillons.Select(m => m.Couche));
+        Assert.Equal(
+            [
+                new ObservationConsommee(1, "empreinte"), new ObservationConsommee(2, "empreinte"),
+                new ObservationConsommee(3, "empreinte"), new ObservationConsommee(4, "empreinte"),
+            ],
+            chaine.Maillons[0].Observations);
+        Assert.Contains("« A »", chaine.Maillons[1].ObjetProduit);
+        Assert.Contains("« B »", chaine.Maillons[3].ObjetProduit);
+        Assert.All(chaine.Maillons.Where(m => m.Couche == Couche.C3),
+            m => Assert.Equal([new ConventionRef("EQ-01", 1)], m.Conventions));
     }
 
     // --- de quelles conventions dépend cet acte ---
@@ -324,6 +378,50 @@ public class RestitutionDAuditTests
             Assert.Empty(RestitutionDAudit.QuALonEcarte(acte, hypotheses)); // consensus dégénéré (003 § 9)
             Assert.Single(RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(acte).EnsemblesMinimaux);
         }
+    }
+
+    // --- D2 (audit de clôture) : les réponses d'audit sont indépendantes de l'agrégation des refus par C6 (014 §§ 7.3, 9) ---
+
+    private static (ActeW RefusAgrege, IReadOnlyList<Hypothese> Hypotheses) RefusContenuAgrege()
+    {
+        var type = new TypeDeSignal("contenu-identique", new ConventionRef("EQ-01", 1));
+        IReadOnlyList<InstanceDeSignal> signaux =
+        [
+            new(type, "A", Regime.Exact, [new ObservationConsommee(1, "empreinte"), new ObservationConsommee(2, "empreinte")]),
+            new(type, "B", Regime.Exact, [new ObservationConsommee(3, "empreinte"), new ObservationConsommee(4, "empreinte")]),
+        ];
+        var hypotheses = ConstructionDesHypotheses.Construire(signaux);
+        var eq01 = new Convention("EQ-01", 1, Famille.Interpretation, "t", "t", [], "R1", "t", "t", "t", "t", "t", new DateOnly(2026, 7, 5), "t");
+        var actes = DecisionDesActes.Decider(hypotheses, new Referentiel([eq01]), [1, 2, 3, 4]); // CE-01 absent
+        var index = new IndexEtat(new IndexOmega(1, 4, "empreinte-detat-test"), [new ConventionRef("EQ-01", 1)]);
+        var w = AssemblageDeLetat.Assembler(actes, index);
+
+        return (w.Actes.Single(a => a.Type == TypeActe.Refus && a.Strate == Strate.Contenu), hypotheses);
+    }
+
+    [Fact]
+    public void DeQuellesObservationsDependIl_dun_refus_agrege_restitue_lunion_triee_des_observations()
+    {
+        var (refusAgrege, hypotheses) = RefusContenuAgrege();
+
+        var obs = RestitutionDAudit.DeQuellesObservationsDependIl(refusAgrege, hypotheses);
+
+        Assert.Equal(
+            [
+                new ObservationConsommee(1, "empreinte"), new ObservationConsommee(2, "empreinte"),
+                new ObservationConsommee(3, "empreinte"), new ObservationConsommee(4, "empreinte"),
+            ],
+            obs);
+    }
+
+    [Fact]
+    public void QuALonEcarte_dun_refus_agrege_reste_vide_comme_pour_les_refus_elementaires()
+    {
+        var (refusAgrege, hypotheses) = RefusContenuAgrege();
+
+        // Les hypothèses refusées ne sont pas des « écartées » (014 § 9 : dominée / incomparable-non-licenciée) :
+        // la réponse est la même que pour chaque refus élémentaire avant agrégation — vide.
+        Assert.Empty(RestitutionDAudit.QuALonEcarte(refusAgrege, hypotheses));
     }
 
     // --- déterminisme, stabilité, indépendance de l'ordre ---

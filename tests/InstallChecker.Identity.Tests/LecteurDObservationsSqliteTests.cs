@@ -309,6 +309,74 @@ public class LecteurDObservationsSqliteTests : IDisposable
             () => new LecteurDObservationsSqlite(chemin).ProjeterContexte());
     }
 
+    // --- D1 (audit de clôture) : violations du contrat de Ω → « Ω invalide », jamais une exception .NET ---
+
+    [Fact]
+    public void Identifiant_dacte_NULL_est_refuse_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (NULL, 'a.txt', 1, 'sha-a', '2026-01-01T00:00:00Z');
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterContexte());
+    }
+
+    [Fact]
+    public void Identifiants_dactes_dupliques_sont_refuses_comme_invalides()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES
+                    (1, 'a.txt', 1, 'sha-a', '2026-01-01T00:00:00Z'),
+                    (1, 'b.txt', 2, 'sha-b', '2026-01-01T00:00:00Z');
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+    }
+
+    [Fact]
+    public void Table_de_capacite_sans_colonne_observation_id_est_refusee_comme_invalide()
+    {
+        var chemin = NouveauCheminDeBase();
+        using (var connection = new SqliteConnection($"Data Source={chemin}"))
+        {
+            connection.Open();
+            using var commande = connection.CreateCommand();
+            commande.CommandText = """
+                CREATE TABLE scan_observations (id INTEGER, path TEXT, size INTEGER, sha256 TEXT, scanned_at TEXT);
+                INSERT INTO scan_observations (id, path, size, sha256, scanned_at) VALUES (1, 'a.txt', 1, 'sha-a', '2026-01-01T00:00:00Z');
+                CREATE TABLE version_info (x INTEGER);
+                INSERT INTO version_info (x) VALUES (42);
+                PRAGMA user_version = 1;
+                """;
+            commande.ExecuteNonQuery();
+        }
+
+        Assert.Throws<OmegaInvalideException>(
+            () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
+    }
+
     // --- D5 (audit final) : fichier présent mais non-SQLite → refusé comme absent, jamais une exception .NET ---
 
     [Fact]
