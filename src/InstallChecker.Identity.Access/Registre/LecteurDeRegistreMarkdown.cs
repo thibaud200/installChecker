@@ -46,6 +46,7 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
 
         var conventionsEnVigueur = enVigueurRefs.Select(reference => conventions[reference]).ToList();
         PredicatDeCoherence.Verifier(conventionsEnVigueur);
+        VerificationDeCouverture.Verifier(conventionsEnVigueur);
 
         return new Referentiel(conventionsEnVigueur);
     }

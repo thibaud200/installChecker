@@ -138,4 +138,58 @@ public class LecteurDeRegistreMarkdownTests
         Assert.Throws<RegistreMalformeException>(
             () => new LecteurDeRegistreMarkdown(CheminFixture("SousSectionHistoriqueDupliquee")).Projeter());
     }
+
+    // --- V2-2 : la quatrième vérification et la septième erreur (017 §§ 4–8) ---
+
+    [Fact]
+    public void Registre_valide_coherent_non_couvert_est_refuse_comme_non_couvert()
+    {
+        // La fixture d'espèce nouvelle du 017 § 10 : rien n'y est « cassé » en soi — son défaut
+        // n'existe que relativement à la couverture déclarée du moteur.
+        Assert.Throws<RegistreNonCouvertException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("RegistreNonCouvert")).Projeter());
+    }
+
+    [Fact]
+    public void La_septieme_erreur_identifie_les_conventions_fautives_leur_famille_et_la_clause_violee()
+    {
+        var erreur = Assert.Throws<RegistreNonCouvertException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("RegistreNonCouvert")).Projeter());
+
+        // 017 § 6 : l'entrée fautive (la ou les conventions concernées avec leur famille)…
+        Assert.Contains("AT-01 v1", erreur.Message);
+        Assert.Contains("Attente", erreur.Message);
+        // … et elle seule : EQ-01, couverte, n'est pas fautive.
+        Assert.DoesNotContain("EQ-01", erreur.Message);
+        // … et la clause violée (la quatrième précondition, 017 § 4).
+        Assert.Contains("quatrième précondition", erreur.Message);
+    }
+
+    [Fact]
+    public void Le_signalement_de_la_septieme_erreur_est_deterministe()
+    {
+        // I64 : même registre, même version de moteur ⟹ même erreur — jusqu'au message.
+        var premiere = Assert.Throws<RegistreNonCouvertException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("RegistreNonCouvert")).Projeter());
+        var seconde = Assert.Throws<RegistreNonCouvertException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("RegistreNonCouvert")).Projeter());
+
+        Assert.Equal(premiere.Message, seconde.Message);
+    }
+
+    [Fact]
+    public void Malforme_et_non_couvert_produit_malforme()
+    {
+        // 017 § 8 : absence < forme < cohérence < couverture — le premier échec est signalé ;
+        // la couverture ne masque jamais une erreur qui la précède.
+        Assert.Throws<RegistreMalformeException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("MalformeEtNonCouvert")).Projeter());
+    }
+
+    [Fact]
+    public void Incoherent_et_non_couvert_produit_incoherent()
+    {
+        Assert.Throws<RegistreIncoherentException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("IncoherentEtNonCouvert")).Projeter());
+    }
 }
