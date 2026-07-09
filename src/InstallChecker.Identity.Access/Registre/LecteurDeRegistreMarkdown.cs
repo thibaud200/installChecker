@@ -196,9 +196,24 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
         }
 
         var adoptees = new HashSet<ConventionRef>();
+        DateOnly? datePrecedente = null;
 
         foreach (var (titre, contenu) in SectionParser.ExtraireSections(File.ReadAllText(chemin)))
         {
+            // 023 § 2 : la date ISO en tête du titre est la représentation normative de la date de
+            // l'entrée — la seule lecture du titre ouverte à C2 (type et convention : les
+            // sous-sections font foi, 015 § 6.2). Illisible → l'entrée omet l'un des cinq éléments
+            // (014 § 5.2) ; ordre décroissant → « registre malformé » (complément assumé, 023 § 2).
+            var dateEntree = ExtraireDateDuTitre(titre, chemin);
+            if (datePrecedente is not null && dateEntree < datePrecedente)
+            {
+                throw new RegistreMalformeException(
+                    $"historique.md : entrée « {titre} » antérieure à l'entrée qui la précède " +
+                    $"({dateEntree:yyyy-MM-dd} < {datePrecedente:yyyy-MM-dd}) — ordre chronologique non décroissant exigé (015 § 6.3, 023 § 2)");
+            }
+
+            datePrecedente = dateEntree;
+
             var sousSections = SectionParser.ExtraireSections(contenu, "### ");
             VerifierAucunTitreDuplique(sousSections, $"historique.md : entrée « {titre} »");
             var champs = sousSections.ToDictionary(s => s.Titre, s => s.Contenu);
@@ -305,6 +320,20 @@ public sealed class LecteurDeRegistreMarkdown(string cheminRegistre) : IRegistre
         }
 
         return enVigueur;
+    }
+
+    private static DateOnly ExtraireDateDuTitre(string titre, string contexte)
+    {
+        var separateur = titre.IndexOf(" — ", StringComparison.Ordinal);
+        var tete = separateur < 0 ? titre.Trim() : titre[..separateur].Trim();
+
+        if (!EssayerAnalyserDate(tete, out var date))
+        {
+            throw new RegistreMalformeException(
+                $"{contexte} : entrée « {titre} » sans date ISO lisible en tête de titre (015 § 6.2 ; 014 § 5.2 : cinq éléments)");
+        }
+
+        return date;
     }
 
     // --- Références de conventions : format partagé « <ID>, version <n> » (015 §§ 3.5, 6.2, 7.3) ---
