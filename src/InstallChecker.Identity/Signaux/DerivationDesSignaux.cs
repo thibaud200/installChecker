@@ -26,7 +26,7 @@ namespace InstallChecker.Identity.Signaux;
 /// convention d'interprétation ne produit pas un refus — elle produit simplement l'absence de
 /// toute instance (I13 : aucune instance sans convention fondatrice).
 /// </summary>
-public static class DerivationDesSignaux
+internal static class DerivationDesSignaux
 {
     private const string TypeContenuIdentique = "contenu-identique";
     private const string AttributEmpreinte = "empreinte";

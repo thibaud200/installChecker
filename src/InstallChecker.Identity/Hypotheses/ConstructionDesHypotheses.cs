@@ -16,7 +16,7 @@ namespace InstallChecker.Identity.Hypotheses;
 /// C4 ne choisit rien, ne compare rien, ne calcule aucun niveau de certitude et ne produit aucun
 /// refus : ce sont les responsabilités de C5/C6 (006, 012 § 1.2).
 /// </summary>
-public static class ConstructionDesHypotheses
+internal static class ConstructionDesHypotheses
 {
     private const string TypeContenuIdentique = "contenu-identique";
 

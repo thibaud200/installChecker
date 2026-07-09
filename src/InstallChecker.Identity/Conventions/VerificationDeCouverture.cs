@@ -9,7 +9,7 @@ namespace InstallChecker.Identity.Conventions;
 /// (017 § 8) : en aval, tout référentiel est couvert par construction (I51 étendu).
 /// Son échec est la septième erreur du contrat (017 § 6) — jamais un refus, jamais un W partiel (I61).
 /// </summary>
-public static class VerificationDeCouverture
+internal static class VerificationDeCouverture
 {
     public static void Verifier(IReadOnlyList<Convention> conventionsEnVigueur)
     {

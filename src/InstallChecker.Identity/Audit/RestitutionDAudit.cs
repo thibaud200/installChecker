@@ -17,7 +17,7 @@ namespace InstallChecker.Identity.Audit;
 /// 003 § 9) : les branches qui les concerneraient sont écrites pour rester correctes si ℛ change,
 /// mais ne sont jamais empruntées sur les données actuelles — vérifié par les tests.
 /// </summary>
-public static class RestitutionDAudit
+internal static class RestitutionDAudit
 {
     private static readonly IReadOnlyDictionary<string, (Couche Rupture, string Manque)> RuptureParMotif =
         new Dictionary<string, (Couche, string)>

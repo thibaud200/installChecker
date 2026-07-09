@@ -18,7 +18,7 @@ namespace InstallChecker.Identity.Auxiliaire;
 /// empreintes de contenu individuelles) sur leur concaténation en ordre canonique d'identifiants
 /// (014 § 7.2) — aucun fichier relu, aucune empreinte de contenu recalculée, aucune fonction nouvelle.
 /// </summary>
-public static class IndexOmegaCalculateur
+internal static class IndexOmegaCalculateur
 {
     private const long VersionDeContrat = 1;
 

@@ -6,4 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- I65 (018) : les couches C1→C7 ne sont adressables par aucun consommateur — seule la
+       frontière (le porteur) est publique. Identity.Access est l'intérieur de la boîte noire
+       (013 § 1.1 : il implémente les ports ; C2 y invoque le prédicat et la couverture) ;
+       Identity.Tests exerce la validation par morceaux (012 § 8). Les deux seuls titulaires. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="InstallChecker.Identity.Access" />
+    <InternalsVisibleTo Include="InstallChecker.Identity.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -34,7 +34,7 @@ namespace InstallChecker.Identity.Actes;
 /// Ces refus couvrent toujours le domaine maximal (la totalité des actes d'Ω, seule information
 /// nécessaire ici — Obs(h) et le contenu des actes restent hors de portée de C5, I51).
 /// </summary>
-public static class DecisionDesActes
+internal static class DecisionDesActes
 {
     private const string MotifUniqueMaximale = "unique-maximale";
     private const string MotifLicenciableNonLicencie = "licenciable-non-licencié";

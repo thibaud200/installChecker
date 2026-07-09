@@ -13,7 +13,7 @@ namespace InstallChecker.Identity.Etat;
 /// refus de même (strate, espèce, motif) *que rien d'autre dans l'état ne distingue* en un refus de
 /// domaine maximal (014 § 7.3) — une mise en forme, jamais un jugement sur ce qui est refusé ou pourquoi.
 /// </summary>
-public static class AssemblageDeLetat
+internal static class AssemblageDeLetat
 {
     public static W Assembler(EnsembleDesActes actes, IndexEtat index)
     {
