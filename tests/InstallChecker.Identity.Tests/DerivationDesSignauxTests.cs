@@ -227,4 +227,70 @@ public class DerivationDesSignauxTests
 
         Assert.False(c3Execute);
     }
+
+    // --- V2-3 : l'application par famille (017 § 2, report 1) ---
+
+    private static Convention ConventionInterpretation(string identifiant, int version = 1) =>
+        ConventionEq01(version) with { Identifiant = identifiant };
+
+    [Fact]
+    public void EQ02_seule_fonde_ses_propres_signaux()
+    {
+        var modele = new ModeleObservations([Acte(1, "A"), Acte(2, "A")]);
+        var referentiel = new Referentiel([ConventionInterpretation("EQ-02")]);
+
+        var signal = Assert.Single(DerivationDesSignaux.Deriver(modele, referentiel));
+
+        Assert.Equal(new ConventionRef("EQ-02", 1), signal.Type.Convention);
+        Assert.Equal("contenu-identique", signal.Type.Identifiant);
+        Assert.Equal(Regime.Exact, signal.Regime);
+    }
+
+    [Fact]
+    public void Deux_conventions_dinterpretation_coexistent_chacune_fondant_ses_instances()
+    {
+        // I13 : chaque instance cite sa convention fondatrice — deux conventions en vigueur
+        // de la même famille fondent chacune leurs propres instances sur les mêmes paires.
+        var modele = new ModeleObservations([Acte(1, "A"), Acte(2, "A")]);
+        var referentiel = new Referentiel([ConventionEq01(), ConventionInterpretation("EQ-02")]);
+
+        var signaux = DerivationDesSignaux.Deriver(modele, referentiel);
+
+        Assert.Equal(2, signaux.Count);
+        Assert.Single(signaux, s => s.Type.Convention == new ConventionRef("EQ-01", 1));
+        Assert.Single(signaux, s => s.Type.Convention == new ConventionRef("EQ-02", 1));
+        Assert.All(signaux, s => Assert.Equal([1L, 2L], s.Provenance.Select(o => o.ActeId)));
+    }
+
+    [Fact]
+    public void La_selection_depend_uniquement_de_la_famille_jamais_de_lidentifiant()
+    {
+        var modele = new ModeleObservations([Acte(1, "A"), Acte(2, "A")]);
+
+        // Une convention nommée EQ-01 mais d'une autre famille ne fonde rien en C3…
+        var horsFamille = new Referentiel([ConventionEq01() with { Famille = Famille.Election }]);
+        Assert.Empty(DerivationDesSignaux.Deriver(modele, horsFamille));
+
+        // … et une convention d'identifiant quelconque de la famille interprétation fonde ses signaux.
+        var identifiantQuelconque = new Referentiel([ConventionInterpretation("XX-99")]);
+        var signal = Assert.Single(DerivationDesSignaux.Deriver(modele, identifiantQuelconque));
+        Assert.Equal(new ConventionRef("XX-99", 1), signal.Type.Convention);
+    }
+
+    [Fact]
+    public void Apprentissage_sans_changement_de_moteur_un_registre_enrichi_dEQ02_est_applique_de_bout_en_bout()
+    {
+        // La promesse du 016 § 5.1 et du 017 § 2 : une convention supplémentaire d'une famille
+        // couverte est une donnée — le registre traverse C2 (couvert), et C3 l'applique,
+        // sans qu'une seule ligne du moteur ait changé.
+        var cheminFixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "RegistresValides", "AvecEq02", "registre");
+        var referentiel = new LecteurDeRegistreMarkdown(cheminFixture).Projeter();
+        var modele = new ModeleObservations([Acte(1, "A"), Acte(2, "A")]);
+
+        var signaux = DerivationDesSignaux.Deriver(modele, referentiel);
+
+        Assert.Equal(2, signaux.Count);
+        Assert.Single(signaux, s => s.Type.Convention == new ConventionRef("EQ-01", 1));
+        Assert.Single(signaux, s => s.Type.Convention == new ConventionRef("EQ-02", 1));
+    }
 }

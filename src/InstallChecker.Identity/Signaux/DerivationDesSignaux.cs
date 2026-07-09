@@ -9,37 +9,52 @@ namespace InstallChecker.Identity.Signaux;
 /// uniquement les objets déjà projetés par C1/C2 — et rien au-delà (012 § 3 : C3 ne lit jamais
 /// les hypothèses, les actes, W ni τ, qui n'existent pas encore à cette couche).
 ///
-/// Seule convention active à cette étape (013/014 plan É4) : EQ-01, qui fonde le signal
-/// relationnel « contenu identique ». Une convention d'une autre famille (élection, p. ex. CE-01)
-/// présente dans le référentiel n'a aucun effet ici — C3 n'agit que sur les familles qui la
-/// concernent (012 § 1.2).
+/// C3 applique la famille <b>interprétation</b> — jamais une convention par identifiant (017 § 2,
+/// report 1 : « appliquer chaque convention selon sa famille ») : toute convention en vigueur de
+/// cette famille fonde ses propres instances, sans changement de moteur (016 § 5.1). L'espèce de
+/// signal appliquée est celle que la théorie définit pour la famille à ce jour : le signal
+/// relationnel d'identité de contenu sur l'empreinte (007 § 4, la relation ≡ₘ ; 014 § 6 : « deux
+/// actes de même empreinte ont des contenus parfaitement égaux » — la seule relation que le
+/// contrat de Ω garantit), en régime exact par nature (002 § 5). Une convention d'interprétation
+/// dont la transformation sortirait de cette espèce serait une forme que la théorie ne définit
+/// pas — révision documentaire d'abord (011 § 10), jamais une latitude du moteur (EXG-13).
+/// Les conventions des autres familles n'ont aucun effet ici — C3 n'agit que sur les familles
+/// qui la concernent (012 § 1.2, 014 § 3).
 ///
 /// C3 n'a pas d'erreur propre (014 C3 : « refuse : rien ») : ses entrées sont valides par
-/// construction (I51). L'absence d'EQ-01 dans le référentiel ne produit pas un refus — elle
-/// produit simplement l'absence de toute instance (I13 : aucune instance sans convention fondatrice).
+/// construction — et couvertes par construction depuis le 017 § 5 (I51 étendu). L'absence de toute
+/// convention d'interprétation ne produit pas un refus — elle produit simplement l'absence de
+/// toute instance (I13 : aucune instance sans convention fondatrice).
 /// </summary>
 public static class DerivationDesSignaux
 {
-    private const string IdentifiantEQ01 = "EQ-01";
     private const string TypeContenuIdentique = "contenu-identique";
     private const string AttributEmpreinte = "empreinte";
 
     public static IReadOnlyList<InstanceDeSignal> Deriver(ModeleObservations modele, Referentiel referentiel)
     {
-        var eq01 = referentiel.ConventionsEnVigueur.SingleOrDefault(
-            c => c.Identifiant == IdentifiantEQ01 && c.Famille == Famille.Interpretation);
+        var interpretations = referentiel.ConventionsEnVigueur
+            .Where(c => c.Famille == Famille.Interpretation)
+            .OrderBy(c => c.Identifiant, StringComparer.Ordinal)
+            .ThenBy(c => c.Version)
+            .ToList();
 
-        if (eq01 is null) return [];
+        if (interpretations.Count == 0) return [];
 
-        var type = new TypeDeSignal(TypeContenuIdentique, eq01.Ref);
-
-        return modele.Actes
+        var paires = modele.Actes
             .GroupBy(a => a.Empreinte, StringComparer.Ordinal)
             .Where(classe => classe.Count() >= 2)
-            .SelectMany(classe => PairesDe(classe))
-            .Select(paire => CreerInstance(type, paire))
-            .OrderBy(instance => instance.Provenance[0].ActeId)
-            .ThenBy(instance => instance.Provenance[1].ActeId)
+            .SelectMany(PairesDe)
+            .OrderBy(paire => paire.Premier)
+            .ThenBy(paire => paire.Second)
+            .ToList();
+
+        return interpretations
+            .SelectMany(convention =>
+            {
+                var type = new TypeDeSignal(TypeContenuIdentique, convention.Ref);
+                return paires.Select(paire => CreerInstance(type, paire));
+            })
             .ToList();
     }
 
