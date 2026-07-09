@@ -1,0 +1,52 @@
+Rapport de rédaction — document 017
+
+Fichier créé : docs/identity/017 - La couverture du registre par le moteur.md. Conforme au plan validé — aucune section ajoutée, déplacée ni scindée par rapport à l'architecture.
+
+Sections effectivement rédigées
+
+- En-tête : Statut (premier acte documentaire opérationnel de la v2, voie 2 du 016 § 3, exécute le report 1), Nature (document de contrat, prolonge 010→015), Raffinement assumé (011 §§ 4, 5, 9 nommés dès l'en-tête, avec renvoi aux sections qui les motivent ; adossement au 016 § 5.1 déclaré), Périmètre (les quatre exclusions constitutives).
+- § 1 Le défaut contractuel — le cas sans issue, la double insuffisance, la qualification du comportement v1, le précédent structurel « Ω incompatible ».
+- § 2 La couverture, objet formel — Définition 1, granularité par famille (016 § 5.1), propriété de la version, compatibilité I40.
+- § 3 La déclaration de couverture — Définition 2, explicite / par version / stable sous l'index, composante de la déclaration de conformité.
+- § 4 La précondition d'applicabilité — raffinement du 011 § 4, « entier ou absent » intact.
+- § 5 Le siège de la vérification — décision : C2, fondée sur trois faits du 014 (seule frontière de ℛ, précédent C1/« Ω incompatible », préservation des « refuse : rien ») ; complément du contrat de C2 ; extension d'I51 (« couvert par construction »).
+- § 6 La septième erreur « registre non couvert » — condition, discipline d'identification, démonstration de non-extensibilité des six erreurs (six cas, six ∎), disjonction d'avec l'incohérence.
+- § 7 Les trois cas de la famille — table exhaustive, frontières fixées.
+- § 8 L'ordre des vérifications du registre — précédence totale (absence < forme < cohérence < couverture), double justification (bonne fondation, attribution), exclusion explicite de l'ordre inter-entrées.
+- § 9 La compatibilité des versions et l'écart publié — raffinement du 011 § 9 (« cohérent et couvert »), classe d'index caractérisée, justification uniforme et acte par acte, déclaration rétroactive de non-conformité de la v1 sur cette classe seule.
+- § 10 La validation — innocuité de W₀ démontrée (∎), extension mécanique de la batterie, espèce nouvelle de fixtures, non-régression gouvernée.
+- § 11 Compatibilité avec les documents figés — table de douze clauses, chacune close par ∎.
+- § 12 Invariants I61–I64, chacun démontré (∎), jamais affirmé.
+- Conclusion (constat de précédence document/code, validation renvoyée à l'autorité), Récapitulatif, « Ce que ce document ne fait volontairement pas ».
+
+Invariants créés
+
+┌───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Invariant │                                                                  Contenu                                                                   │
+├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ I61       │ aucune dérivation sous un registre non couvert — démontré depuis §§ 4–5, 014 §§ 1/3, 011 § 4                                               │
+├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ I62       │ la couverture est déclarée, jamais implicite — démontré par la décidabilité de l'erreur (011 § 5) et la non-circularité de la précondition │
+├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ I63       │ la couverture est une propriété de la version du moteur — démontré par élimination (015 § 1/I56 ; 011 § 2.2/EXG-02 ; 011 § 8)              │
+├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ I64       │ le signalement des échecs de la frontière registre est déterministe — démontré depuis § 8 et I63                                           │
+└───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Contrats raffinés ou complétés
+
+- raffinés (annoncés « raffinement assumé ») : 011 § 4 (quatrième précondition), 011 § 5 (table à sept erreurs), 011 § 9 troisième puce (bornée par la couverture) ;
+- complétés : 014 § 1 C2 (quatrième cas de refus, garantie étendue), 014 § 5.1 (les trois cas de la famille), I51 (portée étendue), 011 § 8 (couverture dans la déclaration de conformité ; batterie étendue mécaniquement) ;
+- adossement sans redéfinition : 016 § 5.1 (raffinement du 011 § 10).
+
+Documents cités
+
+011 (§§ 2.2, 4, 5, 6, 8, 9, 10, 12/I40), 014 (§§ 1 — C1, C2, C3–C5 —, 3, 5.1, I51), 015 (§§ 1, 8, I53–I56), 016 (§§ 3, 4.1 report 1, 4.2 reports 2/6, 5.1, 6, I57, I59) — plus EXG-02, EXG-13, EXG-26 et I13, I34, I38, cités tels que portés par ces quatre documents. Aucune citation hors de ce périmètre.
+
+Ambiguïtés rencontrées
+
+Une seule, tranchée dans le texte plutôt que laissée ouverte : la formule « justifié acte par acte » du 011 § 9 pour un écart qui porte sur une classe d'index. Le § 9 la résout en montrant que la justification est uniforme et vaut acte par acte — tout acte de tout W de la classe porte le même vice (l'index cité n'est pas l'index appliqué) — ce qui satisfait la lettre du 011 § 9 sans énumération impossible.
+
+Confirmation
+
+Aucun autre document n'a été modifié : le 017 est un fichier nouveau ; 011, 014, 015, 016 et le reste de la série sont intacts. Aucune alternative de conception introduite, aucun nouveau report, aucun sujet hors report 1. Aucun commit effectué.

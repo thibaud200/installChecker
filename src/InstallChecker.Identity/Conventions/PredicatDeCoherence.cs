@@ -7,7 +7,7 @@ namespace InstallChecker.Identity.Conventions;
 /// au plus une version par identifiant est simultanément en vigueur, toute dépendance déclarée doit
 /// elle-même être en vigueur, et le graphe de dépendances est acyclique.
 /// </summary>
-public static class PredicatDeCoherence
+internal static class PredicatDeCoherence
 {
     public static void Verifier(IReadOnlyList<Convention> conventionsEnVigueur)
     {

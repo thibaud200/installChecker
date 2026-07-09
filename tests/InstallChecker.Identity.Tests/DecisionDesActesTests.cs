@@ -239,4 +239,110 @@ public class DecisionDesActesTests
 
         Assert.Equal(Cles(directs), Cles(viaAdaptateur));
     }
+
+    // --- V2-4 : l'application par famille (017 § 2, report 1) ---
+
+    private static Convention ConventionElection(string identifiant) => new(
+        identifiant, 1, Famille.Election, "t", "t", [], "R1", "t", "t", "t", "t", "t", new DateOnly(2026, 7, 5), "t");
+
+    private static IReadOnlyList<Hypothese> HypotheseSimple() =>
+        ConstructionDesHypotheses.Construire(
+        [
+            new(new TypeDeSignal("contenu-identique", new ConventionRef("EQ-01", 1)), "A", Regime.Exact,
+                [new ObservationConsommee(1, "empreinte"), new ObservationConsommee(2, "empreinte")]),
+        ]);
+
+    [Fact]
+    public void CE02_seule_licencie_les_elections()
+    {
+        var referentiel = new Referentiel([Eq01, ConventionElection("CE-02")]);
+
+        var actes = DecisionDesActes.Decider(HypotheseSimple(), referentiel, [1, 2]);
+
+        var election = Assert.Single(actes.Elections);
+        Assert.Equal([new ConventionRef("CE-02", 1)], election.Licences);
+        Assert.Equal([new ConventionRef("CE-02", 1), new ConventionRef("EQ-01", 1)], election.Dependances);
+        Assert.Equal(Niveau.Certaine, election.Niveau);
+        Assert.Equal("unique-maximale", election.Motif);
+    }
+
+    [Fact]
+    public void Deux_conventions_delection_coexistent_et_licencient_ensemble()
+    {
+        // I27, 014 § 7.3 : l'élection cite la liste triée des licences — les deux conventions
+        // d'élection en vigueur fondent ensemble le même acte, jamais deux actes.
+        var referentiel = new Referentiel([Eq01, ConventionElection("CE-01"), ConventionElection("CE-02")]);
+
+        var actes = DecisionDesActes.Decider(HypotheseSimple(), referentiel, [1, 2]);
+
+        var election = Assert.Single(actes.Elections);
+        Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("CE-02", 1)], election.Licences);
+        Assert.Equal(
+            [new ConventionRef("CE-01", 1), new ConventionRef("CE-02", 1), new ConventionRef("EQ-01", 1)],
+            election.Dependances);
+    }
+
+    [Fact]
+    public void Une_convention_nommee_CE01_dune_autre_famille_nest_jamais_utilisee()
+    {
+        var horsFamille = new Referentiel([Eq01, ConventionElection("CE-01") with { Famille = Famille.Interpretation }]);
+
+        var actes = DecisionDesActes.Decider(HypotheseSimple(), horsFamille, [1, 2]);
+
+        Assert.Empty(actes.Elections);
+        var refusContenu = Assert.Single(actes.Refus, r => r.Strate == Strate.Contenu);
+        Assert.Equal("licenciable-non-licencié", refusContenu.Motif);
+    }
+
+    [Fact]
+    public void Une_convention_didentifiant_arbitraire_de_la_famille_election_est_appliquee()
+    {
+        var referentiel = new Referentiel([Eq01, ConventionElection("XX-99")]);
+
+        var actes = DecisionDesActes.Decider(HypotheseSimple(), referentiel, [1, 2]);
+
+        var election = Assert.Single(actes.Elections);
+        Assert.Equal([new ConventionRef("XX-99", 1)], election.Licences);
+    }
+
+    [Fact]
+    public void Les_refus_des_strates_superieures_derivent_du_registre_jamais_dune_liste_de_conventions()
+    {
+        // La dérivation est mécanique : aucune convention en vigueur ne fonde de signal ni de
+        // licence aux strates supérieures (014 § 7.4) — le résultat est identique quel que soit
+        // le contenu d'élection du registre, et dérive de sa consultation, pas d'une liste codée.
+        var sansElection = DecisionDesActes.Decider([], new Referentiel([Eq01]), [1, 2]);
+        var avecElections = DecisionDesActes.Decider(
+            [], new Referentiel([Eq01, ConventionElection("CE-01"), ConventionElection("CE-02")]), [1, 2]);
+
+        Assert.Equal(sansElection.Refus.Select(Cle), avecElections.Refus.Select(Cle));
+        Assert.Equal(4, sansElection.Refus.Count);
+        Assert.Equal(3, sansElection.Refus.Count(r => r.Motif == "aucune-convention-strate"));
+        Assert.Single(sansElection.Refus, r => r.Strate == Strate.Famille && r.Motif == "préalable-absent");
+    }
+
+    [Fact]
+    public void Apprentissage_sans_changement_de_moteur_un_registre_enrichi_de_CE02_est_applique_de_bout_en_bout()
+    {
+        // La démonstration symétrique d'EQ-02 (016 § 5.1, 017 § 2) : le registre AvecCe02
+        // traverse C2 (couvert), C3 fonde les signaux, C4 construit, et C5 licencie par les
+        // deux conventions d'élection — sans qu'une seule ligne du moteur ait changé.
+        var cheminFixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "RegistresValides", "AvecCe02", "registre");
+        var referentiel = new LecteurDeRegistreMarkdown(cheminFixture).Projeter();
+        var modele = new ModeleObservations([
+            new ActeObservation(1, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+            new ActeObservation(2, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+        ]);
+
+        var actes = DecisionDesActes.Decider(
+            ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel)),
+            referentiel,
+            [1, 2]);
+
+        var election = Assert.Single(actes.Elections);
+        Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("CE-02", 1)], election.Licences);
+        Assert.Equal(
+            [new ConventionRef("CE-01", 1), new ConventionRef("CE-02", 1), new ConventionRef("EQ-01", 1)],
+            election.Dependances);
+    }
 }

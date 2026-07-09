@@ -1,24 +1,35 @@
 using InstallChecker;
 
-if (args is not ["scan", var root, .. var options])
-    return Usage();
-
-var db = "installchecker.db";
-var json = false;
-for (var i = 0; i < options.Length; i++)
+if (args is ["scan", var root, .. var options])
 {
-    if (options[i] == "--json")
-        json = true;
-    else if (options[i] == "--db" && i + 1 < options.Length)
-        db = options[++i];
-    else
-        return Usage();
+    var db = "installchecker.db";
+    var json = false;
+    for (var i = 0; i < options.Length; i++)
+    {
+        if (options[i] == "--json")
+            json = true;
+        else if (options[i] == "--db" && i + 1 < options.Length)
+            db = options[++i];
+        else
+            return Usage();
+    }
+
+    return ScanCommand.Run(root, db, json, Console.Out, Console.Error);
 }
 
-return ScanCommand.Run(root, db, json, Console.Out, Console.Error);
+if (args is ["identity", "derive", var cheminBase, var cheminRegistre])
+    return IdentityCommand.Deriver(cheminBase, cheminRegistre, Console.Out, Console.Error);
+
+if (args is ["identity", "audit", var baseAudit, var registreAudit, var question, var strate, var acte]
+    && long.TryParse(acte, out var acteId))
+    return IdentityCommand.Auditer(baseAudit, registreAudit, question, strate, acteId, Console.Out, Console.Error);
+
+return Usage();
 
 static int Usage()
 {
     Console.Error.WriteLine("Usage : installchecker scan <dossier> [--db <fichier>] [--json]");
+    Console.Error.WriteLine("        installchecker identity derive <base.db> <registre>");
+    Console.Error.WriteLine("        installchecker identity audit <base.db> <registre> <question> <strate> <acte>");
     return 2;
 }
