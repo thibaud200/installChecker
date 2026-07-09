@@ -42,6 +42,10 @@ Le système ne doit pas être un simple outil de déduplication de fichiers.
 
 Il doit devenir un moteur de connaissance des logiciels Windows.
 
+L'identification logicielle est assurée par un moteur d'identité logique indépendant du pipeline d'observation. Le pipeline produit exclusivement des observations Ω, sans interprétation ; le moteur d'identité consomme Ω ainsi qu'un registre de conventions ℛ et dérive un état du monde W.
+
+La théorie complète du moteur est spécifiée dans `docs/identity/000` à `docs/identity/018`, qui constituent la référence normative de toute implémentation (voir § 21).
+
 ---
 
 ## Vision long terme
@@ -153,6 +157,49 @@ Le moteur principal doit être indépendant :
 
 ---
 
+## Architecture logique
+
+Le système est composé de deux sous-systèmes indépendants :
+
+```text
+InstallChecker.Core
+        │
+        ▼
+ Observations Ω
+        │
+        ▼
+InstallChecker.Identity
+        │
+        ▼
+ État du monde W
+        │
+        ▼
+CLI / rapports / connecteurs
+```
+
+Principes :
+
+- Core produit uniquement Ω.
+- Identity ne modifie jamais Ω.
+- Toute interprétation est réalisée exclusivement par le moteur d'identité.
+- Les conventions sont des données du registre ℛ (`registre/`) et jamais du code.
+
+---
+
+## Règle fondamentale
+
+Le moteur d'identité est entièrement indépendant :
+
+- du pipeline d'observation ;
+- du stockage physique ;
+- des formats de fichiers analysés ;
+- des catalogues externes ;
+- des technologies employées.
+
+Toute évolution de la connaissance passe par le registre ℛ ou par une évolution de la théorie (`docs/identity/`), jamais par l'ajout d'heuristiques dans le code.
+
+---
+
 # 6. MODÈLE DE DONNÉES (CONCEPTUEL)
 
 ## Entités principales
@@ -184,6 +231,8 @@ Le moteur principal doit être indépendant :
 - Détection type installateur
 - Hash engine
 - Moteur d’identification
+- InstallChecker.Identity (le moteur pur : couches C1→C7, porteur — 013 § 1.1)
+- InstallChecker.Identity.Access (les adaptateurs C1/C2)
 - Matching engine
 - Gestion des versions
 - Détection doublons
@@ -200,16 +249,12 @@ Le moteur principal doit être indépendant :
 # 8. PIPELINE DE TRAITEMENT
 
 1. Scan fichiers
-2. Extraction métadonnées
-3. Analyse binaire (PE / signature)
-4. Hash computation
-5. Classification installateur
-6. Identification logiciel
-7. Matching base existante
-8. Analyse version
-9. Lookup externe (si nécessaire)
-10. Stockage en base
-11. Génération rapport
+2. Extraction des observations
+3. Production de Ω
+4. Chargement du registre ℛ
+5. Dérivation de W par le porteur du moteur d'identité (018)
+6. Restitution des chaînes d'audit
+7. Génération des rapports
 
 ---
 
@@ -389,16 +434,31 @@ Toute décision structurante doit être documentée :
 - **Alternatives** : table de métadonnées dédiée (plus verbeux pour le même service) ; framework de migrations (YAGNI tant que le schéma n'a qu'une version).
 - **Conséquences** : changer le schéma = incrémenter la version et régénérer les bases ; une politique de migration ne sera écrite que si des bases deviennent précieuses.
 
+## ADR-009 — Externalisation du moteur d'identité
+
+- **Contexte** : le moteur d'identification est devenu un domaine autonome, indépendant des installateurs Windows.
+- **Décision** : créer un composant autonome `InstallChecker.Identity`, consommateur exclusif des observations Ω produites par le pipeline. Le pipeline ne réalise aucune interprétation. Toute décision d'identité est dérivée par le moteur à partir des observations Ω et du registre de conventions ℛ.
+- **Alternatives** : conserver l'identification dans le pipeline — rejeté : mélange observation et interprétation, couplage fort, impossibilité de réutiliser le moteur sur d'autres domaines.
+- **Conséquences** : Core devient un producteur pur d'observations ; Identity devient un moteur générique applicable à tout domaine disposant d'observations conformes (011 : « le domaine d'application est un paramètre du système, pas du contrat »).
+
+## ADR-010 — Théorie normative du moteur d'identité
+
+- **Contexte** : la logique d'identification dépasse largement le cadre du projet InstallChecker.
+- **Décision** : la théorie du moteur est définie exclusivement dans la série documentaire `docs/identity/000` à `docs/identity/018`, référence normative de toute implémentation. Le code ne définit jamais les règles théoriques ; il les implémente.
+- **Alternatives** : documenter la théorie dans le code ou le présent fichier — rejeté : irréconciliable avec l'auditabilité et la gouvernance documentaire.
+- **Conséquences** : toute évolution de la théorie suit la série documentaire avant toute implémentation (le document précède le code, 016 § 3) ; les invariants I1 à I67 constituent le contrat de conformité du moteur ; les conformités sont consignées sous `docs/conformite/`.
+
 ---
 
 # 18. ROADMAP (ÉVOLUTIF)
 
-- Phase 1 : scan + metadata + hash
-- Phase 2 : identification logicielle
-- Phase 3 : versioning + duplication
-- Phase 4 : connecteurs externes
-- Phase 5 : optimisation + scale
-- Phase 6 : contribution WinGet
+- Phase 1 : pipeline d'observation — **terminée** (pipeline figé, `user_version = 1`)
+- Phase 2 : fondements théoriques du moteur d'identité — **terminée** (`docs/identity/000→016`)
+- Phase 3 : implémentation du moteur d'identité — **terminée** (v1 : É1→É9, tag `identity-v1.0` ; v2 : couverture, application par famille, porteur, CLI `identity` — 017/018)
+- Phase 4 : campagne v3 — résorption des reports du 016 § 4 (forme canonique de W, cohérence d'état de C6, identité d'Ω, τ, hygiène)
+- Phase 5 : connecteurs externes
+- Phase 6 : optimisation et montée en charge
+- Phase 7 : assistance aux contributions WinGet
 
 ---
 
@@ -411,3 +471,17 @@ Toute décision structurante doit être documentée :
 # 20. ANNEXES
 
 À compléter progressivement.
+
+---
+
+# 21. RÉFÉRENCES NORMATIVES
+
+La théorie du moteur d'identité est définie dans :
+
+- `docs/identity/000` à `docs/identity/018` (invariants I1–I67)
+
+Ces documents prévalent sur toute interprétation du présent fichier concernant le moteur d'identité.
+
+Le présent `CLAUDE.md` décrit uniquement : la vision du projet, l'architecture générale, les décisions d'architecture (ADR) et les contraintes de développement. Il ne duplique pas les spécifications théoriques du moteur.
+
+Consignations de conformité (jamais normatives) : `docs/conformite/` — déclarations de conformité v1 et v2, écart publié.

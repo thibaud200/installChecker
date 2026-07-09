@@ -1,4 +1,3 @@
-using InstallChecker;
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
@@ -62,7 +61,7 @@ public class ConformiteV2Tests : IDisposable
     private string BaseVersionNonSupportee()
     {
         var chemin = NouveauCheminDeBase();
-        using (var store = new ObservationStore(chemin)) store.Commit();
+        MiniBaseDObservations.CreerConforme(chemin);
         using var connection = new SqliteConnection($"Data Source={chemin}");
         connection.Open();
         using var commande = connection.CreateCommand();
