@@ -59,9 +59,9 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
 
         var premiereElection = w.Actes.First(a => a.Type == TypeActe.Election);
-        var reference = new ReferenceActe(premiereElection.Strate, premiereElection.Domaine[0]);
 
-        var trouve = RestitutionDAudit.TrouverActeDesigne(w, reference);
+
+        var trouve = RestitutionDAudit.TrouverActeDesigne(w, premiereElection.Strate, premiereElection.Domaine[0]);
 
         Assert.Same(premiereElection, trouve);
     }
@@ -75,7 +75,7 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
 
         Assert.Throws<ActeInexistantDansWException>(() =>
-            RestitutionDAudit.TrouverActeDesigne(w, new ReferenceActe(Strate.Contenu, 999_999)));
+            RestitutionDAudit.TrouverActeDesigne(w, Strate.Contenu, 999_999));
     }
 
     // --- pourquoi cette élection : chaîne aboutie sur les 112 élections de W0 ---

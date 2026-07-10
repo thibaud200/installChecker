@@ -120,10 +120,8 @@ public class PorteurTests
     {
         var w = Porteur.Deriver(OmegaOracle(), RegistreReel());
         var election = w.Actes.First(a => a.Type == TypeActe.Election);
-        var reference = new ReferenceActe(election.Strate, election.Domaine[0]);
-
-        var premiere = Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), reference);
-        var seconde = Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), reference);
+        var premiere = Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), election.Strate, election.Domaine[0]);
+        var seconde = Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), election.Strate, election.Domaine[0]);
 
         Assert.NotEmpty(premiere.Maillons);
         Assert.Null(premiere.ManqueNomme);
@@ -135,7 +133,7 @@ public class PorteurTests
             Assert.Equal(premiere.Maillons[i].Conventions, seconde.Maillons[i].Conventions);
         }
 
-        var dependances = Porteur.DeQuellesConventionsDependCetActe(OmegaOracle(), RegistreReel(), reference);
+        var dependances = Porteur.DeQuellesConventionsDependCetActe(OmegaOracle(), RegistreReel(), election.Strate, election.Domaine[0]);
         Assert.Equal([new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], dependances.Dependances);
     }
 
@@ -143,7 +141,7 @@ public class PorteurTests
     public void Une_question_sur_un_acte_inexistant_est_refusee_nommement_par_C7_a_travers_le_porteur()
     {
         Assert.Throws<ActeInexistantDansWException>(
-            () => Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), new ReferenceActe(Strate.Contenu, -1)));
+            () => Porteur.PourquoiCetteElection(OmegaOracle(), RegistreReel(), Strate.Contenu, -1));
     }
 
     // --- I67 : la matrice multi-défauts — le premier échec de l'ordre total du 018 § 4, toujours ---
@@ -219,7 +217,7 @@ public class PorteurTests
         // Audit : l'échec de l'entrée ne laisse aucune réponse partielle.
         Assert.Throws<RegistreNonCouvertException>(
             () => Porteur.PourquoiCetteElection(
-                OmegaValideEnMemoire(), RegistreCasse("RegistreNonCouvert"), new ReferenceActe(Strate.Contenu, 1)));
+                OmegaValideEnMemoire(), RegistreCasse("RegistreNonCouvert"), Strate.Contenu, 1));
     }
 
     // --- l'apprentissage traverse la frontière : le registre enrichi, le porteur inchangé ---

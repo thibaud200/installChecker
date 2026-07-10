@@ -54,44 +54,44 @@ public static class Porteur
     // --- L'invocation d'audit (011 § 7) : les questions de C7, sur un acte désigné d'un index désigné,
     //     re-dérivées à chaque invocation — le porteur route, C7 répond (surface identique à 014 § 1, C7) ---
 
-    public static Chaine PourquoiCetteElection(IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+    public static Chaine PourquoiCetteElection(IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.PourquoiCetteElection(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        return RestitutionDAudit.PourquoiCetteElection(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
-    public static Chaine PourquoiCeRefus(IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+    public static Chaine PourquoiCeRefus(IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.PourquoiCeRefus(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        return RestitutionDAudit.PourquoiCeRefus(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static DependancesReponse DeQuellesConventionsDependCetActe(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, _) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.DeQuellesConventionsDependCetActe(RestitutionDAudit.TrouverActeDesigne(w, reference));
+        return RestitutionDAudit.DeQuellesConventionsDependCetActe(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine));
     }
 
     public static IReadOnlyList<ObservationConsommee> DeQuellesObservationsDependIl(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.DeQuellesObservationsDependIl(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        return RestitutionDAudit.DeQuellesObservationsDependIl(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static IReadOnlyList<HypotheseEcartee> QuALonEcarte(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.QuALonEcarte(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        return RestitutionDAudit.QuALonEcarte(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static EnsemblesMinimauxReponse QueFaudraitIlRenierPourQueCeciTombe(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
         var (w, _) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(RestitutionDAudit.TrouverActeDesigne(w, reference));
+        return RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine));
     }
 
     // --- La composition (018 § 5) : chaque traversée inter-couches est une ligne de la table du

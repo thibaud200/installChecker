@@ -295,11 +295,36 @@ public class AssemblageDeLetatTests
 
         var tau = AssemblageDeLetat.CalculerTransition(avant, apres, new Cause(TypeCause.Omega, "ajout des actes 4 et 5"));
 
-        Assert.Equal([new ReferenceActe(Strate.Contenu, 1)], tau.Correspondance.Conserves);
-        Assert.Equal([new ReferenceActe(Strate.Variante, 1)], tau.Correspondance.Abandonnes);
-        Assert.Equal([new ReferenceActe(Strate.Contenu, 4)], tau.Correspondance.Nouveaux);
+        Assert.Equal([new ReferenceActe(Strate.Contenu, [1, 2])], tau.Correspondance.Conserves);
+        Assert.Equal([new ReferenceActe(Strate.Variante, [1, 2, 3])], tau.Correspondance.Abandonnes);
+        Assert.Equal([new ReferenceActe(Strate.Contenu, [4, 5])], tau.Correspondance.Nouveaux);
         Assert.Empty(tau.Correspondance.Continuites);
         Assert.Equal(indexAvant, tau.IndexAvant);
         Assert.Equal(indexApres, tau.IndexApres);
+    }
+
+    // --- V3-6 : la totalité de la référence (024 § 3, report 8) ---
+
+    [Fact]
+    public void Tau_reste_total_quand_deux_actes_dune_meme_strate_partagent_leur_plus_petit_identifiant()
+    {
+        // Le cas constructible du report 8 : une élection {1, 2} et un refus {1, 3} à la même
+        // strate — même plus petit identifiant, deux actes. La référence-identité (strate, domaine)
+        // les distingue ; la paire abrégée serait entrée en collision (024 § 2).
+        var index = new IndexEtat(new IndexOmega(1, 3, "empreinte"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+        var election = new ActeW(TypeActe.Election, Strate.Contenu, [1, 2], "A", Niveau.Certaine, "unique-maximale",
+            null, [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+        var refusRecoupant = new ActeW(TypeActe.Refus, Strate.Contenu, [1, 3], null, null, "sous-détermination",
+            Espece.Structurel, null, null, null);
+
+        var w = new W(index, [election, refusRecoupant]);
+
+        var tau = AssemblageDeLetat.CalculerTransition(w, w, new Cause(TypeCause.Omega, "aucun changement"));
+
+        Assert.Equal(2, tau.Correspondance.Conserves.Count);
+        Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 2]), tau.Correspondance.Conserves);
+        Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 3]), tau.Correspondance.Conserves);
+        Assert.Empty(tau.Correspondance.Abandonnes);
+        Assert.Empty(tau.Correspondance.Nouveaux);
     }
 }

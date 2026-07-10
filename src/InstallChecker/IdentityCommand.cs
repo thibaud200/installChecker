@@ -61,18 +61,16 @@ public static class IdentityCommand
 
         var omega = new LecteurDObservationsSqlite(cheminBase);
         var registre = new LecteurDeRegistreMarkdown(cheminRegistre);
-        var reference = new ReferenceActe(strateAnalysee, acteId);
-
         try
         {
             object? reponse = question switch
             {
-                "pourquoi-election" => Porteur.PourquoiCetteElection(omega, registre, reference),
-                "pourquoi-refus" => Porteur.PourquoiCeRefus(omega, registre, reference),
-                "conventions" => Porteur.DeQuellesConventionsDependCetActe(omega, registre, reference),
-                "observations" => Porteur.DeQuellesObservationsDependIl(omega, registre, reference),
-                "ecartees" => Porteur.QuALonEcarte(omega, registre, reference),
-                "renier" => Porteur.QueFaudraitIlRenierPourQueCeciTombe(omega, registre, reference),
+                "pourquoi-election" => Porteur.PourquoiCetteElection(omega, registre, strateAnalysee, acteId),
+                "pourquoi-refus" => Porteur.PourquoiCeRefus(omega, registre, strateAnalysee, acteId),
+                "conventions" => Porteur.DeQuellesConventionsDependCetActe(omega, registre, strateAnalysee, acteId),
+                "observations" => Porteur.DeQuellesObservationsDependIl(omega, registre, strateAnalysee, acteId),
+                "ecartees" => Porteur.QuALonEcarte(omega, registre, strateAnalysee, acteId),
+                "renier" => Porteur.QueFaudraitIlRenierPourQueCeciTombe(omega, registre, strateAnalysee, acteId),
                 _ => null,
             };
 

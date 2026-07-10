@@ -69,8 +69,11 @@ internal static class AssemblageDeLetat
 
     public static Transition CalculerTransition(W avant, W apres, Cause cause)
     {
-        var actesAvant = avant.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine[0]));
-        var actesApres = apres.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine[0]));
+        // 024 § 3 : la référence est l'identité de l'acte (strate, domaine) — totale par la
+        // complétude (014 C5), là où le couple (strate, plus petit identifiant) pouvait entrer
+        // en collision dès que des domaines se recoupent à une même strate (garde du 014 § 7.3).
+        var actesAvant = avant.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine));
+        var actesApres = apres.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine));
 
         var conserves = new List<ReferenceActe>();
         var abandonnes = new List<ReferenceActe>();
