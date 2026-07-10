@@ -1,0 +1,5181 @@
+{
+  "index": {
+    "omega": {
+      "version": 1,
+      "nombreActes": 497,
+      "empreinteEtat": "a0894c89eabf175759683bcb130424b650ae0f7ca2f8c69dce2ffcebb852b421"
+    },
+    "registre": [
+      {
+        "identifiant": "CE-01",
+        "version": 1
+      },
+      {
+        "identifiant": "EQ-01",
+        "version": 1
+      }
+    ]
+  },
+  "actes": [
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        2,
+        464
+      ],
+      "contenu": "3b8443016ddf2416290ff311907fd9dcde620f06cf5bcba8138e5c59c2c902be",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        6,
+        478
+      ],
+      "contenu": "76d186903f535fd2db81370fb49705406bc1b88f10656a49bb7d0661ce0ed7a7",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        7,
+        339
+      ],
+      "contenu": "920cf5c123d1504a3cf9f9dcdd2936d2b0cc0c01801fef093c19c356c9d8b9f4",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        8,
+        366
+      ],
+      "contenu": "133cb56ef6e6b2c830eb12b52b35cb1ba45f51e08cd5a5da36c572f1cee075cf",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        9,
+        467
+      ],
+      "contenu": "bedd57a3d27ac32375914e2f530853de496020d7c5a7a0e6418a5b615c9ac78a",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        11,
+        341
+      ],
+      "contenu": "75a14893e2c121280c0b06312fedfb87cb3d20f03a4ec811b6f9239055e90692",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        14,
+        452
+      ],
+      "contenu": "263a03d42522169109b9e79cce16a8820add81111dcb79a7b5e7f0f7f352d20d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        15,
+        346
+      ],
+      "contenu": "1ddf58219ae5bbcbf665ab6785069c677d612437f38ff119c824fb92e32c6425",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        17,
+        353
+      ],
+      "contenu": "1abdc5a4ca1adfbb92d3ee5e181d1eea55d4054402f17a4c483de6e6cf0449f4",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        18,
+        340
+      ],
+      "contenu": "209657204655d543fc4c6dbba9e0881240efbd16e48da9060cb773e0112f2647",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        20,
+        448
+      ],
+      "contenu": "c8fa13b9c79f39d88a324a03ff97c21585643095b32e674fa668c58e1f106ef1",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        21,
+        462
+      ],
+      "contenu": "52cf3eee044db4e4442be158fe33cc36abe98f32e1c20c12edf43380f3197315",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        22,
+        455
+      ],
+      "contenu": "834d37e222091f95a007cc3901c3489d716833b0fe7a02b746b9064a40e43d3e",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        25,
+        494
+      ],
+      "contenu": "167bbc995b57fec6a02beea16e607c2d4c95982384201710989c2b02fd8d1f97",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        27,
+        376
+      ],
+      "contenu": "9ae1fd11e7fa339d649944543a7ad7eaafbd09c236cd45381f8f0b189022f264",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        28,
+        375
+      ],
+      "contenu": "849cd2c3cf7da1c121754f8ecd1ef7d9a8139249cb92aa0c1a03b92ff1f854dd",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        30,
+        369
+      ],
+      "contenu": "fe81b302807cbd7ca5422c02063faf0c0515e6abc1ba4462925a0de6ae281c72",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        31,
+        324
+      ],
+      "contenu": "7ef5b84c1f30ae344645534f3cce0544054180a0d6c8d29b11abb4574bb77bc9",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        32,
+        361
+      ],
+      "contenu": "d73966e454848c52fad17439050f37f8069d4e29769aeeaf71af57df0470c0a9",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        33,
+        351
+      ],
+      "contenu": "88e2def8aa656dceec95030c3a2b0865e7eda960e8a675df69f4616136e9a7c8",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        34,
+        319
+      ],
+      "contenu": "b313e453f59fb327cb8750c3e7acec0c9b3a42ba9562d1040589b33ccc23f0ea",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        38,
+        442
+      ],
+      "contenu": "11ac7aa797dec10c7db3b132c7bd838d6dc9ef817404d795a6f4c42313b1b2eb",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        40,
+        469
+      ],
+      "contenu": "3514977b03022a75161b9d02f77202bba592ceca55010bdfd55888d0c49f35ea",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        41,
+        449
+      ],
+      "contenu": "076b2f180cc513184db1d41b98ef8cab51a9059ad33a0c64919bac0dc9733775",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        43,
+        463
+      ],
+      "contenu": "8da34e8aed0555b2f813a9dfd907db33821485e33794c6924428a91622e4b3eb",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        44,
+        372
+      ],
+      "contenu": "e18f73924c59345bfc0058e83786795fcac0477cba07330ec314ef76a625313d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        46,
+        68,
+        358
+      ],
+      "contenu": "46f8123403437e69750b7ad4fefb78c5173ae69e81c537b55fb27738a537fc4c",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        47,
+        101,
+        357
+      ],
+      "contenu": "72ce5140916c7b025b8064461a8cd292d430209f804aa56d50a17554521995a6",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        50,
+        126,
+        359
+      ],
+      "contenu": "7349bb7c6073e9551a0adbc8bc7cbc69045cffaca1e7dea4f800109816377315",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        51,
+        356
+      ],
+      "contenu": "4e5b2cc4b48205937ef6583a48645a54f74be9f1c7437713946d6dd3d4ae6035",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        53,
+        348
+      ],
+      "contenu": "893a570757f7fa1460db0d1ac2f77facbf2d50302f4098d60bdc86c7c1fec12d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        56,
+        323
+      ],
+      "contenu": "2b8484c1ad59cc9ec02b76774f6c6f030c4455972d505a378096ffda5af6812d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        59,
+        485
+      ],
+      "contenu": "718a26ff322e539955d864d028cf2510cdc2fc0dd57e252ed316e5c6de018b00",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        60,
+        321
+      ],
+      "contenu": "670dc70b22cf30309b65898404c7c1a60a9d7426ba48fb5eb1dcf67fcc12d58d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        61,
+        331
+      ],
+      "contenu": "85c1ccac0701c978fd364dc428452cd798fb7292c3943383a42f3ff9f46db231",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        69,
+        315
+      ],
+      "contenu": "c463d23e60c2169da0e10d1cfb097d2ae27f25102ac55d4589069bbe2c4a2276",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        70,
+        329
+      ],
+      "contenu": "07c9cbc0b70fc6fe77338e73db99b79a4006cc8fff553d63c02d5731fa37f944",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        71,
+        440
+      ],
+      "contenu": "b2ac56b7639e2b259bb78bab077555d76f2a5eec6c516690d63de36bc1d6ca25",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        75,
+        337
+      ],
+      "contenu": "e0b08a8a4b11ac500d1b0666493ba850b054c5724bb059782019cff71ecaa74d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        78,
+        466
+      ],
+      "contenu": "1b5eea6bbe4c27692e653f38b7e8d8d69b1724993fa3ac789e262051dfc58eea",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        80,
+        465
+      ],
+      "contenu": "e26170a687e5b33be3e4afe67c58e90fa3e07515298e248f9861b6dc54e7e60e",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        82,
+        326
+      ],
+      "contenu": "e0f1c4086b34aef0aa4778a168376a47c0ba693eb59f930c71843e845be6c96c",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        83,
+        330
+      ],
+      "contenu": "37b2f6d8157888c81411e5f763c00d3124dd10ad651cbdda121e110e96d68065",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        85,
+        342
+      ],
+      "contenu": "49f0336f6732623040253caebad1af35c8d1b00b099481c647ba9db9d4715fae",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        87,
+        459
+      ],
+      "contenu": "ae9c1e732d02be00ec0689376c32d8362261ee6f148b9e538e0a569ba1ecb392",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        88,
+        327
+      ],
+      "contenu": "9f0b9a678d6ca8ae838408b1682dc8386b72d46ca44cc28ff44a4eb47e0cfc6b",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        89,
+        476
+      ],
+      "contenu": "60714fcdac0a7cbfc45e6ed9bc6d4b7f8536947f630016e5faca5cce1745adcf",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        90,
+        468
+      ],
+      "contenu": "41d5611b83e48f3d0c54bb0a79bb5f37f6c783fc5bbb17196e1fcf1d187fe4fc",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        91,
+        472
+      ],
+      "contenu": "06978ff96f2714810bc9cf06cf06d153812c2ff898fe72599a36a933fcaebd73",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        92,
+        365
+      ],
+      "contenu": "caa62ab1e1b31dd0353d6ab53d51187df90cdd713dc9e809aba9cbda7692cf47",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        93,
+        450
+      ],
+      "contenu": "444a867f02798d97f85af656ee7c6dc8f8812be1633657fa9f99f9793b580f92",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        94,
+        318
+      ],
+      "contenu": "5bf363ad53075e032dae7f4d224f3241f784a990cda49c56984887816afee6ae",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        96,
+        355
+      ],
+      "contenu": "985171b72cf3a94e8dbdea20397eccb180e32bfa8732e2e8f4cde9d89c57b619",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        98,
+        370
+      ],
+      "contenu": "9776b77a3f0e4a83571b1c17bab19310eaef521b10ce95072d04c5fdeedf7cc5",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        100,
+        473
+      ],
+      "contenu": "4e26b8e1517bab4ce480350d7e9c4aa8e24d30a598af440480f651f961f93210",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        102,
+        336
+      ],
+      "contenu": "90e5fc16038287fc8b7400cbe09877a1ea09ee826e4c840fcc48b8056b53d1b8",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        104,
+        333
+      ],
+      "contenu": "39c496efa00d270bc6537f87f1885bae7388445e6702e4d58f5066e9a71f8173",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        106,
+        447
+      ],
+      "contenu": "4edb63c267c96ca5c05f309081b55e3374626e25dddb205cf8b37a42c2438750",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        111,
+        354
+      ],
+      "contenu": "e3f21aabecc253c258931adaec249376a3d9e423490d529a0c8af19f26336afa",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        112,
+        491
+      ],
+      "contenu": "8e57991c99308ccc3f4ca5de726b9915bb379a1c903db61c0e28f257142da835",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        117,
+        364
+      ],
+      "contenu": "65b84ce9e17ec2129043828e25706ff70ddc251bbb7cf10b2643827b1d671048",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        118,
+        367
+      ],
+      "contenu": "6d2968f293e5e266d5c162ca9c824bf66f76f8bec36443d498135d8d7b56e621",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        120,
+        347
+      ],
+      "contenu": "b5fbbdcc0e918dc185b2e35a78447ca3099dc7389a645626063d376c47892d58",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        122,
+        328
+      ],
+      "contenu": "ea15c753b468c22f4d840c065ba604a9ae46b659d785057f158335cbadae497b",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        123,
+        313
+      ],
+      "contenu": "ccb99abeb554c877236697168ad75bf6fb905c986ddbdb463a8e16cf430a1c0d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        124,
+        471
+      ],
+      "contenu": "d561ea3b7ffcef7d43ceffefbfda2fb5d2a85dfe0b7f82b7576493623993f3c8",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        127,
+        444
+      ],
+      "contenu": "ad12c204cf4b9f98824668e36ee23f61266465bebfe810eb3e0111343efe12c6",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        130,
+        456
+      ],
+      "contenu": "5469f2786de6ab03f3acedd9d490596d48aba0f84305035801536250e47853e4",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        131,
+        458
+      ],
+      "contenu": "27664f65c109f0ce90789a6a3e7613bc4a1762a468d2ab8306de8279a4f3a5e9",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        132,
+        454
+      ],
+      "contenu": "4d029b3bef558b3232e33e6e7c54f65feada347b99cac142978643cd7cadb12c",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        133,
+        360
+      ],
+      "contenu": "6bf760361307144b606e760e40b8a13f89adca9629a27e86f3fc385cbe37c78d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        134,
+        443
+      ],
+      "contenu": "6fa830d2f4bcd43ce06683e2dbbee328400d4ee16e591928d3405dcc343c8081",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        136,
+        461
+      ],
+      "contenu": "aabcbcdb5847a407bafa3d980511bd841fcb4148171fe79ccb234620e87f6624",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        138,
+        345
+      ],
+      "contenu": "a6392ed62578da8ddd145446de1ded4dfd11f7d1ce7e0101aca82b3933611b14",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        140,
+        312
+      ],
+      "contenu": "db92e057f649d4804d3a758aedade71a3b63991ca318077d4340e47c4bdba8e7",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        142,
+        377
+      ],
+      "contenu": "cfb01191826c1e962ad10e1b2a06b45a71fb78e9128be900707b1313ea952335",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        145,
+        371
+      ],
+      "contenu": "7df7d52bdd8662e49379b6eed5de63144de5cd875abda923b50b4f9f8d293ab0",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        146,
+        493
+      ],
+      "contenu": "e368cbd51e46ba49b14975c858f3a6c6295890f438fbeb4e7a07b93a9b5bf00e",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        147,
+        441
+      ],
+      "contenu": "a7da165e4dc6cf3be4fc800223ba1242908558878b926dc132ab6523d347a798",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        148,
+        451
+      ],
+      "contenu": "24e3353a88a821f9e6d36ed4f63332414cb72d6b879cf3f13b0a4e70ccefd4a9",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        149,
+        343
+      ],
+      "contenu": "fc293ce10825fd9ba9c3215c1b793f6e25ad43940a040dd6f673ef5d4a6f9c5d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        150,
+        325
+      ],
+      "contenu": "c0e5855db7fe18332eb8546634e2ab62807c72d9ee2e7de2b24f2ebd87a4aac9",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        151,
+        335
+      ],
+      "contenu": "2c8293b45443f0d40da18766de6706bbdd52c4885d98b34e08139775e614deb5",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        153,
+        477
+      ],
+      "contenu": "7cef0419f52c47f41b9546065e6788f20de07a7f1e647589ab52d88f6c7e50a5",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        154,
+        317
+      ],
+      "contenu": "4b3637f36cae2b4585a48cec5671968972e3eb5d9b76ea1225527c8282aae850",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        156,
+        314
+      ],
+      "contenu": "f73830d5f64e7a920aef8ae2c101b3dea69a5feb47c10d1d6b2141235c4156ae",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        157,
+        352
+      ],
+      "contenu": "85cd9410fa065a2bc139e91670fe9c2cfe84242c2bda6fcc1895f1157ca0defc",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        158,
+        460
+      ],
+      "contenu": "89f17c032de7cd46def8ffafe4333b629afc3af94f9924e06cf5805e5297fa72",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        159,
+        350
+      ],
+      "contenu": "7fe90caef955591c2182f50433797816b35cdd2416a500a4267210612e6347fb",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        160,
+        334
+      ],
+      "contenu": "5ca5cb212bb950e4194935ddd23040f11340748992f8c29b5cbd59f66df65c0a",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        161,
+        349
+      ],
+      "contenu": "64d564336f8823be7de45a181c8a9055c88fcbfafba7e527c1a4b1ed73b654ac",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        163,
+        322
+      ],
+      "contenu": "4916a007191ded558b00e55efe7ade0576917120d97993884bb22f7240e1dbd5",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        164,
+        368
+      ],
+      "contenu": "092280f9396bc48afc79eec7c85efc5ac55d0aa5b56a6ecbd75ca82f7817e315",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        165,
+        492
+      ],
+      "contenu": "a2241bbfa9e412ed3e0a7bc63eab3b88421bfe8172432af9152ac84709443bc3",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        167,
+        453
+      ],
+      "contenu": "e15470d16fffafcb734c6d43a09e61eab7dbbf39187d5d24952fe2ed2895772e",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        170,
+        457
+      ],
+      "contenu": "4ab8d64bf66013786098d0f231b55426540ba642fd7bc842954d11a1b0ee2f49",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        171,
+        362
+      ],
+      "contenu": "53784174ef5139fd1703f08a5561d883b00b11f276b0ed09ea340a10eaa7010d",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        172,
+        344
+      ],
+      "contenu": "71425c13ce267113f5fa23a431cc2f8ffa61dca06f2b9cff5a0d17ebf87ed1e6",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        173,
+        332
+      ],
+      "contenu": "3f83725793cd5a117a38e8e5c42b5bbdd09a08805bcbd23ea6a80518ff483194",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        174,
+        363
+      ],
+      "contenu": "08b6f653e272a45ed86bc07da0f7875e116cc05b748ebaf5280a34826f9d27bf",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        176,
+        374
+      ],
+      "contenu": "0bf625b7a306a7ec239919e5c3b64de9d4404ee059768fca93fc7bd67f13f5a7",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        179,
+        320
+      ],
+      "contenu": "908624149e5a9e2eb403b9910ebbed6168bc60adf90122fc677a413417d87de7",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        182,
+        373
+      ],
+      "contenu": "be4e2d7836e658f3f99ec5523afd68167c4fa97a18a694a7a7bb7b99db4fcf33",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        183,
+        338
+      ],
+      "contenu": "5e5bf037ea4074c13d463b510523b968f39af7ade6e88431cb16b83f805b815c",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        184,
+        470
+      ],
+      "contenu": "4215fe05280ca44f007a90864a0e74ad5b0a5144a6be8f820d9ac9aada51a35a",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        191,
+        486
+      ],
+      "contenu": "3809b9c375738f2fb4482b9597b1a549463d1a4c840c80cc27f1ce0a6454df3b",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        192,
+        488
+      ],
+      "contenu": "43fe9fbb32db3cc4485e0cd82a9e65245931ba0f96acb1ee948ef8ee26bbcd6c",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        193,
+        487
+      ],
+      "contenu": "6877fad5183fa5c90c2671baefcaac8dd0e5d6faf3c249366b4c5b5748e41c26",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        240,
+        241
+      ],
+      "contenu": "1a8575fc846717e3b8c222a77de50829688a320f8bb876fd665c501548afc62e",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        258,
+        259,
+        260
+      ],
+      "contenu": "9bdd200622b7e4c2301a853aca3f31051b433ec664494f8d73cafb93d541b04f",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        298,
+        299
+      ],
+      "contenu": "d023d54b3a5db10c7e896089bb3dbe6e7f4bc4eaa9bbecb34ca414be5970f688",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "élection",
+      "strate": "contenu",
+      "domaine": [
+        436,
+        437
+      ],
+      "contenu": "55322b76ad3c3787b1fe4e1b4250c84f5bfad10a99e066f509de9044bfe0f9b5",
+      "niveau": "certaine",
+      "motif": "unique-maximale",
+      "licences": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        }
+      ],
+      "dependances": [
+        {
+          "identifiant": "CE-01",
+          "version": 1
+        },
+        {
+          "identifiant": "EQ-01",
+          "version": 1
+        }
+      ],
+      "dette": []
+    },
+    {
+      "type": "refus",
+      "strate": "variante",
+      "domaine": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495,
+        496,
+        497
+      ],
+      "motif": "aucune-convention-strate",
+      "espece": "normatif"
+    },
+    {
+      "type": "refus",
+      "strate": "version",
+      "domaine": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495,
+        496,
+        497
+      ],
+      "motif": "aucune-convention-strate",
+      "espece": "normatif"
+    },
+    {
+      "type": "refus",
+      "strate": "identite",
+      "domaine": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495,
+        496,
+        497
+      ],
+      "motif": "aucune-convention-strate",
+      "espece": "normatif"
+    },
+    {
+      "type": "refus",
+      "strate": "famille",
+      "domaine": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368,
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445,
+        446,
+        447,
+        448,
+        449,
+        450,
+        451,
+        452,
+        453,
+        454,
+        455,
+        456,
+        457,
+        458,
+        459,
+        460,
+        461,
+        462,
+        463,
+        464,
+        465,
+        466,
+        467,
+        468,
+        469,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        494,
+        495,
+        496,
+        497
+      ],
+      "motif": "préalable-absent",
+      "espece": "normatif"
+    }
+  ]
+}

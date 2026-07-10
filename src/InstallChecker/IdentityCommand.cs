@@ -18,9 +18,11 @@ namespace InstallChecker;
 /// traduite, renommée, dégradée ni agrégée (018 § 6, le patron du 014 § 7.4). Aucune logique
 /// métier : le consommateur n'influence jamais W (EXG-16), ne compare jamais deux W (011 § 9 :
 /// τ est la seule comparaison), ne complète, ne filtre ni ne réordonne rien, n'écrit ni dans Ω ni
-/// dans ℛ (011 § 11). L'émission suit les décisions du 013 § 4 (JSON, ordre canonique des actes
-/// déjà porté par W, champs dans l'ordre du 014 § 7.3) ; la forme canonique <b>matérielle</b> bit
-/// à bit relève du report 3 (016 § 4.1) et n'est pas spécifiée ici.
+/// dans ℛ (011 § 11). W est émis « tel que produit, sous la forme canonique du 013 § 4 » (018 § 6) :
+/// la forme canonique matérielle du moteur (report 3), définie par <see cref="FormeCanonique"/> et
+/// consignée dans <c>docs/conformite/forme-canonique-materielle.md</c> — octets identiques sur
+/// toute plateforme (EXG-18). Les réponses d'audit gardent une présentation JSON non consignée
+/// (le manque est inventorié dans la consignation, § 4).
 /// </summary>
 public static class IdentityCommand
 {
@@ -39,7 +41,7 @@ public static class IdentityCommand
                 new LecteurDObservationsSqlite(cheminBase),
                 new LecteurDeRegistreMarkdown(cheminRegistre));
 
-            output.WriteLine(JsonSerializer.Serialize(FormeEmise(w), OptionsJson));
+            output.Write(FormeCanonique.Emettre(w));
             return 0;
         }
         catch (Exception ex) when (EstUneErreurContractuelle(ex))
@@ -99,31 +101,4 @@ public static class IdentityCommand
     private static bool EstUneErreurContractuelle(Exception ex) =>
         ex is ErreurOmega or ErreurDeRegistre or ActeInexistantDansWException;
 
-    /// <summary>La forme émise de W : les sections et l'ordre des champs du 014 § 7 — présentation du consommateur, jamais la forme canonique matérielle (report 3).</summary>
-    private static object FormeEmise(W w) => new
-    {
-        index = new
-        {
-            omega = new
-            {
-                version = w.Index.Omega.Version,
-                nombreActes = w.Index.Omega.NombreActes,
-                empreinteEtat = w.Index.Omega.EmpreinteEtat,
-            },
-            registre = w.Index.Registre.Select(r => new { identifiant = r.Identifiant, version = r.Version }),
-        },
-        actes = w.Actes.Select(a => new
-        {
-            type = a.Type == TypeActe.Election ? "élection" : "refus",
-            strate = a.Strate.ToString().ToLowerInvariant(),
-            domaine = a.Domaine,
-            contenu = a.Contenu,
-            niveau = a.Niveau?.ToString().ToLowerInvariant(),
-            motif = a.Motif,
-            espece = a.Espece?.ToString().ToLowerInvariant(),
-            licences = a.Licences?.Select(r => new { identifiant = r.Identifiant, version = r.Version }),
-            dependances = a.Dependances?.Select(r => new { identifiant = r.Identifiant, version = r.Version }),
-            dette = a.Dette?.Select(r => new { identifiant = r.Identifiant, version = r.Version }),
-        }),
-    };
 }

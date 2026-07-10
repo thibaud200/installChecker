@@ -103,6 +103,19 @@ public class IdentityCommandTests : IDisposable
         Assert.Equal(premiere.ToString(), seconde.ToString());
     }
 
+    [Fact]
+    public void Le_consommateur_emet_exactement_le_fichier_W0_attendu_de_loracle_independant()
+    {
+        // 018 § 6 : « émet W tel que produit, sous la forme canonique du 013 § 4 » — le test d'or
+        // par la commande réelle : l'égalité est bit à bit avec le fichier produit hors moteur (É7).
+        var sortie = new StringWriter { NewLine = "\n" };
+
+        Assert.Equal(0, IdentityCommand.Deriver(CheminOracle(), CheminRegistreReel(), sortie, new StringWriter()));
+
+        var attendu = File.ReadAllBytes(Path.Combine(RacineDuDepot(), "tests", "oracle", "W0-attendu.json"));
+        Assert.Equal(attendu, System.Text.Encoding.UTF8.GetBytes(sortie.ToString()));
+    }
+
     // --- 018 § 6 : toute erreur restituée telle quelle — jamais traduite, renommée ni agrégée ---
 
     [Fact]
