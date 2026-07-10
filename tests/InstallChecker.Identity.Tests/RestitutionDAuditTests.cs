@@ -2,7 +2,6 @@ using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
 using InstallChecker.Identity.Audit;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Etat;
@@ -38,7 +37,7 @@ public class RestitutionDAuditTests
     {
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
         return AssemblageDeLetat.Assembler(actes, index);
     }
 

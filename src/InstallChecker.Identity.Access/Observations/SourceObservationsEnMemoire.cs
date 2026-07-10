@@ -1,3 +1,4 @@
+using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Observations;
 
 namespace InstallChecker.Identity.Access.Observations;
@@ -13,4 +14,7 @@ public sealed class SourceObservationsEnMemoire(ModeleObservations modele, IRead
     public ModeleObservations ProjeterModele() => modele;
 
     public IReadOnlyList<ContexteObservation> ProjeterContexte() => contexte;
+
+    /// <summary>Même contrat, même construction (025 § 3) : l'identité que produirait tout support user_version = 1 pour ces données — la substituabilité (I42) vaut aussi pour l'identité.</summary>
+    public IndexOmega ProjeterIdentite() => IdentiteDeLEtatOmega.Calculer(modele, versionDeContrat: 1);
 }

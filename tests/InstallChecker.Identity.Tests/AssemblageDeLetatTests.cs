@@ -3,7 +3,6 @@ using System.Text;
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
@@ -36,7 +35,7 @@ public class AssemblageDeLetatTests
         var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
         return AssemblageDeLetat.Assembler(actes, index);
     }
 
@@ -114,7 +113,7 @@ public class AssemblageDeLetatTests
         var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
 
         var premier = AssemblageDeLetat.Assembler(actes, index);
         var second = AssemblageDeLetat.Assembler(actes, index);
@@ -133,7 +132,7 @@ public class AssemblageDeLetatTests
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
         var actesMelanges = new EnsembleDesActes(actes.Elections.Reverse().ToList(), actes.Refus.Reverse().ToList());
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
 
         var direct = AssemblageDeLetat.Assembler(actes, index);
         var melange = AssemblageDeLetat.Assembler(actesMelanges, index);
@@ -184,17 +183,49 @@ public class AssemblageDeLetatTests
         });
     }
 
-    // --- empreinte d'état conforme à 014 § 7.2 (même fonction que les empreintes de contenu) ---
+    // --- empreinte d'état conforme au 014 § 7.2 raffiné (025 § 3) : la fonction déclarée du
+    //     support sur l'encodage à préfixe de longueur des couples (identifiant, empreinte) ---
 
     [Fact]
-    public void Lempreinte_detat_est_la_fonction_dempreinte_du_support_sur_la_concatenation_canonique()
+    public void Lempreinte_detat_est_la_fonction_declaree_du_support_sur_lencodage_des_couples()
     {
         var modele = ModeleOracle();
 
-        var attendue = Convert.ToHexStringLower(SHA256.HashData(
-            Encoding.UTF8.GetBytes(string.Concat(modele.Actes.OrderBy(a => a.Identifiant).Select(a => a.Empreinte)))));
+        var encodage = string.Concat(modele.Actes
+            .OrderBy(a => a.Identifiant)
+            .SelectMany(a => new[] { a.Identifiant.ToString(), a.Empreinte })
+            .Select(v => $"{v.Length}:{v},"));
+        var attendue = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(encodage)));
 
-        Assert.Equal(attendue, IndexOmegaCalculateur.Calculer(modele).EmpreinteEtat);
+        Assert.Equal(attendue, new SourceObservationsEnMemoire(modele, []).ProjeterIdentite().EmpreinteEtat);
+    }
+
+    // --- V3-7 : la discrimination (025 § 1, P1) — les identifiants entrent dans l'identité ---
+
+    [Fact]
+    public void Deux_etats_de_memes_contenus_et_didentifiants_differents_ont_des_identites_distinctes()
+    {
+        // La classe des renumérotations, jadis confondue sur un même index (report 5) :
+        // mêmes contenus (A, B), identifiants (1, 2) contre (5, 9) — deux identités désormais.
+        var premier = new ModeleObservations([
+            new ActeObservation(1, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+            new ActeObservation(2, 1, "B", new Dictionary<Attribut, ValeurObservee>()),
+        ]);
+        var second = new ModeleObservations([
+            new ActeObservation(5, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+            new ActeObservation(9, 1, "B", new Dictionary<Attribut, ValeurObservee>()),
+        ]);
+
+        var identitePremier = new SourceObservationsEnMemoire(premier, []).ProjeterIdentite();
+        var identiteSecond = new SourceObservationsEnMemoire(second, []).ProjeterIdentite();
+
+        Assert.NotEqual(identitePremier.EmpreinteEtat, identiteSecond.EmpreinteEtat);
+        Assert.Equal(identitePremier.NombreActes, identiteSecond.NombreActes);
+
+        // Et le déterminisme demeure : le même état produit la même identité.
+        Assert.Equal(
+            identitePremier.EmpreinteEtat,
+            new SourceObservationsEnMemoire(premier, []).ProjeterIdentite().EmpreinteEtat);
     }
 
     // --- reconstruction complète depuis Ω et ℛ via le pipeline ---

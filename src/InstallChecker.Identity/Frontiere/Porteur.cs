@@ -1,6 +1,5 @@
 using InstallChecker.Identity.Actes;
 using InstallChecker.Identity.Audit;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
@@ -102,14 +101,17 @@ public static class Porteur
         IObservationsSource omega, IRegistreSource registre)
     {
         // Bloc Ω d'abord, bloc ℛ ensuite (018 § 4) — les deux entièrement vérifiés avant toute dérivation (017 § 4).
+        // L'identité de l'état est produite par le support (025 §§ 2–4, ligne C1 → C6) : le porteur
+        // la convoie, il ne calcule rien (018 § 2, I66).
         var modele = omega.ProjeterModele();
+        var identiteOmega = omega.ProjeterIdentite();
         var referentiel = registre.Projeter();
 
         var signaux = DerivationDesSignaux.Deriver(modele, referentiel);
         var hypotheses = ConstructionDesHypotheses.Construire(signaux);
         var actes = DecisionDesActes.Decider(
             hypotheses, referentiel, modele.Actes.Select(a => a.Identifiant).ToList());
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(identiteOmega, referentiel.Index);
 
         return (AssemblageDeLetat.Assembler(actes, index), hypotheses);
     }

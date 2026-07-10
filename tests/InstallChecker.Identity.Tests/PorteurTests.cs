@@ -1,7 +1,6 @@
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Etat;
@@ -54,6 +53,8 @@ public class PorteurTests
         public ModeleObservations ProjeterModele() => throw erreur;
 
         public IReadOnlyList<ContexteObservation> ProjeterContexte() => throw erreur;
+
+        public IndexOmega ProjeterIdentite() => throw erreur;
     }
 
     private sealed class RegistreEnEchec(ErreurDeRegistre erreur) : IRegistreSource
@@ -93,7 +94,7 @@ public class PorteurTests
         var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, modele.Actes.Select(a => a.Identifiant).ToList());
         var manuel = AssemblageDeLetat.Assembler(
-            actes, new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index));
+            actes, new IndexEtat(OmegaOracle().ProjeterIdentite(), referentiel.Index));
 
         Assert.Equal(Cle(manuel), Cle(w));
     }

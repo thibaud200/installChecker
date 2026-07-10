@@ -1,4 +1,5 @@
 using InstallChecker.Identity.Erreurs;
+using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Observations;
 using Microsoft.Data.Sqlite;
 
@@ -38,6 +39,9 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
 
         return new ModeleObservations(actes);
     }
+
+    /// <summary>L'identité de l'état (025 §§ 3–4) : produite par le support — sa fonction déclarée (SHA-256, user_version = 1) sur l'encodage des couples (identifiant, empreinte).</summary>
+    public IndexOmega ProjeterIdentite() => IdentiteDeLEtatOmega.Calculer(ProjeterModele(), VersionDeContratSupportee);
 
     public IReadOnlyList<ContexteObservation> ProjeterContexte()
     {
