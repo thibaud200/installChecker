@@ -324,14 +324,26 @@ public class AssemblageDeLetatTests
         var avant = new W(indexAvant, [electionConservee, refusVariante]);
         var apres = new W(indexApres, [electionConservee, electionNouvelle]);
 
-        var tau = AssemblageDeLetat.CalculerTransition(avant, apres, new Cause(TypeCause.Omega, "ajout des actes 4 et 5"));
+        var tau = AssemblageDeLetat.CalculerTransition(avant, apres, [1, 2, 3], [1, 2, 3, 4, 5]);
 
         Assert.Equal([new ReferenceActe(Strate.Contenu, [1, 2])], tau.Correspondance.Conserves);
         Assert.Equal([new ReferenceActe(Strate.Variante, [1, 2, 3])], tau.Correspondance.Abandonnes);
         Assert.Equal([new ReferenceActe(Strate.Contenu, [4, 5])], tau.Correspondance.Nouveaux);
-        Assert.Empty(tau.Correspondance.Continuites);
         Assert.Equal(indexAvant, tau.IndexAvant);
         Assert.Equal(indexApres, tau.IndexApres);
+
+        // La cause est dérivée des entrées, jamais fournie (026 § 3) : les identités d'Ω diffèrent →
+        // volet Ω (le delta des énumérations) ; les listes ℛ sont égales → aucun volet ℛ.
+        Assert.NotNull(tau.Cause.Omega);
+        Assert.Equal([4L, 5L], tau.Cause.Omega.Ajoutes);
+        Assert.Empty(tau.Cause.Omega.Retires);
+        Assert.Null(tau.Cause.Registre);
+
+        // La continuité triviale de l'élection conservée (026 § 4, 006 E5) ; l'élection nouvelle
+        // n'a aucun prédécesseur (contenu « B » absent de W).
+        Assert.Equal(
+            [(new ReferenceActe(Strate.Contenu, [1, 2]), new ReferenceActe(Strate.Contenu, [1, 2]))],
+            tau.Correspondance.Continuites);
     }
 
     // --- V3-6 : la totalité de la référence (024 § 3, report 8) ---
@@ -350,12 +362,16 @@ public class AssemblageDeLetatTests
 
         var w = new W(index, [election, refusRecoupant]);
 
-        var tau = AssemblageDeLetat.CalculerTransition(w, w, new Cause(TypeCause.Omega, "aucun changement"));
+        var tau = AssemblageDeLetat.CalculerTransition(w, w, [1, 2, 3], [1, 2, 3]);
 
         Assert.Equal(2, tau.Correspondance.Conserves.Count);
         Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 2]), tau.Correspondance.Conserves);
         Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 3]), tau.Correspondance.Conserves);
         Assert.Empty(tau.Correspondance.Abandonnes);
         Assert.Empty(tau.Correspondance.Nouveaux);
+
+        // Deux index égaux : la cause est vide — une comparaison, jamais une révision (026 § 3, 006 Déf. 6).
+        Assert.Null(tau.Cause.Omega);
+        Assert.Null(tau.Cause.Registre);
     }
 }

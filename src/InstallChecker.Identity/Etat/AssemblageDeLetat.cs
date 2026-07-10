@@ -67,7 +67,9 @@ internal static class AssemblageDeLetat
         return resultat;
     }
 
-    public static Transition CalculerTransition(W avant, W apres, Cause cause)
+    public static Transition CalculerTransition(
+        W avant, W apres,
+        IReadOnlyList<long> identifiantsAvant, IReadOnlyList<long> identifiantsApres)
     {
         // 024 § 3 : la référence est l'identité de l'acte (strate, domaine) — totale par la
         // complétude (014 C5), là où le couple (strate, plus petit identifiant) pouvait entrer
@@ -102,12 +104,74 @@ internal static class AssemblageDeLetat
         return new Transition(
             avant.Index,
             apres.Index,
-            cause,
+            DeriverLaCause(avant.Index, apres.Index, identifiantsAvant, identifiantsApres),
             new Correspondance(
                 Trier(conserves),
                 Trier(abandonnes),
                 Trier(nouveaux),
-                Continuites: []));
+                DeriverLesContinuites(avant, apres)));
+    }
+
+    /// <summary>
+    /// La cause dérivée des entrées (026 § 3, T1 close) : un volet par membre de l'index dont les
+    /// deux états diffèrent — Ω puis ℛ —, aucun volet pour un membre inchangé ; entre deux index
+    /// égaux la cause est vide (τ de comparaison, EXG-30 ; jamais une révision, 006 Déf. 6).
+    /// </summary>
+    private static Cause DeriverLaCause(
+        IndexEtat avant, IndexEtat apres,
+        IReadOnlyList<long> identifiantsAvant, IReadOnlyList<long> identifiantsApres)
+    {
+        VoletOmega? omega = null;
+        if (avant.Omega != apres.Omega)
+        {
+            omega = new VoletOmega(
+                identifiantsApres.Except(identifiantsAvant).OrderBy(id => id).ToList(),
+                identifiantsAvant.Except(identifiantsApres).OrderBy(id => id).ToList());
+        }
+
+        VoletRegistre? registre = null;
+        if (!avant.Registre.SequenceEqual(apres.Registre))
+        {
+            registre = new VoletRegistre(
+                apres.Registre.Except(avant.Registre).ToList(),
+                avant.Registre.Except(apres.Registre).ToList());
+        }
+
+        return new Cause(omega, registre);
+    }
+
+    /// <summary>
+    /// Les continuités dérivées (026 § 4, le critère du 006 § 5) : entre élections seulement (un
+    /// refus ne postule aucune origine), e′ est successeur de e lorsque même strate, même contenu
+    /// propositionnel (à la strate contenu, l'origine postulée est le contenu commun) et domaines
+    /// se recouvrant — les triviales des conservés comprises (006 E5 : « les mêmes hypothèses se
+    /// succèdent à elles-mêmes »).
+    /// </summary>
+    private static IReadOnlyList<(ReferenceActe Avant, ReferenceActe Apres)> DeriverLesContinuites(W avant, W apres)
+    {
+        var electionsApres = apres.Actes
+            .Where(a => a.Type == TypeActe.Election)
+            .ToLookup(a => (a.Strate, a.Contenu));
+
+        var continuites = new List<(ReferenceActe Avant, ReferenceActe Apres)>();
+        foreach (var election in avant.Actes.Where(a => a.Type == TypeActe.Election))
+        {
+            foreach (var successeur in electionsApres[(election.Strate, election.Contenu)])
+            {
+                if (election.Domaine.Any(successeur.Domaine.Contains))
+                {
+                    continuites.Add((
+                        new ReferenceActe(election.Strate, election.Domaine),
+                        new ReferenceActe(successeur.Strate, successeur.Domaine)));
+                }
+            }
+        }
+
+        return continuites
+            .OrderBy(c => c.Avant.Strate)
+            .ThenBy(c => c.Avant.PlusPetitIdentifiantDuDomaine)
+            .ThenBy(c => c.Apres.PlusPetitIdentifiantDuDomaine)
+            .ToList();
     }
 
     private static List<ReferenceActe> Trier(List<ReferenceActe> references) =>

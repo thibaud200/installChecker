@@ -344,7 +344,7 @@ public class RestitutionDAuditTests
     {
         var indexAvant = new IndexEtat(new IndexOmega(1, 3, "avant"), [new ConventionRef("CE-01", 1)]);
         var indexApres = new IndexEtat(new IndexOmega(1, 5, "apres"), [new ConventionRef("CE-01", 1)]);
-        var tau = new Transition(indexAvant, indexApres, new Cause(TypeCause.Omega, "test"),
+        var tau = new Transition(indexAvant, indexApres, new Cause(new VoletOmega([4, 5], []), null),
             new Correspondance([], [], [], []));
 
         var reponse = RestitutionDAudit.QuEstCeQuiAChangeEntreDeuxEtats(tau);
