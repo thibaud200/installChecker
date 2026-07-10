@@ -44,7 +44,7 @@ Il doit devenir un moteur de connaissance des logiciels Windows.
 
 L'identification logicielle est assurée par un moteur d'identité logique indépendant du pipeline d'observation. Le pipeline produit exclusivement des observations Ω, sans interprétation ; le moteur d'identité consomme Ω ainsi qu'un registre de conventions ℛ et dérive un état du monde W.
 
-La théorie complète du moteur est spécifiée dans `docs/identity/000` à `docs/identity/018`, qui constituent la référence normative de toute implémentation (voir § 21).
+La théorie complète du moteur est spécifiée dans `docs/identity/000` à `docs/identity/026`, qui constituent la référence normative de toute implémentation (voir § 21).
 
 ---
 
@@ -444,7 +444,7 @@ Toute décision structurante doit être documentée :
 ## ADR-010 — Théorie normative du moteur d'identité
 
 - **Contexte** : la logique d'identification dépasse largement le cadre du projet InstallChecker.
-- **Décision** : la théorie du moteur est définie exclusivement dans la série documentaire `docs/identity/000` à `docs/identity/018`, référence normative de toute implémentation. Le code ne définit jamais les règles théoriques ; il les implémente.
+- **Décision** : la théorie du moteur est définie exclusivement dans la série documentaire `docs/identity/000` à `docs/identity/026`, référence normative de toute implémentation. Le code ne définit jamais les règles théoriques ; il les implémente.
 - **Alternatives** : documenter la théorie dans le code ou le présent fichier — rejeté : irréconciliable avec l'auditabilité et la gouvernance documentaire.
 - **Conséquences** : toute évolution de la théorie suit la série documentaire avant toute implémentation (le document précède le code, 016 § 3) ; les invariants I1 à I67 constituent le contrat de conformité du moteur ; les conformités sont consignées sous `docs/conformite/`.
 
@@ -455,7 +455,7 @@ Toute décision structurante doit être documentée :
 - Phase 1 : pipeline d'observation — **terminée** (pipeline figé, `user_version = 1`)
 - Phase 2 : fondements théoriques du moteur d'identité — **terminée** (`docs/identity/000→016`)
 - Phase 3 : implémentation du moteur d'identité — **terminée** (v1 : É1→É9, tag `identity-v1.0` ; v2 : couverture, application par famille, porteur, CLI `identity` — 017/018)
-- Phase 4 : campagne v3 — résorption des reports du 016 § 4 (forme canonique de W, cohérence d'état de C6, identité d'Ω, τ, hygiène)
+- Phase 4 : campagne v3 — **terminée** (les douze reports du 016 § 4 résolus : actes 019→026, vérification de cohérence d'état de C6, forme canonique matérielle et test d'or par oracle indépendant ; déclaration de conformité v3)
 - Phase 5 : connecteurs externes
 - Phase 6 : optimisation et montée en charge
 - Phase 7 : assistance aux contributions WinGet
@@ -478,10 +478,10 @@ Toute décision structurante doit être documentée :
 
 La théorie du moteur d'identité est définie dans :
 
-- `docs/identity/000` à `docs/identity/018` (invariants I1–I67)
+- `docs/identity/000` à `docs/identity/026` (invariants I1–I67)
 
 Ces documents prévalent sur toute interprétation du présent fichier concernant le moteur d'identité.
 
 Le présent `CLAUDE.md` décrit uniquement : la vision du projet, l'architecture générale, les décisions d'architecture (ADR) et les contraintes de développement. Il ne duplique pas les spécifications théoriques du moteur.
 
-Consignations de conformité (jamais normatives) : `docs/conformite/` — déclarations de conformité v1 et v2, écart publié.
+Consignations de conformité (jamais normatives) : `docs/conformite/` — déclarations de conformité v1, v2 et v3, les trois écarts publiés, la forme canonique matérielle de W et de τ.
