@@ -2,7 +2,6 @@ using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
 using InstallChecker.Identity.Audit;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Etat;
@@ -38,7 +37,7 @@ public class RestitutionDAuditTests
     {
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
         return AssemblageDeLetat.Assembler(actes, index);
     }
 
@@ -59,9 +58,9 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
 
         var premiereElection = w.Actes.First(a => a.Type == TypeActe.Election);
-        var reference = new ReferenceActe(premiereElection.Strate, premiereElection.Domaine[0]);
 
-        var trouve = RestitutionDAudit.TrouverActeDesigne(w, reference);
+
+        var trouve = RestitutionDAudit.TrouverActeDesigne(w, premiereElection.Strate, premiereElection.Domaine[0]);
 
         Assert.Same(premiereElection, trouve);
     }
@@ -75,7 +74,7 @@ public class RestitutionDAuditTests
         var w = AssemblerW0(modele, referentiel, hypotheses);
 
         Assert.Throws<ActeInexistantDansWException>(() =>
-            RestitutionDAudit.TrouverActeDesigne(w, new ReferenceActe(Strate.Contenu, 999_999)));
+            RestitutionDAudit.TrouverActeDesigne(w, Strate.Contenu, 999_999));
     }
 
     // --- pourquoi cette élection : chaîne aboutie sur les 112 élections de W0 ---
@@ -345,7 +344,7 @@ public class RestitutionDAuditTests
     {
         var indexAvant = new IndexEtat(new IndexOmega(1, 3, "avant"), [new ConventionRef("CE-01", 1)]);
         var indexApres = new IndexEtat(new IndexOmega(1, 5, "apres"), [new ConventionRef("CE-01", 1)]);
-        var tau = new Transition(indexAvant, indexApres, new Cause(TypeCause.Omega, "test"),
+        var tau = new Transition(indexAvant, indexApres, new Cause(new VoletOmega([4, 5], []), null),
             new Correspondance([], [], [], []));
 
         var reponse = RestitutionDAudit.QuEstCeQuiAChangeEntreDeuxEtats(tau);

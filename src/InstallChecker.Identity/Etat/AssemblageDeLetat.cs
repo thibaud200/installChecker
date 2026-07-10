@@ -1,13 +1,14 @@
 using InstallChecker.Identity.Actes;
+using InstallChecker.Identity.Erreurs;
 
 namespace InstallChecker.Identity.Etat;
 
 /// <summary>
 /// C6 — assemblage de l'état du monde (012 § 1.2, 014 C6). Couche d'assemblage pure : elle ne
 /// décide rien (les actes lui arrivent déjà décidés par C5), ne dérive rien, ne compare aucune
-/// hypothèse, ne lit jamais Ω ni ℛ (elle reçoit leur index déjà constitué). Elle se borne à mettre
-/// en forme canonique (014 § 7) l'ensemble des actes de C5, et à calculer la correspondance entre
-/// deux telles formes (τ, 014 § 7.5).
+/// hypothèse, ne lit jamais Ω ni ℛ (elle reçoit leur index déjà constitué). Elle vérifie la
+/// cohérence d'état avant livraison (006 § 3, 014 C6 — report 4), met en forme canonique (014 § 7)
+/// l'ensemble des actes de C5, et calcule la correspondance entre deux telles formes (τ, 014 § 7.5).
 ///
 /// La seule transformation qu'elle opère sur le contenu des actes est l'agrégation canonique des
 /// refus de même (strate, espèce, motif) *que rien d'autre dans l'état ne distingue* en un refus de
@@ -17,6 +18,8 @@ internal static class AssemblageDeLetat
 {
     public static W Assembler(EnsembleDesActes actes, IndexEtat index)
     {
+        VerifierLaCoherenceDEtat(actes, index);
+
         var refusAgreges = AgregerLesRefus(actes);
 
         var tousLesActes = actes.Elections.Select(ActeW.DepuisElection)
@@ -27,6 +30,59 @@ internal static class AssemblageDeLetat
             .ToList();
 
         return new W(index, tousLesActes);
+    }
+
+    /// <summary>
+    /// La vérification de cohérence d'état avant livraison (014 C6 « garantit la vérification de
+    /// cohérence d'état (006 § 3) avant livraison » — report 4), bornée aux clauses de la
+    /// Définition 3 du 006 § 3 décidables sur les entrées déclarées de C6 (l'ensemble des actes et
+    /// l'index, 014 § 1) : l'<b>unicité de l'identité d'acte</b> (014 § 2 : (domaine, strate) ;
+    /// 014 C5 : « exactement un acte » — la projection de P1 sur les actes livrés), les
+    /// <b>licences</b> des élections (I27 : non vides ; en vigueur) et leurs <b>dépendances</b>
+    /// (006 § 3 : « ne référence que des conventions en vigueur dans K, versions comprises » —
+    /// l'index les énumère). Les clauses restantes du prédicat (dominance, emboîtement I17,
+    /// Obs ⊆ Ω, complétude sur Ω) exigeraient de « voir plus bas » — interdit par le 012 § 2 et
+    /// par la clause « ignore » de C6 — et demeurent garanties par C5 (014 C5). Tout échec est une
+    /// défaillance interne (« un défaut de C5, jamais une situation d'entrée », 014 C6), signalée
+    /// comme telle (011 § 4) — jamais une huitième erreur contractuelle.
+    /// </summary>
+    private static void VerifierLaCoherenceDEtat(EnsembleDesActes actes, IndexEtat index)
+    {
+        var identites = new HashSet<ReferenceActe>();
+        var references = actes.Elections.Select(e => new ReferenceActe(e.Strate, e.Domaine))
+            .Concat(actes.Refus.Select(r => new ReferenceActe(r.Strate, r.Domaine)));
+        foreach (var reference in references)
+        {
+            if (!identites.Add(reference))
+            {
+                throw new DefaillanceInterneException(
+                    $"Cohérence d'état violée (006 § 3) : deux actes portent la même identité — strate {reference.Strate}, domaine [{string.Join(", ", reference.Domaine)}] (014 C5 : « exactement un acte » par domaine-strate). Défaut de C5, jamais une erreur du contrat public (014 C6).");
+            }
+        }
+
+        var enVigueur = index.Registre.ToHashSet();
+        foreach (var election in actes.Elections.OrderBy(e => e.Strate).ThenBy(e => e.Domaine[0]))
+        {
+            if (election.Licences.Count == 0)
+            {
+                throw new DefaillanceInterneException(
+                    $"Cohérence d'état violée (006 § 3, I27) : l'élection (strate {election.Strate}, domaine [{string.Join(", ", election.Domaine)}]) ne cite aucune licence. Défaut de C5, jamais une erreur du contrat public (014 C6).");
+            }
+
+            var licenceHorsVigueur = election.Licences.FirstOrDefault(l => !enVigueur.Contains(l));
+            if (licenceHorsVigueur is not null)
+            {
+                throw new DefaillanceInterneException(
+                    $"Cohérence d'état violée (006 § 3, I27) : l'élection (strate {election.Strate}, domaine [{string.Join(", ", election.Domaine)}]) cite la licence {licenceHorsVigueur.Identifiant} v{licenceHorsVigueur.Version}, qui n'est pas en vigueur dans l'index. Défaut de C5, jamais une erreur du contrat public (014 C6).");
+            }
+
+            var dependanceHorsVigueur = election.Dependances.FirstOrDefault(d => !enVigueur.Contains(d));
+            if (dependanceHorsVigueur is not null)
+            {
+                throw new DefaillanceInterneException(
+                    $"Cohérence d'état violée (006 § 3, « versions comprises ») : l'élection (strate {election.Strate}, domaine [{string.Join(", ", election.Domaine)}]) dépend de {dependanceHorsVigueur.Identifiant} v{dependanceHorsVigueur.Version}, qui n'est pas en vigueur dans l'index. Défaut de C5, jamais une erreur du contrat public (014 C6).");
+            }
+        }
     }
 
     /// <summary>
@@ -67,10 +123,15 @@ internal static class AssemblageDeLetat
         return resultat;
     }
 
-    public static Transition CalculerTransition(W avant, W apres, Cause cause)
+    public static Transition CalculerTransition(
+        W avant, W apres,
+        IReadOnlyList<long> identifiantsAvant, IReadOnlyList<long> identifiantsApres)
     {
-        var actesAvant = avant.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine[0]));
-        var actesApres = apres.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine[0]));
+        // 024 § 3 : la référence est l'identité de l'acte (strate, domaine) — totale par la
+        // complétude (014 C5), là où le couple (strate, plus petit identifiant) pouvait entrer
+        // en collision dès que des domaines se recoupent à une même strate (garde du 014 § 7.3).
+        var actesAvant = avant.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine));
+        var actesApres = apres.Actes.ToDictionary(a => new ReferenceActe(a.Strate, a.Domaine));
 
         var conserves = new List<ReferenceActe>();
         var abandonnes = new List<ReferenceActe>();
@@ -99,12 +160,74 @@ internal static class AssemblageDeLetat
         return new Transition(
             avant.Index,
             apres.Index,
-            cause,
+            DeriverLaCause(avant.Index, apres.Index, identifiantsAvant, identifiantsApres),
             new Correspondance(
                 Trier(conserves),
                 Trier(abandonnes),
                 Trier(nouveaux),
-                Continuites: []));
+                DeriverLesContinuites(avant, apres)));
+    }
+
+    /// <summary>
+    /// La cause dérivée des entrées (026 § 3, T1 close) : un volet par membre de l'index dont les
+    /// deux états diffèrent — Ω puis ℛ —, aucun volet pour un membre inchangé ; entre deux index
+    /// égaux la cause est vide (τ de comparaison, EXG-30 ; jamais une révision, 006 Déf. 6).
+    /// </summary>
+    private static Cause DeriverLaCause(
+        IndexEtat avant, IndexEtat apres,
+        IReadOnlyList<long> identifiantsAvant, IReadOnlyList<long> identifiantsApres)
+    {
+        VoletOmega? omega = null;
+        if (avant.Omega != apres.Omega)
+        {
+            omega = new VoletOmega(
+                identifiantsApres.Except(identifiantsAvant).OrderBy(id => id).ToList(),
+                identifiantsAvant.Except(identifiantsApres).OrderBy(id => id).ToList());
+        }
+
+        VoletRegistre? registre = null;
+        if (!avant.Registre.SequenceEqual(apres.Registre))
+        {
+            registre = new VoletRegistre(
+                apres.Registre.Except(avant.Registre).ToList(),
+                avant.Registre.Except(apres.Registre).ToList());
+        }
+
+        return new Cause(omega, registre);
+    }
+
+    /// <summary>
+    /// Les continuités dérivées (026 § 4, le critère du 006 § 5) : entre élections seulement (un
+    /// refus ne postule aucune origine), e′ est successeur de e lorsque même strate, même contenu
+    /// propositionnel (à la strate contenu, l'origine postulée est le contenu commun) et domaines
+    /// se recouvrant — les triviales des conservés comprises (006 E5 : « les mêmes hypothèses se
+    /// succèdent à elles-mêmes »).
+    /// </summary>
+    private static IReadOnlyList<(ReferenceActe Avant, ReferenceActe Apres)> DeriverLesContinuites(W avant, W apres)
+    {
+        var electionsApres = apres.Actes
+            .Where(a => a.Type == TypeActe.Election)
+            .ToLookup(a => (a.Strate, a.Contenu));
+
+        var continuites = new List<(ReferenceActe Avant, ReferenceActe Apres)>();
+        foreach (var election in avant.Actes.Where(a => a.Type == TypeActe.Election))
+        {
+            foreach (var successeur in electionsApres[(election.Strate, election.Contenu)])
+            {
+                if (election.Domaine.Any(successeur.Domaine.Contains))
+                {
+                    continuites.Add((
+                        new ReferenceActe(election.Strate, election.Domaine),
+                        new ReferenceActe(successeur.Strate, successeur.Domaine)));
+                }
+            }
+        }
+
+        return continuites
+            .OrderBy(c => c.Avant.Strate)
+            .ThenBy(c => c.Avant.PlusPetitIdentifiantDuDomaine)
+            .ThenBy(c => c.Apres.PlusPetitIdentifiantDuDomaine)
+            .ToList();
     }
 
     private static List<ReferenceActe> Trier(List<ReferenceActe> references) =>

@@ -1,4 +1,3 @@
-using InstallChecker;
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Observations;
@@ -29,14 +28,6 @@ public class LecteurDObservationsSqliteTests : IDisposable
 
         var racine = repertoire?.FullName ?? throw new InvalidOperationException("racine du dépôt introuvable");
         return Path.Combine(racine, "tests", "oracle", "corpus1-postA1.db");
-    }
-
-    private string ScannerDossier(string dossier)
-    {
-        var db = NouveauCheminDeBase();
-        var exitCode = ScanCommand.Run(dossier, db, jsonOutput: false, TextWriter.Null, TextWriter.Null);
-        Assert.Equal(0, exitCode);
-        return db;
     }
 
     private static IEnumerable<KeyValuePair<Attribut, ValeurObservee>> Trier(ActeObservation acte) =>
@@ -74,56 +65,9 @@ public class LecteurDObservationsSqliteTests : IDisposable
         }
     }
 
-    // --- Fidélité de projection ---
-
-    [Fact]
-    public void Projette_fidelement_les_valeurs_absentes_dun_fichier_sans_capacite_reconnue()
-    {
-        var fichier = Path.Combine(_root, "sans-capacite.txt");
-        File.WriteAllText(fichier, "aucune capacité reconnue ici");
-
-        var modele = new LecteurDObservationsSqlite(ScannerDossier(_root)).ProjeterModele();
-        var acte = Assert.Single(modele.Actes);
-
-        Assert.Equal(ValeurObservee.Absente.Instance, acte.Attributs[new Attribut("pe_info", "machine")]);
-        Assert.Equal(ValeurObservee.Absente.Instance, acte.Attributs[new Attribut("authenticode", "subject")]);
-        Assert.Equal(ValeurObservee.Absente.Instance, acte.Attributs[new Attribut("version_info", "product_name")]);
-        Assert.Equal(ValeurObservee.Absente.Instance, acte.Attributs[new Attribut("file_headers", "container")]);
-    }
-
-    [Fact]
-    public void Projette_fidelement_les_valeurs_presentes_dun_fichier_PE()
-    {
-        var copie = Path.Combine(_root, "kernel32.dll");
-        File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), copie);
-
-        var modele = new LecteurDObservationsSqlite(ScannerDossier(_root)).ProjeterModele();
-        var acte = Assert.Single(modele.Actes);
-
-        Assert.Equal(new FileInfo(copie).Length, acte.Taille);
-        Assert.Equal(new ValeurObservee.Texte("pe"), acte.Attributs[new Attribut("file_headers", "container")]);
-        var magicHex = Assert.IsType<ValeurObservee.Texte>(acte.Attributs[new Attribut("file_headers", "magic_hex")]);
-        Assert.StartsWith("4d5a", magicHex.Valeur);
-        Assert.IsType<ValeurObservee.Texte>(acte.Attributs[new Attribut("version_info", "company_name")]);
-    }
-
-    // --- Contexte : canal séparé (A1) ---
-
-    [Fact]
-    public void Le_contexte_porte_le_chemin_et_la_date_hors_du_modele()
-    {
-        var fichier = Path.Combine(_root, "a.txt");
-        File.WriteAllText(fichier, "x");
-        var db = ScannerDossier(_root);
-        var lecteur = new LecteurDObservationsSqlite(db);
-
-        var contexte = Assert.Single(lecteur.ProjeterContexte());
-        Assert.Equal(fichier, contexte.Chemin);
-        Assert.False(string.IsNullOrEmpty(contexte.DateDeScan));
-
-        var acte = Assert.Single(lecteur.ProjeterModele().Actes);
-        Assert.Equal(contexte.Identifiant, acte.Identifiant);
-    }
+    // --- Fidélité et canal de contexte sur scan réel : voir FrontiereDeDonneesTests (suite de la
+    //     CLI) — ces scénarios exercent le producteur ET le lecteur, ils vivent à la frontière de
+    //     données (013 § 2), pas dans la suite du moteur (016 § 4.2, report 10, jalon V3-1). ---
 
     // --- Indépendance de l'ordre de stockage SQL ---
 
@@ -131,7 +75,7 @@ public class LecteurDObservationsSqliteTests : IDisposable
     public void Lordre_de_stockage_SQL_nimporte_pas_a_lordre_logique_des_actes()
     {
         var chemin = NouveauCheminDeBase();
-        using (var store = new ObservationStore(chemin)) store.Commit(); // crée le schéma, stamp user_version = 1
+        MiniBaseDObservations.CreerConforme(chemin); // crée le schéma du contrat, stamp user_version = 1
 
         using (var connection = new SqliteConnection($"Data Source={chemin}"))
         {
@@ -170,7 +114,7 @@ public class LecteurDObservationsSqliteTests : IDisposable
     public void User_version_incorrect_est_refuse_comme_incompatible()
     {
         var chemin = NouveauCheminDeBase();
-        using (var store = new ObservationStore(chemin)) store.Commit();
+        MiniBaseDObservations.CreerConforme(chemin);
 
         using (var connection = new SqliteConnection($"Data Source={chemin}"))
         {
@@ -204,7 +148,7 @@ public class LecteurDObservationsSqliteTests : IDisposable
     public void Ligne_de_capacite_manquante_rompt_linvariant_1_1()
     {
         var chemin = NouveauCheminDeBase();
-        using (var store = new ObservationStore(chemin)) store.Commit();
+        MiniBaseDObservations.CreerConforme(chemin);
 
         using (var connection = new SqliteConnection($"Data Source={chemin}"))
         {
@@ -389,23 +333,5 @@ public class LecteurDObservationsSqliteTests : IDisposable
             () => new LecteurDObservationsSqlite(chemin).ProjeterModele());
     }
 
-    // --- Substituabilité du port (I42) ---
-
-    private static int CompterActes(IObservationsSource source) => source.ProjeterModele().Actes.Count;
-
-    [Fact]
-    public void Ladaptateur_memoire_est_substituable_au_lecteur_SQLite()
-    {
-        var fichier = Path.Combine(_root, "a.txt");
-        File.WriteAllText(fichier, "x");
-        var sqlite = new LecteurDObservationsSqlite(ScannerDossier(_root));
-
-        var modele = sqlite.ProjeterModele();
-        var contexte = sqlite.ProjeterContexte();
-        var memoire = new SourceObservationsEnMemoire(modele, contexte);
-
-        Assert.Equal(CompterActes(sqlite), CompterActes(memoire));
-        Assert.Same(modele, memoire.ProjeterModele());
-        Assert.Same(contexte, memoire.ProjeterContexte());
-    }
+    // --- Substituabilité du port (I42) sur scan réel : voir FrontiereDeDonneesTests (suite de la CLI). ---
 }

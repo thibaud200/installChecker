@@ -1,15 +1,15 @@
 using System.Text.Json;
-using InstallChecker;
 using InstallChecker.Identity.Access.Registre;
 using Microsoft.Data.Sqlite;
 
-namespace InstallChecker.Identity.Tests;
+namespace InstallChecker.Tests;
 
 /// <summary>
 /// V2-7 (É9, 018 § 6) — la commande <c>identity</c>, consommateur du moteur : bout-en-bout sur
 /// l'artefact et le registre réels, erreurs restituées telles quelles, batterie des sept erreurs
-/// par la commande, audit restitué unité par unité. « La CLI du pipeline reste intacte » est
-/// prouvé par la suite pipeline (39 tests), inchangée.
+/// par la commande, audit restitué unité par unité. Ces tests vivent dans la suite de la CLI —
+/// c'est le composant qu'ils exercent (jalon V3-1, report 10 : la suite Identity redevient pure) ;
+/// les fixtures de registres, versionnées avec la suite du moteur, sont lues par chemin de dépôt.
 /// </summary>
 public class IdentityCommandTests : IDisposable
 {
@@ -40,7 +40,7 @@ public class IdentityCommandTests : IDisposable
     private static string CheminRegistreReel() => Path.Combine(RacineDuDepot(), "registre");
 
     private static string CheminFixture(string espece, string cas) =>
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", espece, cas, "registre");
+        Path.Combine(RacineDuDepot(), "tests", "InstallChecker.Identity.Tests", "Fixtures", espece, cas, "registre");
 
     private string BaseVersionNonSupportee()
     {
@@ -101,6 +101,19 @@ public class IdentityCommandTests : IDisposable
         Assert.Equal(0, IdentityCommand.Deriver(CheminOracle(), CheminRegistreReel(), seconde, new StringWriter()));
 
         Assert.Equal(premiere.ToString(), seconde.ToString());
+    }
+
+    [Fact]
+    public void Le_consommateur_emet_exactement_le_fichier_W0_attendu_de_loracle_independant()
+    {
+        // 018 § 6 : « émet W tel que produit, sous la forme canonique du 013 § 4 » — le test d'or
+        // par la commande réelle : l'égalité est bit à bit avec le fichier produit hors moteur (É7).
+        var sortie = new StringWriter { NewLine = "\n" };
+
+        Assert.Equal(0, IdentityCommand.Deriver(CheminOracle(), CheminRegistreReel(), sortie, new StringWriter()));
+
+        var attendu = File.ReadAllBytes(Path.Combine(RacineDuDepot(), "tests", "oracle", "W0-attendu.json"));
+        Assert.Equal(attendu, System.Text.Encoding.UTF8.GetBytes(sortie.ToString()));
     }
 
     // --- 018 § 6 : toute erreur restituée telle quelle — jamais traduite, renommée ni agrégée ---

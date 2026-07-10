@@ -192,4 +192,26 @@ public class LecteurDeRegistreMarkdownTests
         Assert.Throws<RegistreIncoherentException>(
             () => new LecteurDeRegistreMarkdown(CheminFixture("IncoherentEtNonCouvert")).Projeter());
     }
+
+    // --- V3-5 : la date des entrées et l'ordre chronologique (023 § 2, report 7) ---
+
+    [Fact]
+    public void Un_journal_desordonne_est_refuse_comme_malforme()
+    {
+        // 015 § 6.3 (« ordre chronologique non décroissant »), rendu exigible de C2 par le 023 § 2.
+        var erreur = Assert.Throws<RegistreMalformeException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("JournalDesordonne")).Projeter());
+
+        Assert.Contains("ordre chronologique", erreur.Message);
+    }
+
+    [Fact]
+    public void Une_entree_sans_date_de_titre_est_refusee_comme_malformee()
+    {
+        // 014 § 5.2 : « entrée sans l'un de ces éléments » — la date, désormais lisible (023 § 2).
+        var erreur = Assert.Throws<RegistreMalformeException>(
+            () => new LecteurDeRegistreMarkdown(CheminFixture("EntreeSansDateDeTitre")).Projeter());
+
+        Assert.Contains("date ISO", erreur.Message);
+    }
 }
