@@ -30,10 +30,15 @@ internal static class RestitutionDAudit
                 "configuration licenciable, aucune convention d'élection en vigueur (007 § 3, I27)"),
         };
 
-    /// <summary>Résout l'acte désigné dans le W désigné — la seule clause de refus du contrat de C7 (014 C7).</summary>
-    public static ActeW TrouverActeDesigne(W w, ReferenceActe reference) =>
-        w.Actes.FirstOrDefault(a => a.Strate == reference.Strate && a.Domaine[0] == reference.PlusPetitIdentifiantDuDomaine)
-        ?? throw new ActeInexistantDansWException($"acte inexistant dans le W désigné : {reference}");
+    /// <summary>
+    /// Résout l'acte désigné dans le W désigné — la seule clause de refus du contrat de C7 (014 C7).
+    /// La désignation est la forme abrégée (strate, plus petit identifiant du domaine), univoque sur
+    /// tous les états dérivables sous la couverture de la version courante (024 § 3).
+    /// </summary>
+    public static ActeW TrouverActeDesigne(W w, Strate strate, long plusPetitIdentifiantDuDomaine) =>
+        w.Actes.FirstOrDefault(a => a.Strate == strate && a.Domaine[0] == plusPetitIdentifiantDuDomaine)
+        ?? throw new ActeInexistantDansWException(
+            $"acte inexistant dans le W désigné : strate {strate}, plus petit identifiant {plusPetitIdentifiantDuDomaine}");
 
     /// <summary>« Pourquoi cette élection ? » (011 § 7) : la chaîne complète observation → signal → hypothèse → élection → état.</summary>
     public static Chaine PourquoiCetteElection(ActeW acte, IReadOnlyList<Hypothese> hypotheses)

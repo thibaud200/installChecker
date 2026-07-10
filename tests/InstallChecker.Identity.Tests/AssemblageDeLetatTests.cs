@@ -3,8 +3,8 @@ using System.Text;
 using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
+using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
 using InstallChecker.Identity.Observations;
@@ -36,7 +36,7 @@ public class AssemblageDeLetatTests
         var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
         return AssemblageDeLetat.Assembler(actes, index);
     }
 
@@ -114,7 +114,7 @@ public class AssemblageDeLetatTests
         var hypotheses = ConstructionDesHypotheses.Construire(DerivationDesSignaux.Deriver(modele, referentiel));
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
 
         var premier = AssemblageDeLetat.Assembler(actes, index);
         var second = AssemblageDeLetat.Assembler(actes, index);
@@ -133,7 +133,7 @@ public class AssemblageDeLetatTests
         var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
         var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
         var actesMelanges = new EnsembleDesActes(actes.Elections.Reverse().ToList(), actes.Refus.Reverse().ToList());
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var index = new IndexEtat(new SourceObservationsEnMemoire(modele, []).ProjeterIdentite(), referentiel.Index);
 
         var direct = AssemblageDeLetat.Assembler(actes, index);
         var melange = AssemblageDeLetat.Assembler(actesMelanges, index);
@@ -184,17 +184,49 @@ public class AssemblageDeLetatTests
         });
     }
 
-    // --- empreinte d'état conforme à 014 § 7.2 (même fonction que les empreintes de contenu) ---
+    // --- empreinte d'état conforme au 014 § 7.2 raffiné (025 § 3) : la fonction déclarée du
+    //     support sur l'encodage à préfixe de longueur des couples (identifiant, empreinte) ---
 
     [Fact]
-    public void Lempreinte_detat_est_la_fonction_dempreinte_du_support_sur_la_concatenation_canonique()
+    public void Lempreinte_detat_est_la_fonction_declaree_du_support_sur_lencodage_des_couples()
     {
         var modele = ModeleOracle();
 
-        var attendue = Convert.ToHexStringLower(SHA256.HashData(
-            Encoding.UTF8.GetBytes(string.Concat(modele.Actes.OrderBy(a => a.Identifiant).Select(a => a.Empreinte)))));
+        var encodage = string.Concat(modele.Actes
+            .OrderBy(a => a.Identifiant)
+            .SelectMany(a => new[] { a.Identifiant.ToString(), a.Empreinte })
+            .Select(v => $"{v.Length}:{v},"));
+        var attendue = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(encodage)));
 
-        Assert.Equal(attendue, IndexOmegaCalculateur.Calculer(modele).EmpreinteEtat);
+        Assert.Equal(attendue, new SourceObservationsEnMemoire(modele, []).ProjeterIdentite().EmpreinteEtat);
+    }
+
+    // --- V3-7 : la discrimination (025 § 1, P1) — les identifiants entrent dans l'identité ---
+
+    [Fact]
+    public void Deux_etats_de_memes_contenus_et_didentifiants_differents_ont_des_identites_distinctes()
+    {
+        // La classe des renumérotations, jadis confondue sur un même index (report 5) :
+        // mêmes contenus (A, B), identifiants (1, 2) contre (5, 9) — deux identités désormais.
+        var premier = new ModeleObservations([
+            new ActeObservation(1, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+            new ActeObservation(2, 1, "B", new Dictionary<Attribut, ValeurObservee>()),
+        ]);
+        var second = new ModeleObservations([
+            new ActeObservation(5, 1, "A", new Dictionary<Attribut, ValeurObservee>()),
+            new ActeObservation(9, 1, "B", new Dictionary<Attribut, ValeurObservee>()),
+        ]);
+
+        var identitePremier = new SourceObservationsEnMemoire(premier, []).ProjeterIdentite();
+        var identiteSecond = new SourceObservationsEnMemoire(second, []).ProjeterIdentite();
+
+        Assert.NotEqual(identitePremier.EmpreinteEtat, identiteSecond.EmpreinteEtat);
+        Assert.Equal(identitePremier.NombreActes, identiteSecond.NombreActes);
+
+        // Et le déterminisme demeure : le même état produit la même identité.
+        Assert.Equal(
+            identitePremier.EmpreinteEtat,
+            new SourceObservationsEnMemoire(premier, []).ProjeterIdentite().EmpreinteEtat);
     }
 
     // --- reconstruction complète depuis Ω et ℛ via le pipeline ---
@@ -293,13 +325,139 @@ public class AssemblageDeLetatTests
         var avant = new W(indexAvant, [electionConservee, refusVariante]);
         var apres = new W(indexApres, [electionConservee, electionNouvelle]);
 
-        var tau = AssemblageDeLetat.CalculerTransition(avant, apres, new Cause(TypeCause.Omega, "ajout des actes 4 et 5"));
+        var tau = AssemblageDeLetat.CalculerTransition(avant, apres, [1, 2, 3], [1, 2, 3, 4, 5]);
 
-        Assert.Equal([new ReferenceActe(Strate.Contenu, 1)], tau.Correspondance.Conserves);
-        Assert.Equal([new ReferenceActe(Strate.Variante, 1)], tau.Correspondance.Abandonnes);
-        Assert.Equal([new ReferenceActe(Strate.Contenu, 4)], tau.Correspondance.Nouveaux);
-        Assert.Empty(tau.Correspondance.Continuites);
+        Assert.Equal([new ReferenceActe(Strate.Contenu, [1, 2])], tau.Correspondance.Conserves);
+        Assert.Equal([new ReferenceActe(Strate.Variante, [1, 2, 3])], tau.Correspondance.Abandonnes);
+        Assert.Equal([new ReferenceActe(Strate.Contenu, [4, 5])], tau.Correspondance.Nouveaux);
         Assert.Equal(indexAvant, tau.IndexAvant);
         Assert.Equal(indexApres, tau.IndexApres);
+
+        // La cause est dérivée des entrées, jamais fournie (026 § 3) : les identités d'Ω diffèrent →
+        // volet Ω (le delta des énumérations) ; les listes ℛ sont égales → aucun volet ℛ.
+        Assert.NotNull(tau.Cause.Omega);
+        Assert.Equal([4L, 5L], tau.Cause.Omega.Ajoutes);
+        Assert.Empty(tau.Cause.Omega.Retires);
+        Assert.Null(tau.Cause.Registre);
+
+        // La continuité triviale de l'élection conservée (026 § 4, 006 E5) ; l'élection nouvelle
+        // n'a aucun prédécesseur (contenu « B » absent de W).
+        Assert.Equal(
+            [(new ReferenceActe(Strate.Contenu, [1, 2]), new ReferenceActe(Strate.Contenu, [1, 2]))],
+            tau.Correspondance.Continuites);
+    }
+
+    // --- V3-9 (report 4) : la vérification de cohérence d'état avant livraison (006 § 3, 014 C6) —
+    //     défaillance interne signalée comme telle (011 § 4), jamais une huitième erreur contractuelle ---
+
+    private static IndexEtat IndexReel() =>
+        new(new IndexOmega(1, 3, "empreinte"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+
+    private static ActeElection ElectionValide(IReadOnlyList<long> domaine, string contenu) =>
+        new(Strate.Contenu, domaine, contenu, Niveau.Certaine, "unique-maximale",
+            [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+
+    [Fact]
+    public void Un_ensemble_coherent_est_livre_sans_defaillance()
+    {
+        var actes = new EnsembleDesActes(
+            [ElectionValide([1, 2], "A")],
+            [new Refus(Strate.Variante, [1, 2, 3], Espece.Normatif, "aucune-convention-strate")]);
+
+        var w = AssemblageDeLetat.Assembler(actes, IndexReel());
+
+        Assert.Equal(2, w.Actes.Count);
+    }
+
+    [Fact]
+    public void Deux_actes_de_meme_identite_sont_une_defaillance_interne_jamais_une_erreur_contractuelle()
+    {
+        // Deux élections sur le même (domaine, strate) : la projection de P1 (006 § 3) et la
+        // complétude « exactement un acte » (014 C5) sont violées — un défaut de C5.
+        var actes = new EnsembleDesActes([ElectionValide([1, 2], "A"), ElectionValide([1, 2], "B")], []);
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(actes, IndexReel()));
+
+        Assert.Contains("même identité", defaillance.Message);
+        // Signalée comme telle (011 § 4) : hors des deux hiérarchies d'erreurs nommées du contrat.
+        Assert.IsNotAssignableFrom<ErreurOmega>(defaillance);
+        Assert.IsNotAssignableFrom<ErreurDeRegistre>(defaillance);
+    }
+
+    [Fact]
+    public void Une_election_et_un_refus_de_meme_identite_sont_une_defaillance_interne()
+    {
+        var actes = new EnsembleDesActes(
+            [ElectionValide([1, 2], "A")],
+            [new Refus(Strate.Contenu, [1, 2], Espece.Structurel, "sous-détermination")]);
+
+        Assert.Throws<DefaillanceInterneException>(() => AssemblageDeLetat.Assembler(actes, IndexReel()));
+    }
+
+    [Fact]
+    public void Une_election_sans_licence_est_une_defaillance_interne()
+    {
+        var election = ElectionValide([1, 2], "A") with { Licences = [] };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("I27", defaillance.Message);
+    }
+
+    [Fact]
+    public void Une_licence_hors_vigueur_est_une_defaillance_interne_versions_comprises()
+    {
+        // La version compte (006 § 3 : « versions comprises ») : CE-01 v2 n'est pas en vigueur.
+        var election = ElectionValide([1, 2], "A") with { Licences = [new ConventionRef("CE-01", 2)] };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("CE-01 v2", defaillance.Message);
+    }
+
+    [Fact]
+    public void Une_dependance_hors_vigueur_est_une_defaillance_interne()
+    {
+        var election = ElectionValide([1, 2], "A") with
+        {
+            Dependances = [new ConventionRef("CE-01", 1), new ConventionRef("EQ-99", 1)],
+        };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("EQ-99 v1", defaillance.Message);
+    }
+
+    // --- V3-6 : la totalité de la référence (024 § 3, report 8) ---
+
+    [Fact]
+    public void Tau_reste_total_quand_deux_actes_dune_meme_strate_partagent_leur_plus_petit_identifiant()
+    {
+        // Le cas constructible du report 8 : une élection {1, 2} et un refus {1, 3} à la même
+        // strate — même plus petit identifiant, deux actes. La référence-identité (strate, domaine)
+        // les distingue ; la paire abrégée serait entrée en collision (024 § 2).
+        var index = new IndexEtat(new IndexOmega(1, 3, "empreinte"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+        var election = new ActeW(TypeActe.Election, Strate.Contenu, [1, 2], "A", Niveau.Certaine, "unique-maximale",
+            null, [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+        var refusRecoupant = new ActeW(TypeActe.Refus, Strate.Contenu, [1, 3], null, null, "sous-détermination",
+            Espece.Structurel, null, null, null);
+
+        var w = new W(index, [election, refusRecoupant]);
+
+        var tau = AssemblageDeLetat.CalculerTransition(w, w, [1, 2, 3], [1, 2, 3]);
+
+        Assert.Equal(2, tau.Correspondance.Conserves.Count);
+        Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 2]), tau.Correspondance.Conserves);
+        Assert.Contains(new ReferenceActe(Strate.Contenu, [1, 3]), tau.Correspondance.Conserves);
+        Assert.Empty(tau.Correspondance.Abandonnes);
+        Assert.Empty(tau.Correspondance.Nouveaux);
+
+        // Deux index égaux : la cause est vide — une comparaison, jamais une révision (026 § 3, 006 Déf. 6).
+        Assert.Null(tau.Cause.Omega);
+        Assert.Null(tau.Cause.Registre);
     }
 }

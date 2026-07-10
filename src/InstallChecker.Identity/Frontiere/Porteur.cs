@@ -1,6 +1,5 @@
 using InstallChecker.Identity.Actes;
 using InstallChecker.Identity.Audit;
-using InstallChecker.Identity.Auxiliaire;
 using InstallChecker.Identity.Conventions;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
@@ -28,8 +27,9 @@ namespace InstallChecker.Identity.Frontiere;
 /// Les erreurs des couches sont surfacées telles quelles — jamais renommées, jamais agrégées,
 /// jamais converties (018 § 3). Les réponses d'audit sont re-dérivées de l'index à chaque
 /// invocation (011 § 7 : « dérivée du seul index » ; I39 ; 013 § 4 : le moteur recalcule
-/// toujours). Pour la transition, la cause est transportée telle quelle, sans vérification —
-/// forme du 014 § 7.5, fourniture par l'appelant sous le régime actuel (016 § 4.2, report 9).
+/// toujours). Pour la transition, la demande se réduit à deux désignations d'index : la cause et
+/// les continuités sont dérivées par C6 des entrées de l'invocation (026 §§ 3–4, T1 close) — le
+/// porteur convoie les deux énumérations d'identifiants, il ne fournit ni ne vérifie aucune cause.
 /// </summary>
 public static class Porteur
 {
@@ -38,79 +38,82 @@ public static class Porteur
     public static W Deriver(IObservationsSource omega, IRegistreSource registre) =>
         DeriverAvecHypotheses(omega, registre).W;
 
-    // --- L'invocation de transition (011 § 3 : τ — deux index dont le porteur reçoit les deux membres) ---
+    // --- L'invocation de transition (011 § 3 : τ — deux index dont le porteur reçoit les deux membres ;
+    //     la demande se réduit à deux désignations d'index : la cause est dérivée par C6, jamais fournie (026 § 3)) ---
 
     public static Transition Transitionner(
         IObservationsSource omegaAvant, IRegistreSource registreAvant,
-        IObservationsSource omegaApres, IRegistreSource registreApres,
-        Cause cause)
+        IObservationsSource omegaApres, IRegistreSource registreApres)
     {
         // Membre par membre, dans l'ordre des sections du 014 § 7.5 : l'index avant, puis l'index après (018 § 4).
-        var avant = Deriver(omegaAvant, registreAvant);
-        var apres = Deriver(omegaApres, registreApres);
-        return AssemblageDeLetat.CalculerTransition(avant, apres, cause);
+        var avant = DeriverAvecHypotheses(omegaAvant, registreAvant);
+        var apres = DeriverAvecHypotheses(omegaApres, registreApres);
+        return AssemblageDeLetat.CalculerTransition(avant.W, apres.W, avant.Identifiants, apres.Identifiants);
     }
 
     // --- L'invocation d'audit (011 § 7) : les questions de C7, sur un acte désigné d'un index désigné,
     //     re-dérivées à chaque invocation — le porteur route, C7 répond (surface identique à 014 § 1, C7) ---
 
-    public static Chaine PourquoiCetteElection(IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+    public static Chaine PourquoiCetteElection(IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.PourquoiCetteElection(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        var (w, hypotheses, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.PourquoiCetteElection(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
-    public static Chaine PourquoiCeRefus(IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+    public static Chaine PourquoiCeRefus(IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.PourquoiCeRefus(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        var (w, hypotheses, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.PourquoiCeRefus(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static DependancesReponse DeQuellesConventionsDependCetActe(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, _) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.DeQuellesConventionsDependCetActe(RestitutionDAudit.TrouverActeDesigne(w, reference));
+        var (w, _, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.DeQuellesConventionsDependCetActe(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine));
     }
 
     public static IReadOnlyList<ObservationConsommee> DeQuellesObservationsDependIl(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.DeQuellesObservationsDependIl(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        var (w, hypotheses, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.DeQuellesObservationsDependIl(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static IReadOnlyList<HypotheseEcartee> QuALonEcarte(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, hypotheses) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.QuALonEcarte(RestitutionDAudit.TrouverActeDesigne(w, reference), hypotheses);
+        var (w, hypotheses, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.QuALonEcarte(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine), hypotheses);
     }
 
     public static EnsemblesMinimauxReponse QueFaudraitIlRenierPourQueCeciTombe(
-        IObservationsSource omega, IRegistreSource registre, ReferenceActe reference)
+        IObservationsSource omega, IRegistreSource registre, Strate strate, long plusPetitIdentifiantDuDomaine)
     {
-        var (w, _) = DeriverAvecHypotheses(omega, registre);
-        return RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(RestitutionDAudit.TrouverActeDesigne(w, reference));
+        var (w, _, _) = DeriverAvecHypotheses(omega, registre);
+        return RestitutionDAudit.QueFaudraitIlRenierPourQueCeciTombe(RestitutionDAudit.TrouverActeDesigne(w, strate, plusPetitIdentifiantDuDomaine));
     }
 
     // --- La composition (018 § 5) : chaque traversée inter-couches est une ligne de la table du
     //     014 § 3 ; l'index est fourni à C6 au titre de sa clause « reçoit » (014 § 1), l'identité
-    //     d'Ω selon le régime actuel du 014 § 7.2 (report 5 : convoyée, jamais définie ici) ---
+    //     d'Ω par la ligne C1 → C6 (025 § 4 : convoyée, jamais définie ici) ---
 
-    private static (W W, IReadOnlyList<Hypothese> Hypotheses) DeriverAvecHypotheses(
+    private static (W W, IReadOnlyList<Hypothese> Hypotheses, IReadOnlyList<long> Identifiants) DeriverAvecHypotheses(
         IObservationsSource omega, IRegistreSource registre)
     {
         // Bloc Ω d'abord, bloc ℛ ensuite (018 § 4) — les deux entièrement vérifiés avant toute dérivation (017 § 4).
+        // L'identité de l'état est produite par le support (025 §§ 2–4, ligne C1 → C6) : le porteur
+        // la convoie, il ne calcule rien (018 § 2, I66).
         var modele = omega.ProjeterModele();
+        var identiteOmega = omega.ProjeterIdentite();
         var referentiel = registre.Projeter();
 
         var signaux = DerivationDesSignaux.Deriver(modele, referentiel);
         var hypotheses = ConstructionDesHypotheses.Construire(signaux);
-        var actes = DecisionDesActes.Decider(
-            hypotheses, referentiel, modele.Actes.Select(a => a.Identifiant).ToList());
-        var index = new IndexEtat(IndexOmegaCalculateur.Calculer(modele), referentiel.Index);
+        var identifiants = modele.Actes.Select(a => a.Identifiant).ToList();
+        var actes = DecisionDesActes.Decider(hypotheses, referentiel, identifiants);
+        var index = new IndexEtat(identiteOmega, referentiel.Index);
 
-        return (AssemblageDeLetat.Assembler(actes, index), hypotheses);
+        return (AssemblageDeLetat.Assembler(actes, index), hypotheses, identifiants);
     }
 }

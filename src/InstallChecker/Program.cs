@@ -1,5 +1,9 @@
 using InstallChecker;
 
+// 013 § 4 : « UTF-8 sans BOM » — la console Windows encoderait sinon la sortie dans sa page de
+// codes héritée (CP850), brisant l'identité bit à bit de l'émission canonique (EXG-18, report 3).
+Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
 if (args is ["scan", var root, .. var options])
 {
     var db = "installchecker.db";
