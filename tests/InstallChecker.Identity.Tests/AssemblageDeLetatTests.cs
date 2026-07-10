@@ -4,6 +4,7 @@ using InstallChecker.Identity.Access.Observations;
 using InstallChecker.Identity.Access.Registre;
 using InstallChecker.Identity.Actes;
 using InstallChecker.Identity.Conventions;
+using InstallChecker.Identity.Erreurs;
 using InstallChecker.Identity.Etat;
 using InstallChecker.Identity.Hypotheses;
 using InstallChecker.Identity.Observations;
@@ -344,6 +345,91 @@ public class AssemblageDeLetatTests
         Assert.Equal(
             [(new ReferenceActe(Strate.Contenu, [1, 2]), new ReferenceActe(Strate.Contenu, [1, 2]))],
             tau.Correspondance.Continuites);
+    }
+
+    // --- V3-9 (report 4) : la vérification de cohérence d'état avant livraison (006 § 3, 014 C6) —
+    //     défaillance interne signalée comme telle (011 § 4), jamais une huitième erreur contractuelle ---
+
+    private static IndexEtat IndexReel() =>
+        new(new IndexOmega(1, 3, "empreinte"), [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)]);
+
+    private static ActeElection ElectionValide(IReadOnlyList<long> domaine, string contenu) =>
+        new(Strate.Contenu, domaine, contenu, Niveau.Certaine, "unique-maximale",
+            [new ConventionRef("CE-01", 1)], [new ConventionRef("CE-01", 1), new ConventionRef("EQ-01", 1)], []);
+
+    [Fact]
+    public void Un_ensemble_coherent_est_livre_sans_defaillance()
+    {
+        var actes = new EnsembleDesActes(
+            [ElectionValide([1, 2], "A")],
+            [new Refus(Strate.Variante, [1, 2, 3], Espece.Normatif, "aucune-convention-strate")]);
+
+        var w = AssemblageDeLetat.Assembler(actes, IndexReel());
+
+        Assert.Equal(2, w.Actes.Count);
+    }
+
+    [Fact]
+    public void Deux_actes_de_meme_identite_sont_une_defaillance_interne_jamais_une_erreur_contractuelle()
+    {
+        // Deux élections sur le même (domaine, strate) : la projection de P1 (006 § 3) et la
+        // complétude « exactement un acte » (014 C5) sont violées — un défaut de C5.
+        var actes = new EnsembleDesActes([ElectionValide([1, 2], "A"), ElectionValide([1, 2], "B")], []);
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(actes, IndexReel()));
+
+        Assert.Contains("même identité", defaillance.Message);
+        // Signalée comme telle (011 § 4) : hors des deux hiérarchies d'erreurs nommées du contrat.
+        Assert.IsNotAssignableFrom<ErreurOmega>(defaillance);
+        Assert.IsNotAssignableFrom<ErreurDeRegistre>(defaillance);
+    }
+
+    [Fact]
+    public void Une_election_et_un_refus_de_meme_identite_sont_une_defaillance_interne()
+    {
+        var actes = new EnsembleDesActes(
+            [ElectionValide([1, 2], "A")],
+            [new Refus(Strate.Contenu, [1, 2], Espece.Structurel, "sous-détermination")]);
+
+        Assert.Throws<DefaillanceInterneException>(() => AssemblageDeLetat.Assembler(actes, IndexReel()));
+    }
+
+    [Fact]
+    public void Une_election_sans_licence_est_une_defaillance_interne()
+    {
+        var election = ElectionValide([1, 2], "A") with { Licences = [] };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("I27", defaillance.Message);
+    }
+
+    [Fact]
+    public void Une_licence_hors_vigueur_est_une_defaillance_interne_versions_comprises()
+    {
+        // La version compte (006 § 3 : « versions comprises ») : CE-01 v2 n'est pas en vigueur.
+        var election = ElectionValide([1, 2], "A") with { Licences = [new ConventionRef("CE-01", 2)] };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("CE-01 v2", defaillance.Message);
+    }
+
+    [Fact]
+    public void Une_dependance_hors_vigueur_est_une_defaillance_interne()
+    {
+        var election = ElectionValide([1, 2], "A") with
+        {
+            Dependances = [new ConventionRef("CE-01", 1), new ConventionRef("EQ-99", 1)],
+        };
+
+        var defaillance = Assert.Throws<DefaillanceInterneException>(
+            () => AssemblageDeLetat.Assembler(new EnsembleDesActes([election], []), IndexReel()));
+
+        Assert.Contains("EQ-99 v1", defaillance.Message);
     }
 
     // --- V3-6 : la totalité de la référence (024 § 3, report 8) ---
