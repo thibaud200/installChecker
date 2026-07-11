@@ -4,9 +4,11 @@
     <Project Path="src/InstallChecker.Core/InstallChecker.Core.csproj" />
     <Project Path="src/InstallChecker.Identity/InstallChecker.Identity.csproj" />
     <Project Path="src/InstallChecker.Identity.Access/InstallChecker.Identity.Access.csproj" />
+    <Project Path="src/InstallChecker.DuplicateFiles/InstallChecker.DuplicateFiles.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InstallChecker.Tests/InstallChecker.Tests.csproj" />
     <Project Path="tests/InstallChecker.Identity.Tests/InstallChecker.Identity.Tests.csproj" />
+    <Project Path="tests/InstallChecker.DuplicateFiles.Tests/InstallChecker.DuplicateFiles.Tests.csproj" />
   </Folder>
 </Solution>
