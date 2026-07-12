@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# InstallChecker — artefacts locaux de scan/test (non versionnés)
+*.db
+rapport-doublons.json
+coveragereport/
+/%TEMP%/

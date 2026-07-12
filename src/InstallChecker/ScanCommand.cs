@@ -10,9 +10,11 @@ public static class ScanCommand
     /// Parcourt récursivement <paramref name="root"/>, écrit une ligne par fichier sur stdout
     /// (TSV "chemin TAB taille TAB sha256" par défaut, JSON Lines si <paramref name="jsonOutput"/>)
     /// et enregistre chaque observation dans la base SQLite <paramref name="dbPath"/> via <see cref="ObservationStore"/>.
+    /// Si <paramref name="extensions"/> est non vide, seuls les fichiers dont l'extension y figure sont
+    /// observés (comparaison insensible à la casse ; le point de tête est optionnel, « exe » = « .exe »).
     /// </summary>
     /// <returns>0 si le scan s'est terminé (même avec erreurs locales), 1 si la racine ou la base est invalide.</returns>
-    public static int Run(string root, string dbPath, bool jsonOutput, TextWriter output, TextWriter errors)
+    public static int Run(string root, string dbPath, bool jsonOutput, TextWriter output, TextWriter errors, IReadOnlyCollection<string>? extensions = null)
     {
         if (!Directory.Exists(root))
         {
@@ -36,6 +38,11 @@ public static class ScanCommand
             return 1;
         }
 
+        // Filtre d'extensions optionnel : normalisé une fois (point de tête optionnel, insensible à la casse).
+        var filtreExtensions = extensions is { Count: > 0 }
+            ? extensions.Select(e => e.StartsWith('.') ? e : "." + e).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : null;
+
         using (store)
         {
             var options = new EnumerationOptions
@@ -48,6 +55,9 @@ public static class ScanCommand
             long fileCount = 0, errorCount = 0;
             foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", options))
             {
+                if (filtreExtensions is not null && !filtreExtensions.Contains(file.Extension))
+                    continue;
+
                 try
                 {
                     // Toutes les lectures d'abord (chaque capacité ouvre le fichier indépendamment),

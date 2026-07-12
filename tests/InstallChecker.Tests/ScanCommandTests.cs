@@ -59,6 +59,24 @@ public class ScanCommandTests : IDisposable
     }
 
     [Fact]
+    public void Scan_WithExtensionFilter_ScansOnlyMatchingExtensions()
+    {
+        File.WriteAllText(Path.Combine(_root, "garde.exe"), "x");
+        File.WriteAllText(Path.Combine(_root, "ignore.txt"), "y");
+        File.WriteAllText(Path.Combine(_root, "aussi.MSI"), "z"); // casse différente, filtre donné sans point
+
+        var output = new StringWriter();
+        var exitCode = ScanCommand.Run(_root, DbPath, false, output, TextWriter.Null, [".exe", "msi"]);
+        var lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(2, lines.Length); // .exe et .MSI retenus (casse et point ignorés), .txt exclu
+        Assert.Contains(lines, l => l.Contains("garde.exe"));
+        Assert.Contains(lines, l => l.Contains("aussi.MSI"));
+        Assert.DoesNotContain(lines, l => l.Contains("ignore.txt"));
+    }
+
+    [Fact]
     public void Scan_IncludesHiddenFiles()
     {
         var hidden = Path.Combine(_root, "hidden.dat");
