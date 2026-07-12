@@ -42,6 +42,10 @@ La théorie du moteur est définie exclusivement dans `docs/identity/000` à `do
 
 Les objectifs fonctionnels de chaque module métier sont décrits dans `docs/modules/`..
 
+L'identification logicielle est assurée par un moteur d'identité logique indépendant du pipeline d'observation. Le pipeline produit exclusivement des observations Ω, sans interprétation ; le moteur d'identité consomme Ω ainsi qu'un registre de conventions ℛ et dérive un état du monde W.
+
+La théorie complète du moteur est spécifiée dans `docs/identity/000` à `docs/identity/026`, qui constituent la référence normative de toute implémentation (voir § 21).
+
 ---
 
 ## Vision long terme
