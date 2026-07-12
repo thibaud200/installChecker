@@ -106,7 +106,7 @@ groupes classés → [restituteur] → rapport (motif court par défaut ; chaîn
 ## 6. Gestion des refus / absences
 
 - Un fichier singleton (aucun autre fichier ≡ₘ) n'entre dans aucun groupe — hors périmètre du rapport, il n'y a rien à décider.
-- Si W porte un **refus motivé** à la strate contenu pour un domaine d'actes (rare vu le caractère mathématique R1 de CE-01/EQ-01, mais le contrat ne garantit jamais son absence) — jamais éliminé silencieusement : il apparaît dans une section séparée du rapport (« non tranché »), motif restitué **tel quel**, jamais traduit ni interprété (018 §6).
+- Les **refus globaux** portés par W concernent les strates supérieures (variante/version/identité/famille), pour lesquelles ℛ n'a encore adopté aucune convention ; ils ne sont **jamais** restitués tels quels dans le rapport. Ils sont dérivés en une **note de capacité** unique indiquant que le regroupement de versions n'est pas encore disponible (voir le plan d'implémentation rev3, correction P2). La note s'auto-résorbe dès qu'une convention est adoptée dans ℛ (§8).
 - Si l'invocation du porteur échoue (une des 6 erreurs contractuelles, 011 §5) — **aucun rapport partiel** n'est produit : l'erreur remonte telle quelle, héritage direct de la postcondition « entier ou absent » du moteur.
 - Si un attribut Ω nécessaire au classement est absent pour un fichier (ex. signature non observée, ⊥) — ce n'est **pas une erreur**, c'est une observation légitime : le critère concerné est simplement non discriminant pour ce fichier, le classeur passe au critère suivant de la politique (traité comme une égalité sur ce critère). Ce comportement fait partie intégrante de la politique de rétention versionnée (D6), pas laissé implicite dans le code.
 

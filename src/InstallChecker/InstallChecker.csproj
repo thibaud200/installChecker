@@ -18,6 +18,7 @@
          Identity ← Identity.Access ← CLI (013 § 1.2), jamais l'inverse, aucun cycle. -->
     <ProjectReference Include="..\InstallChecker.Identity\InstallChecker.Identity.csproj" />
     <ProjectReference Include="..\InstallChecker.Identity.Access\InstallChecker.Identity.Access.csproj" />
+    <ProjectReference Include="..\InstallChecker.DuplicateFiles\InstallChecker.DuplicateFiles.csproj" />
   </ItemGroup>
 
 </Project>
