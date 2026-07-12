@@ -10,6 +10,8 @@ Décisions et pistes issues des tests de bout en bout de la v1 (2026-07-12).
 
 **Garde d'architecture.** La réduction ne s'appuie que sur des **métadonnées du système de fichiers** (nom, chemin, attributs, taille, dates), au niveau de l'orchestration du scan. Tout filtrage fondé sur le **contenu** (PE, MSI, AppX…) appartient aux **consommateurs** (rapport, UI, modules), **jamais au scan**.
 
+**Axe chemin (piste, non implémenté).** Une **liste de répertoires système** est **exclue par défaut** (`C:\Windows`, `C:\Program Files`, `C:\Program Files (x86)`, `$Recycle.Bin`, …). Une option permet leur **inclusion explicite** au scan.
+
 ---
 
 ## A2 — Ne jamais copier des fichiers pour filtrer
@@ -23,6 +25,8 @@ Le filtrage se fait **en place**, chemin d'origine conservé. Copier les fichier
 Une UI pour revoir les groupes de doublons et décider quoi conserver.
 
 **Décidé.** L'UI est un **consommateur du rapport** (aucune logique métier, aucun appel au moteur pour décider). En v1 elle **exporte un plan d'action** revu par l'humain et **n'exécute rien** — aucune suppression automatique. L'exécution viendra plus tard, une fois le snapshot d'A4 résolu.
+
+**Sécurité du plan.** Les chemins appartenant aux **répertoires système** (A1) ne sont **jamais proposés à la suppression**, même lorsqu'ils apparaissent dans un groupe de doublons. Règle appliquée à la génération du plan ; les rangs et la politique de rétention restent inchangés.
 
 ---
 
