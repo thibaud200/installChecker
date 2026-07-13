@@ -12,6 +12,8 @@ Décisions et pistes issues des tests de bout en bout de la v1 (2026-07-12).
 
 **Axe chemin (piste, non implémenté).** Une **liste de répertoires système** est **exclue par défaut** (`C:\Windows`, `C:\Program Files`, `C:\Program Files (x86)`, `$Recycle.Bin`, …). Une option permet leur **inclusion explicite** au scan.
 
+**État.** L'axe nom (`--ext`) est **livré**. L'axe chemin (exclusion de répertoires) reste une piste non implémentée.
+
 ---
 
 ## A2 — Ne jamais copier des fichiers pour filtrer
@@ -20,13 +22,13 @@ Le filtrage se fait **en place**, chemin d'origine conservé. Copier les fichier
 
 ---
 
-## A3 — Interface graphique simple
+## A3 — Plan de suppression
 
-Une UI pour revoir les groupes de doublons et décider quoi conserver.
+**Implémenté (commande `plan`).** À partir des groupes de contenus identiques, produit une **liste plate de propositions** `{ contenu, chemin }`. Garanties : au moins une copie subsiste par contenu ; un chemin protégé n'est jamais proposé ; rien n'est exécuté. Constructeur pur, indépendant du classement et du rapport.
 
-**Décidé.** L'UI est un **consommateur du rapport** (aucune logique métier, aucun appel au moteur pour décider). En v1 elle **exporte un plan d'action** revu par l'humain et **n'exécute rien** — aucune suppression automatique. L'exécution viendra plus tard, une fois le snapshot d'A4 résolu.
+**Sécurité — protection.** Le mécanisme d'exclusion des chemins protégés est **en place** et testé, mais **aucune liste n'est encore fournie** (répertoires système, A1) : un ensemble vide est passé, donc des chemins système peuvent apparaître. À alimenter par A1.
 
-**Sécurité du plan.** Les chemins appartenant aux **répertoires système** (A1) ne sont **jamais proposés à la suppression**, même lorsqu'ils apparaissent dans un groupe de doublons. Règle appliquée à la génération du plan ; les rangs et la politique de rétention restent inchangés.
+**UI (non implémentée).** Une interface de revue et d'export du plan — consommateur du plan et du rapport, aucune logique métier, aucune suppression automatique — reste à faire.
 
 ---
 

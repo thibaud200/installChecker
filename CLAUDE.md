@@ -470,7 +470,7 @@ Toute décision structurante doit être documentée :
 - Phase 3 : implémentation du moteur d'identité — **terminée** (v1 : É1→É9, tag `identity-v1.0` ; v2 : couverture, application par famille, porteur, CLI `identity` — 017/018)
 - Phase 4 : campagne v3 — **terminée** (les douze reports du 016 § 4 résolus : actes 019→026, vérification de cohérence d'état de C6, forme canonique matérielle et test d'or par oracle indépendant ; déclaration de conformité v3)
 - Phase 5 : plateforme d'extension (formalisation des points d'extension, API publiques, séparation moteur / modules métier)
-- Phase 6 : premier module métier « Duplicate Files » (détection de doublons, politiques de sélection, stratégies de conservation, rapports)
+- Phase 6 : premier module métier « Duplicate Files » — **en cours** (rapport de doublons `duplicates`, plan de suppression `plan`, politique de rétention versionnée, sélection de corpus `--ext`)
 - Phase 7 : modules complémentaires et optimisation (connecteurs externes, montée en charge, nouveaux domaines métier, assistance aux contributions WinGet)
 - 
 

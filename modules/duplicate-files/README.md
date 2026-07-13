@@ -93,7 +93,9 @@ Sortie (stdout, JSON) :
   "Synthese": {
     "NombreDeGroupes": 4083,
     "NombreDeFichiersRedondants": 7765,
-    "EspaceRecuperableOctets": 33841151856
+    "EspaceRecuperableOctets": 33841151856,
+    "NombreDeFichiersAConserver": 4083,
+    "NombreDeCandidatsASuppression": 7765
   },
   "Note": null,
   "Groupes": [
@@ -114,6 +116,9 @@ Sortie (stdout, JSON) :
   ]
 }
 ```
+
+> Chaque `Fichier` porte aussi `ActeId`, `SignatureAuthenticodePresente`, `EstUnPeLisible`,
+> `PresenceMetadonneesMsi`, `DateDObservation` (abrégés ci-dessus).
 
 ### `plan` — plan de suppression
 
@@ -163,5 +168,6 @@ stdout.
 
 - L'analyse porte sur une base **d'un seul scan**. Plusieurs scans cumulés dans la même base font
   apparaître un fichier comme doublon de lui-même et faussent les résultats.
-- La protection des répertoires système n'est pas encore branchée : des chemins système peuvent
+- La protection des chemins est **implémentée dans le plan** mais n'est **alimentée par aucune liste**
+  de répertoires protégés (A1) : un ensemble vide lui est passé, donc des chemins système peuvent
   apparaître dans un plan.
