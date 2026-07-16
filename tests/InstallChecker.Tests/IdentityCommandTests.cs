@@ -49,7 +49,7 @@ public class IdentityCommandTests : IDisposable
         using var connection = new SqliteConnection($"Data Source={chemin}");
         connection.Open();
         using var commande = connection.CreateCommand();
-        commande.CommandText = "PRAGMA user_version = 2;";
+        commande.CommandText = "PRAGMA user_version = 3;";
         commande.ExecuteNonQuery();
         return chemin;
     }

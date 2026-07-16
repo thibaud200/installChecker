@@ -101,6 +101,76 @@ public class LecteurDObservationsSqliteTests : IDisposable
         Assert.Equal([10, 20, 30], modele.Actes.Select(a => a.Identifiant));
     }
 
+    // --- Contrat v2 : l'état courant = le dernier scan de chaque volume (spec multi-disque D1/D4) ---
+
+    /// <summary>Trois scans : deux sur vol-a (le second remplace le premier), un sur vol-b.
+    /// Les capacités portent une ligne par observation, courante ou non — comme une vraie base.</summary>
+    private string BaseV2DeuxVolumes()
+    {
+        var chemin = NouveauCheminDeBase();
+        MiniBaseDObservations.CreerConformeV2(chemin);
+
+        using var connection = new SqliteConnection($"Data Source={chemin}");
+        connection.Open();
+        using var commande = connection.CreateCommand();
+        commande.CommandText = """
+            INSERT INTO scans (id, volume_id, volume_label, root_path, started_at) VALUES
+                (1, 'vol-a', 'Data',  'D:\',            '2026-01-01T00:00:00Z'),
+                (2, 'vol-a', 'Data',  'D:\',            '2026-02-01T00:00:00Z'),
+                (3, 'vol-b', NULL,    '\\nas\partage',  '2026-01-15T00:00:00Z');
+            INSERT INTO scan_observations (id, scan_id, path, size, sha256, scanned_at) VALUES
+                (1, 1, 'D:\a.exe',            1, 'sha-a', '2026-01-01T00:00:00Z'),
+                (2, 1, 'D:\b.exe',            2, 'sha-b', '2026-01-01T00:00:00Z'),
+                (3, 2, 'D:\a.exe',            1, 'sha-a', '2026-02-01T00:00:00Z'),
+                (4, 3, '\\nas\partage\c.exe', 3, 'sha-c', '2026-01-15T00:00:00Z');
+            INSERT INTO version_info (observation_id) VALUES (1), (2), (3), (4);
+            INSERT INTO file_headers (observation_id, magic_hex) VALUES (1, 'aa'), (2, 'aa'), (3, 'aa'), (4, 'aa');
+            INSERT INTO pe_info (observation_id) VALUES (1), (2), (3), (4);
+            INSERT INTO authenticode (observation_id) VALUES (1), (2), (3), (4);
+            INSERT INTO msi_properties (observation_id) VALUES (1), (2), (3), (4);
+            INSERT INTO appx_manifest (observation_id) VALUES (1), (2), (3), (4);
+            """;
+        commande.ExecuteNonQuery();
+        return chemin;
+    }
+
+    [Fact]
+    public void Base_v2_ne_lit_que_le_dernier_scan_de_chaque_volume()
+    {
+        var modele = new LecteurDObservationsSqlite(BaseV2DeuxVolumes()).ProjeterModele();
+
+        // L'observation 3 (rescan de vol-a) et la 4 (vol-b) sont courantes ; 1 et 2 sont remplacées.
+        Assert.Equal([3L, 4L], modele.Actes.Select(a => a.Identifiant));
+    }
+
+    [Fact]
+    public void Base_v2_le_contexte_est_filtre_comme_les_actes()
+    {
+        var contexte = new LecteurDObservationsSqlite(BaseV2DeuxVolumes()).ProjeterContexte();
+
+        Assert.Equal([3L, 4L], contexte.Select(c => c.Identifiant));
+    }
+
+    [Fact]
+    public void Base_v2_lidentite_declare_la_version_2()
+    {
+        var identite = new LecteurDObservationsSqlite(BaseV2DeuxVolumes()).ProjeterIdentite();
+
+        Assert.Equal(2, identite.Version);
+        Assert.Equal(2, identite.NombreActes);
+    }
+
+    [Fact]
+    public void Base_v2_sans_scan_produit_un_omega_vide()
+    {
+        var chemin = NouveauCheminDeBase();
+        MiniBaseDObservations.CreerConformeV2(chemin);
+
+        var modele = new LecteurDObservationsSqlite(chemin).ProjeterModele();
+
+        Assert.Empty(modele.Actes);
+    }
+
     // --- Refus nommés (011 § 5, 014 C1) ---
 
     [Fact]
@@ -120,7 +190,7 @@ public class LecteurDObservationsSqliteTests : IDisposable
         {
             connection.Open();
             using var commande = connection.CreateCommand();
-            commande.CommandText = "PRAGMA user_version = 2;";
+            commande.CommandText = "PRAGMA user_version = 3;";
             commande.ExecuteNonQuery();
         }
 

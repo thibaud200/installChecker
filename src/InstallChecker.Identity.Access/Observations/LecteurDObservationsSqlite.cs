@@ -7,13 +7,21 @@ namespace InstallChecker.Identity.Access.Observations;
 
 /// <summary>
 /// L'adaptateur C1 (013 § 1.1, § 5) : projette la base SQLite d'observations produite par le
-/// pipeline figé (schéma <c>user_version = 1</c>) vers le modèle logique du moteur pur. Seul
-/// composant à connaître les noms de tables et de colonnes ; <c>InstallChecker.Identity</c> n'en
-/// sait rien (013 § 1.2, § 5) — il ne reçoit que des <see cref="ActeObservation"/>.
+/// pipeline (schéma <c>user_version</c> 1 ou 2 — v2 : état courant multi-disque, filtré au dernier
+/// scan par volume) vers le modèle logique du moteur pur. Seul composant à connaître les noms de
+/// tables et de colonnes ; <c>InstallChecker.Identity</c> n'en sait rien (013 § 1.2, § 5) — il ne
+/// reçoit que des <see cref="ActeObservation"/>.
 /// </summary>
 public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservationsSource
 {
-    private const long VersionDeContratSupportee = 1;
+    // Versions de contrat acceptées à la lecture : v1 (lecture intégrale — l'oracle de conformité
+    // reste lisible tel quel) et v2 (état courant multi-disque). Le producteur, lui, n'écrit que v2.
+    private static readonly long[] VersionsSupportees = [1, 2];
+
+    // v2 : l'état courant = le dernier scan de chaque volume (spec multi-disque D1/D4).
+    private const string ScansCourants = "(SELECT MAX(id) FROM scans GROUP BY volume_id)";
+    private const string ObservationsCourantes =
+        "(SELECT id FROM scan_observations WHERE scan_id IN " + ScansCourants + ")";
 
     // Une table = une capacité (001 § Provenance). Le répertoire est ouvert (001 Déf. 4) :
     // ajouter une capacité future n'exige qu'une entrée ici, jamais un nouveau type de modèle.
@@ -22,14 +30,14 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
 
     public ModeleObservations ProjeterModele()
     {
-        using var connection = Ouvrir();
+        using var connection = Ouvrir(out var version);
 
-        var actesBruts = LireActesBruts(connection);
+        var actesBruts = LireActesBruts(connection, version);
         var attributsParActe = actesBruts.Keys.ToDictionary(id => id, _ => new Dictionary<Attribut, ValeurObservee>());
 
         foreach (var table in TablesDeCapacite)
         {
-            LireCapacite(connection, table, actesBruts.Keys, attributsParActe);
+            LireCapacite(connection, table, version, actesBruts.Keys, attributsParActe);
         }
 
         var actes = actesBruts
@@ -40,18 +48,25 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
         return new ModeleObservations(actes);
     }
 
-    /// <summary>L'identité de l'état (025 §§ 3–4) : produite par le support — sa fonction déclarée (SHA-256, user_version = 1) sur l'encodage des couples (identifiant, empreinte).</summary>
-    public IndexOmega ProjeterIdentite() => IdentiteDeLEtatOmega.Calculer(ProjeterModele(), VersionDeContratSupportee);
+    /// <summary>L'identité de l'état (025 §§ 3–4) : produite par le support — sa fonction déclarée (SHA-256) et la version de contrat qu'il déclare (1 ou 2) sur l'encodage des couples (identifiant, empreinte).</summary>
+    public IndexOmega ProjeterIdentite()
+    {
+        long version;
+        using (Ouvrir(out version)) { } // lit et valide la version déclarée par le support
+        return IdentiteDeLEtatOmega.Calculer(ProjeterModele(), version);
+    }
 
     public IReadOnlyList<ContexteObservation> ProjeterContexte()
     {
-        using var connection = Ouvrir();
+        using var connection = Ouvrir(out var version);
 
         var contextes = new List<ContexteObservation>();
         try
         {
             using var commande = connection.CreateCommand();
-            commande.CommandText = "SELECT id, path, scanned_at FROM scan_observations;";
+            commande.CommandText = version == 2
+                ? "SELECT id, path, scanned_at FROM scan_observations WHERE scan_id IN " + ScansCourants + ";"
+                : "SELECT id, path, scanned_at FROM scan_observations;";
             using var lecteur = commande.ExecuteReader();
             while (lecteur.Read())
             {
@@ -69,7 +84,7 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
         return contextes.OrderBy(c => c.Identifiant).ToList();
     }
 
-    private SqliteConnection Ouvrir()
+    private SqliteConnection Ouvrir(out long version)
     {
         if (!File.Exists(cheminBase))
         {
@@ -83,12 +98,12 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
 
             using var pragma = connection.CreateCommand();
             pragma.CommandText = "PRAGMA user_version;";
-            var version = (long)pragma.ExecuteScalar()!;
+            version = (long)pragma.ExecuteScalar()!;
 
-            if (version != VersionDeContratSupportee)
+            if (!VersionsSupportees.Contains(version))
             {
                 throw new OmegaIncompatibleException(
-                    $"version de contrat non supportée : {cheminBase} : user_version={version}, attendu {VersionDeContratSupportee}");
+                    $"version de contrat non supportée : {cheminBase} : user_version={version}, attendu 1 ou 2");
             }
         }
         catch (SqliteException ex)
@@ -105,13 +120,15 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
         return connection;
     }
 
-    private static Dictionary<long, (long Taille, string Empreinte)> LireActesBruts(SqliteConnection connection)
+    private static Dictionary<long, (long Taille, string Empreinte)> LireActesBruts(SqliteConnection connection, long version)
     {
         var actes = new Dictionary<long, (long, string)>();
         try
         {
             using var commande = connection.CreateCommand();
-            commande.CommandText = "SELECT id, size, sha256 FROM scan_observations;";
+            commande.CommandText = version == 2
+                ? "SELECT id, size, sha256 FROM scan_observations WHERE scan_id IN " + ScansCourants + ";"
+                : "SELECT id, size, sha256 FROM scan_observations;";
             using var lecteur = commande.ExecuteReader();
             while (lecteur.Read())
             {
@@ -144,6 +161,7 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
     private static void LireCapacite(
         SqliteConnection connection,
         string table,
+        long version,
         IReadOnlyCollection<long> identifiantsConnus,
         IReadOnlyDictionary<long, Dictionary<Attribut, ValeurObservee>> attributsParActe)
     {
@@ -151,7 +169,9 @@ public sealed class LecteurDObservationsSqlite(string cheminBase) : IObservation
         try
         {
             using var commande = connection.CreateCommand();
-            commande.CommandText = $"SELECT * FROM {table};";
+            commande.CommandText = version == 2
+                ? $"SELECT * FROM {table} WHERE observation_id IN {ObservationsCourantes};"
+                : $"SELECT * FROM {table};";
             using var lecteur = commande.ExecuteReader();
 
             var colonnes = Enumerable.Range(0, lecteur.FieldCount).Select(lecteur.GetName).ToList();
