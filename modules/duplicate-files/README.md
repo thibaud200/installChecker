@@ -51,8 +51,10 @@ installchecker scan <dossier> [--db <fichier>] [--json] [--ext <.ext,.ext>]
 | `--json` | Sortie en JSON Lines au lieu du TSV par défaut. |
 | `--ext <liste>` | Ne scanne que ces extensions (`exe,msi` ou `.exe,.msi`), insensible à la casse. |
 
-La base est **append-only** : re-scanner un même dossier dans la même base y ajoute des observations.
-Pour repartir propre, supprimer d'abord la base.
+La base est **append-only** : chaque scan y ajoute une ligne `scans` et ses observations, rien n'est
+jamais effacé. Les analyses ne voient que l'**état courant** (le dernier scan de chaque volume, voir
+« Multi-disque ») : re-scanner un dossier remplace l'état de son volume sans qu'il faille supprimer
+la base.
 
 ```
 del test.db
@@ -118,7 +120,7 @@ Sortie (stdout, JSON) :
 ```
 
 > Chaque `Fichier` porte aussi `ActeId`, `SignatureAuthenticodePresente`, `EstUnPeLisible`,
-> `PresenceMetadonneesMsi`, `DateDObservation` (abrégés ci-dessus).
+> `PresenceMetadonneesMsi`, `DateDObservation`, `VolumeId`, `VolumeLabel` (abrégés ci-dessus).
 
 ### `plan` — plan de suppression
 
@@ -151,6 +153,30 @@ n'est **jamais** proposé ; le plan **n'exécute rien**.
 
 ---
 
+## Multi-disque
+
+La base est **unique pour tous les disques** (A4) : un doublon entre deux volumes (interne,
+USB, NAS) est détecté comme n'importe quel autre. Chaque `scan` enregistre le volume de sa
+racine — numéro de série pour un disque local, racine UNC normalisée (`\\serveur\partage`)
+pour le réseau, lettre mappée résolue en UNC — sans option nouvelle.
+
+**État courant.** Les rapports (`duplicates`, `plan`, `identity`) ne voient, pour chaque
+volume, que son **dernier scan** : rescanner un disque remplace son état précédent sans
+toucher aux autres, et sans fabriquer de faux doublons entre deux scans. Rien n'est effacé
+(append-only) : « remplacer » signifie sortir de l'état courant.
+
+**Conséquence à connaître** : un scan partiel (sous-dossier, ou `--ext` étroit) remplace
+tout l'état courant du volume — les fichiers non re-scannés en sortent. La ligne `scans`
+de la base conserve la racine et le filtre utilisés pour que ce soit explicable.
+
+Chaque exemplaire du rapport `duplicates` porte `VolumeId` et `VolumeLabel` : avec des
+lettres de lecteur changeantes (USB), c'est le volume qui dit sur quel disque physique se
+trouve chaque copie.
+
+Les bases v1 antérieures sont refusées par `scan` (aucune migration, ADR-008) : rescanner.
+
+---
+
 ## Codes de sortie
 
 | Code | Signification |
@@ -166,8 +192,6 @@ stdout.
 
 ## Limites actuelles
 
-- L'analyse porte sur une base **d'un seul scan**. Plusieurs scans cumulés dans la même base font
-  apparaître un fichier comme doublon de lui-même et faussent les résultats.
 - La protection des chemins est **implémentée dans le plan** mais n'est **alimentée par aucune liste**
   de répertoires protégés (A1) : un ensemble vide lui est passé, donc des chemins système peuvent
   apparaître dans un plan.

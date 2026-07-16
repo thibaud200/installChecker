@@ -461,6 +461,13 @@ Toute décision structurante doit être documentée :
 - **Alternatives** : documenter la théorie dans le code ou le présent fichier — rejeté : irréconciliable avec l'auditabilité et la gouvernance documentaire.
 - **Conséquences** : toute évolution de la théorie suit la série documentaire avant toute implémentation (le document précède le code, 016 § 3) ; les invariants I1 à I67 constituent le contrat de conformité du moteur ; les conformités sont consignées sous `docs/conformite/`.
 
+## ADR-011 — Schéma v2 : scans, volumes et état courant multi-disque
+
+- **Contexte** : A4 — base unique pour tous les disques ; avec des rescans, l'append-only (ADR-002) empile les observations d'un même fichier et fabrique de faux doublons entre deux scans.
+- **Décision** : schéma `user_version = 2` — table `scans` (identité de volume observée : numéro de série local ou racine UNC normalisée ; racine et filtre `--ext` conservés pour l'explicabilité) et colonne `scan_id` sur les observations. L'**état courant** = le dernier scan de chaque volume, appliqué par le lecteur Ω avant toute dérivation : tous les consommateurs partagent le même état, Ω reste append-only. Le lecteur accepte v1 (lecture intégrale — l'oracle de conformité v3 reste lisible tel quel) et v2 ; le producteur n'écrit que v2 (025 : le support déclare sa version de contrat).
+- **Alternatives** : filtrage par consommateur (rejeté — trois implémentations divergentes du même « courant ») ; flag « courant » maintenu à l'écriture (rejeté — UPDATE interdit par ADR-002) ; lecteur v2 seul (rejeté — casserait le test d'or v1 et rouvrirait la conformité v3).
+- **Conséquences** : bases v1 rescannées (ADR-008, aucune migration) ; un scan partiel remplace tout l'état courant de son volume ; rejouer un état passé reste possible (l'historique est conservé) mais n'est pas exposé.
+
 ---
 
 # 18. ROADMAP (ÉVOLUTIF)
@@ -470,7 +477,7 @@ Toute décision structurante doit être documentée :
 - Phase 3 : implémentation du moteur d'identité — **terminée** (v1 : É1→É9, tag `identity-v1.0` ; v2 : couverture, application par famille, porteur, CLI `identity` — 017/018)
 - Phase 4 : campagne v3 — **terminée** (les douze reports du 016 § 4 résolus : actes 019→026, vérification de cohérence d'état de C6, forme canonique matérielle et test d'or par oracle indépendant ; déclaration de conformité v3)
 - Phase 5 : plateforme d'extension (formalisation des points d'extension, API publiques, séparation moteur / modules métier)
-- Phase 6 : premier module métier « Duplicate Files » — **en cours** (rapport de doublons `duplicates`, plan de suppression `plan`, politique de rétention versionnée, sélection de corpus `--ext`)
+- Phase 6 : premier module métier « Duplicate Files » — **en cours** (rapport de doublons `duplicates`, plan de suppression `plan`, politique de rétention versionnée, sélection de corpus `--ext`, gestion multi-disque : schéma v2, état courant par volume, volumes dans le rapport)
 - Phase 7 : modules complémentaires et optimisation (connecteurs externes, montée en charge, nouveaux domaines métier, assistance aux contributions WinGet)
 - 
 

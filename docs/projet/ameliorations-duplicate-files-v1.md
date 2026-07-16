@@ -36,7 +36,14 @@ Le filtrage se fait **en place**, chemin d'origine conservé. Copier les fichier
 
 **Décidé.** Une **base unique** pour tous les disques : un doublon peut exister *entre* volumes (même SHA-256) et une base unique le détecte ; des bases par volume exigeraient une déduplication inter-bases inutile.
 
-**Chantier ouvert.** Avec des rescans, l'append-only (ADR-002) empile les observations d'un même fichier → faux doublons entre deux scans. Il faudra une notion de **snapshot courant** ; elle devra s'appliquer **à la source des observations (Ω) avant toute dérivation**, afin que tous les consommateurs partagent le même état courant, Ω restant append-only. Prérequis à toute suppression exécutée.
+**Livré (2026-07-16).** Le snapshot courant est implémenté selon
+`docs/superpowers/specs/2026-07-16-multi-disque-design.md` : table `scans` (schéma v2),
+identité de volume observée au scan (numéro de série local, racine UNC normalisée),
+état courant = dernier scan par volume, appliqué par le lecteur Ω **avant toute dérivation** —
+tous les consommateurs (`identity`, `duplicates`, `plan`) partagent le même état courant,
+Ω restant append-only. Le lecteur reste bi-version (v1 : lecture intégrale, l'oracle de
+conformité est intact ; v2 : état courant). Le rapport `duplicates` porte le volume de
+chaque exemplaire.
 
 ---
 
