@@ -78,6 +78,34 @@ public class GenerateurDeRapportTests
     }
 
     [Fact]
+    public void Les_volumes_fournis_apparaissent_sur_les_exemplaires_et_leur_absence_donne_null()
+    {
+        var w = new W(IndexDeTest, [Election(1, 2)]);
+        var volumes = new Dictionary<long, VolumeDuFichier> { [1] = new("vol-a", "Data") };
+
+        var rapport = GenerateurDeRapport.Generer(w, OmegaDeuxFichiers(), volumes);
+
+        var exemplaires = Assert.Single(rapport.Groupes).Exemplaires;
+        var fichier1 = exemplaires.Single(e => e.Fichier.ActeId == 1).Fichier;
+        var fichier2 = exemplaires.Single(e => e.Fichier.ActeId == 2).Fichier;
+        Assert.Equal("vol-a", fichier1.VolumeId);
+        Assert.Equal("Data", fichier1.VolumeLabel);
+        Assert.Null(fichier2.VolumeId);   // pas d'entrée volume pour l'acte 2 : absence, jamais une erreur
+        Assert.Null(fichier2.VolumeLabel);
+    }
+
+    [Fact]
+    public void Sans_volumes_le_rapport_reste_celui_daujourdhui()
+    {
+        var w = new W(IndexDeTest, [Election(1, 2)]);
+
+        var rapport = GenerateurDeRapport.Generer(w, OmegaDeuxFichiers());
+
+        var exemplaires = Assert.Single(rapport.Groupes).Exemplaires;
+        Assert.All(exemplaires, e => Assert.Null(e.Fichier.VolumeId));
+    }
+
+    [Fact]
     public void La_synthese_precede_les_groupes_dans_le_rapport()
     {
         var parametres = typeof(RapportDeDoublons).GetConstructors()[0].GetParameters().Select(p => p.Name).ToList();

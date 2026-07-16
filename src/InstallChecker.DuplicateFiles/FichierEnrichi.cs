@@ -10,6 +10,8 @@ namespace InstallChecker.DuplicateFiles;
 ///   <item><see cref="EstUnPeLisible"/> — présence de <c>pe_info.machine</c> ;</item>
 ///   <item><see cref="PresenceMetadonneesMsi"/> — présence de <c>msi_properties.product_name</c>.</item>
 /// </list>
+/// <see cref="VolumeId"/>/<see cref="VolumeLabel"/> — le volume observé au scan (spec multi-disque
+/// D5), <c>null</c> sur une base v1 : une absence légitime, jamais une erreur.
 /// </summary>
 public sealed record FichierEnrichi(
     long ActeId,
@@ -18,4 +20,6 @@ public sealed record FichierEnrichi(
     bool SignatureAuthenticodePresente,
     bool EstUnPeLisible,
     bool PresenceMetadonneesMsi,
-    string DateDObservation);
+    string DateDObservation,
+    string? VolumeId = null,
+    string? VolumeLabel = null);

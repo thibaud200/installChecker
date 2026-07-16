@@ -31,7 +31,9 @@ public static class DuplicatesCommand
         {
             var omega = new LecteurDObservationsSqlite(cheminBase);
             var w = Porteur.Deriver(omega, new LecteurDeRegistreMarkdown(cheminRegistre));
-            var rapport = GenerateurDeRapport.Generer(w, omega);
+            // Volumes lus après la dérivation : une base absente/incompatible est déjà refusée par
+            // le moteur avec son erreur contractuelle, jamais par ce lecteur annexe.
+            var rapport = GenerateurDeRapport.Generer(w, omega, LecteurDeVolumes.Lire(cheminBase));
 
             output.WriteLine(JsonSerializer.Serialize(rapport, OptionsJson));
             return 0;

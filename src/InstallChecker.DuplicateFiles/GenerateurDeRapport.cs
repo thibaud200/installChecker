@@ -13,7 +13,8 @@ namespace InstallChecker.DuplicateFiles;
 /// </summary>
 public static class GenerateurDeRapport
 {
-    public static RapportDeDoublons Generer(W w, IObservationsSource omega)
+    public static RapportDeDoublons Generer(
+        W w, IObservationsSource omega, IReadOnlyDictionary<long, VolumeDuFichier>? volumes = null)
     {
         var (groupesActeW, refusStratesSuperieures) = ExtracteurDeGroupes.Extraire(w);
 
@@ -25,7 +26,7 @@ public static class GenerateurDeRapport
 
         foreach (var groupeActeW in groupesActeW)
         {
-            var fichiers = EnrichisseurDeGroupe.Enrichir(groupeActeW.Domaine, actes, contextes);
+            var fichiers = EnrichisseurDeGroupe.Enrichir(groupeActeW.Domaine, actes, contextes, volumes);
             var exemplairesClasses = PolitiqueRetentionV1.Classer(fichiers);
             groupesClasses.Add(exemplairesClasses);
 

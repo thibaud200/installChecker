@@ -19,11 +19,13 @@ public static class EnrichisseurDeGroupe
     public static IReadOnlyList<FichierEnrichi> Enrichir(
         IReadOnlyList<long> domaine,
         IReadOnlyDictionary<long, ActeObservation> actes,
-        IReadOnlyDictionary<long, ContexteObservation> contextes) =>
+        IReadOnlyDictionary<long, ContexteObservation> contextes,
+        IReadOnlyDictionary<long, VolumeDuFichier>? volumes = null) =>
         domaine.Select(id =>
         {
             var acte = actes[id];
             var contexte = contextes[id];
+            var volume = volumes is not null && volumes.TryGetValue(id, out var v) ? v : null;
             return new FichierEnrichi(
                 id,
                 contexte.Chemin,
@@ -31,7 +33,9 @@ public static class EnrichisseurDeGroupe
                 ValeurPresente(acte, new Attribut("authenticode", "subject")),
                 ValeurPresente(acte, new Attribut("pe_info", "machine")),
                 ValeurPresente(acte, new Attribut("msi_properties", "product_name")),
-                contexte.DateDeScan);
+                contexte.DateDeScan,
+                volume?.VolumeId,
+                volume?.VolumeLabel);
         }).ToList();
 
     private static bool ValeurPresente(ActeObservation acte, Attribut attribut) =>
