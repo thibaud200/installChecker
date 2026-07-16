@@ -45,7 +45,8 @@ public class IdentityCommandTests : IDisposable
     private string BaseVersionNonSupportee()
     {
         var chemin = NouveauCheminDeBase();
-        using (var store = new ObservationStore(chemin)) store.Commit();
+        using (var store = new ObservationStore(chemin,
+            new ScanDeclaration("vol-test", null, @"C:\", "2026-01-01T00:00:00Z", null))) store.Commit();
         using var connection = new SqliteConnection($"Data Source={chemin}");
         connection.Open();
         using var commande = connection.CreateCommand();

@@ -22,10 +22,30 @@ public static class ScanCommand
             return 1;
         }
 
+        // Identité du volume résolue avant toute écriture : un volume irrésoluble corromprait le
+        // remplacement de l'état courant (spec multi-disque D3) — on refuse de démarrer.
+        VolumeIdentity volume;
+        try
+        {
+            volume = VolumeIdentityExtractor.Resolve(root);
+        }
+        catch (InvalidOperationException ex)
+        {
+            errors.WriteLine(ex.Message);
+            return 1;
+        }
+
+        var declaration = new ScanDeclaration(
+            volume.VolumeId,
+            volume.VolumeLabel,
+            Path.GetFullPath(root),
+            DateTime.UtcNow.ToString("O"),
+            extensions is { Count: > 0 } ? string.Join(",", extensions) : null);
+
         ObservationStore store;
         try
         {
-            store = new ObservationStore(dbPath);
+            store = new ObservationStore(dbPath, declaration);
         }
         catch (SqliteException ex)
         {

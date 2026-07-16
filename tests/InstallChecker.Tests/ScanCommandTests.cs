@@ -123,13 +123,61 @@ public class ScanCommandTests : IDisposable
     }
 
     [Fact]
+    public void Scan_enregistre_le_scan_avec_volume_racine_et_extensions()
+    {
+        File.WriteAllText(Path.Combine(_root, "a.exe"), "x");
+
+        var exitCode = ScanCommand.Run(_root, DbPath, false, TextWriter.Null, TextWriter.Null, ["exe"]);
+        Assert.Equal(0, exitCode);
+
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+
+        using var version = connection.CreateCommand();
+        version.CommandText = "PRAGMA user_version;";
+        Assert.Equal(2L, version.ExecuteScalar());
+
+        using var scans = connection.CreateCommand();
+        scans.CommandText = "SELECT id, volume_id, volume_label, root_path, started_at, extensions FROM scans;";
+        using var lecteur = scans.ExecuteReader();
+        Assert.True(lecteur.Read());
+        var scanId = lecteur.GetInt64(0);
+        Assert.Matches("^[0-9a-f]{8}$", lecteur.GetString(1)); // série du volume local des dossiers temporaires
+        Assert.Equal(Path.GetFullPath(_root), lecteur.GetString(3));
+        Assert.False(lecteur.IsDBNull(4));
+        Assert.Equal("exe", lecteur.GetString(5));
+        Assert.False(lecteur.Read()); // un scan = exactement une ligne
+
+        using var observations = connection.CreateCommand();
+        observations.CommandText = "SELECT DISTINCT scan_id FROM scan_observations;";
+        Assert.Equal(scanId, observations.ExecuteScalar());
+    }
+
+    [Fact]
+    public void Deux_scans_dans_la_meme_base_ajoutent_deux_lignes_scans_sans_rien_effacer()
+    {
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "x");
+        Assert.Equal(0, ScanCommand.Run(_root, DbPath, false, TextWriter.Null, TextWriter.Null));
+        Assert.Equal(0, ScanCommand.Run(_root, DbPath, false, TextWriter.Null, TextWriter.Null));
+
+        using var connection = new SqliteConnection($"Data Source={DbPath}");
+        connection.Open();
+        using var scans = connection.CreateCommand();
+        scans.CommandText = "SELECT COUNT(*) FROM scans;";
+        Assert.Equal(2L, scans.ExecuteScalar());
+        using var observations = connection.CreateCommand();
+        observations.CommandText = "SELECT COUNT(*) FROM scan_observations;";
+        Assert.Equal(2L, observations.ExecuteScalar()); // append-only : les deux observations coexistent
+    }
+
+    [Fact]
     public void Scan_UnknownUserVersion_ReturnsOneWithExplicitError()
     {
         using (var connection = new SqliteConnection($"Data Source={DbPath}"))
         {
             connection.Open();
             using var stamp = connection.CreateCommand();
-            stamp.CommandText = "PRAGMA user_version = 2;";
+            stamp.CommandText = "PRAGMA user_version = 3;";
             stamp.ExecuteNonQuery();
         }
         SqliteConnection.ClearAllPools();
@@ -138,7 +186,7 @@ public class ScanCommandTests : IDisposable
         var exitCode = ScanCommand.Run(_root, DbPath, false, TextWriter.Null, errors);
 
         Assert.Equal(1, exitCode);
-        Assert.Contains("user_version=2", errors.ToString());
+        Assert.Contains("user_version=3", errors.ToString());
     }
 
     [Fact]

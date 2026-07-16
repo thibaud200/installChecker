@@ -18,6 +18,13 @@ public sealed record FileObservation(
     AppxManifestExtractor.AppxManifest AppxManifest);
 
 /// <summary>
+/// La déclaration du scan en cours (spec multi-disque D2/D3) : l'identité observée du volume,
+/// la racine et le filtre d'extensions tels que passés — conservés pour que l'éviction de l'état
+/// précédent du volume reste explicable. Simple objet de transmission — aucune logique.
+/// </summary>
+public sealed record ScanDeclaration(string VolumeId, string? VolumeLabel, string RootPath, string StartedAt, string? Extensions);
+
+/// <summary>
 /// Propriétaire unique du stockage : création de la base, schéma, écriture des observations
 /// et projection JSON. Les tables sont append-only : chaque exécution ajoute de nouvelles
 /// observations, sans dédoublonnage. La projection JSON est dérivée strictement des mêmes
@@ -50,14 +57,17 @@ public sealed class ObservationStore : IDisposable
     private readonly SqliteParameter _pAppxObservationId, _pAppxName, _pAppxPublisher, _pAppxVersion, _pAppxProcessorArchitecture;
 
     /// <summary>Version de schéma écrite et exigée dans PRAGMA user_version. Aucune migration : version inconnue = erreur.</summary>
-    public const long SchemaVersion = 1;
+    public const long SchemaVersion = 2;
+
+    private readonly long _scanId;
 
     /// <summary>
-    /// Ouvre (ou crée) la base, crée le schéma si absent, ouvre la transaction unique du scan
-    /// et prépare les INSERT. Lève <see cref="SqliteException"/> si la base est inaccessible,
-    /// <see cref="InvalidDataException"/> si son user_version n'est pas celui attendu.
+    /// Ouvre (ou crée) la base, crée le schéma si absent, ouvre la transaction unique du scan,
+    /// enregistre la déclaration du scan et prépare les INSERT. Lève <see cref="SqliteException"/>
+    /// si la base est inaccessible, <see cref="InvalidDataException"/> si son user_version n'est
+    /// pas celui attendu.
     /// </summary>
-    public ObservationStore(string dbPath)
+    public ObservationStore(string dbPath, ScanDeclaration scan)
     {
         _connection = new SqliteConnection($"Data Source={dbPath}");
         try
@@ -74,8 +84,17 @@ public sealed class ObservationStore : IDisposable
 
             using var create = _connection.CreateCommand();
             create.CommandText = """
+                CREATE TABLE IF NOT EXISTS scans (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    volume_id    TEXT NOT NULL,
+                    volume_label TEXT,
+                    root_path    TEXT NOT NULL,
+                    started_at   TEXT NOT NULL,
+                    extensions   TEXT
+                );
                 CREATE TABLE IF NOT EXISTS scan_observations (
                     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scan_id    INTEGER NOT NULL,
                     path       TEXT NOT NULL,
                     size       INTEGER NOT NULL,
                     sha256     TEXT NOT NULL,
@@ -145,12 +164,30 @@ public sealed class ObservationStore : IDisposable
         // Transaction unique : simplicité d'abord. Lots + reprise viendront quand une mesure le justifiera.
         _transaction = _connection.BeginTransaction();
 
+        // La ligne du scan vit dans la même transaction : un scan interrompu ne laisse ni scan ni observations.
+        using (var insertScan = _connection.CreateCommand())
+        {
+            insertScan.Transaction = _transaction;
+            insertScan.CommandText = """
+                INSERT INTO scans (volume_id, volume_label, root_path, started_at, extensions)
+                VALUES ($volumeId, $volumeLabel, $rootPath, $startedAt, $extensions);
+                SELECT last_insert_rowid();
+                """;
+            insertScan.Parameters.AddWithValue("$volumeId", scan.VolumeId);
+            insertScan.Parameters.AddWithValue("$volumeLabel", (object?)scan.VolumeLabel ?? DBNull.Value);
+            insertScan.Parameters.AddWithValue("$rootPath", scan.RootPath);
+            insertScan.Parameters.AddWithValue("$startedAt", scan.StartedAt);
+            insertScan.Parameters.AddWithValue("$extensions", (object?)scan.Extensions ?? DBNull.Value);
+            _scanId = (long)insertScan.ExecuteScalar()!;
+        }
+
         _insert = _connection.CreateCommand();
         _insert.Transaction = _transaction;
         _insert.CommandText = """
-            INSERT INTO scan_observations (path, size, sha256, scanned_at) VALUES ($path, $size, $sha256, $scannedAt);
+            INSERT INTO scan_observations (scan_id, path, size, sha256, scanned_at) VALUES ($scanId, $path, $size, $sha256, $scannedAt);
             SELECT last_insert_rowid();
             """;
+        _insert.Parameters.AddWithValue("$scanId", _scanId); // fixé une fois, jamais réassigné dans Persist
         _pPath = _insert.Parameters.Add("$path", SqliteType.Text);
         _pSize = _insert.Parameters.Add("$size", SqliteType.Integer);
         _pSha256 = _insert.Parameters.Add("$sha256", SqliteType.Text);
