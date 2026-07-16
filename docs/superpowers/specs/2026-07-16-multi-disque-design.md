@@ -47,8 +47,9 @@ Chaque décision suit le format : Contexte → Décision → Alternatives écart
   `scan_observations` gagne une colonne `scan_id INTEGER NOT NULL`. Un scan = une ligne `scans` + ses observations ; jamais d'UPDATE. `root_path` et `extensions` sont conservés pour que l'éviction d'un état précédent soit toujours **explicable** (règle « toute décision doit être explicable »).
 - **Alternatives écartées** :
   - déduire le scan de `scanned_at` sans table (rejeté — fragile : deux scans peuvent se chevaucher dans le temps, et l'identité du volume n'aurait nulle part où vivre) ;
-  - migration des bases v1 (rejeté — ADR-008 : aucune migration, les bases existantes sont jetables ; une base v1 est rejetée avec l'erreur `user_version` existante, on rescanne).
-- **Conséquences** : bump v1→v2, rescans nécessaires ; le mécanisme de version existant couvre le refus des bases anciennes sans code nouveau.
+  - migration des bases v1 (rejeté — ADR-008 : aucune migration, les bases existantes sont jetables ; le producteur (scan) refuse une base v1 avec l'erreur `user_version` existante, on rescanne).
+- **Versions côté lecture** (amendement 2026-07-16, découvert à la planification) : le **producteur n'écrit que du v2**, mais le **lecteur Ω accepte v1 et v2** — conforme au 025 (« le support déclare sa version de contrat ») : v1 est lu intégralement comme aujourd'hui, v2 avec le filtre « état courant » (D1). Raison : l'oracle des tests d'or du moteur (`tests/oracle/corpus1-postA1.db`) est une base v1, artefact de la conformité v3 ; exiger v2 seul à la lecture casserait le test d'or et rouvrirait la conformité. L'identité d'état Ω est calculée avec la version déclarée par le support — les identités des bases v1 restent inchangées.
+- **Conséquences** : bump v1→v2 côté production, rescans nécessaires ; l'oracle et les artefacts de conformité v3 restent intacts.
 
 ### D3 — Identité de volume observée automatiquement (numéro de série, UNC normalisé)
 
@@ -95,8 +96,9 @@ Chaque décision suit le format : Contexte → Décision → Alternatives écart
 ## 4. Erreurs
 
 - Identité de volume irrésoluble → erreur explicite au démarrage du scan, aucun fallback (D3).
-- Base v1 ouverte par le binaire v2 → erreur `user_version` existante, inchangée (D2).
-- Aucun autre cas nouveau : une base sans table `scans` est nécessairement une base v1, couverte ci-dessus.
+- Base v1 présentée au **producteur** (scan) → erreur `user_version` existante, inchangée (D2).
+- Base v1 présentée au **lecteur** Ω → lecture intégrale, comportement actuel conservé (D2, amendement bi-version).
+- Base d'une version autre que 1 ou 2 présentée au lecteur → erreur « Ω incompatible » existante.
 
 ---
 
