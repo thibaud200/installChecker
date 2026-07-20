@@ -1,0 +1,108 @@
+-- R1 — Totaux et durée interne
+observations | octets_corpus | debut | fin | duree_s
+497 | 24681700749 | 2026-07-05T07:51:00.7942793Z | 2026-07-05T07:52:34.1405468Z | 93.3
+
+-- R2 — Invariant 1:1 (les 6 tables de capacités)
+obs | headers | pe | version | auth | msi | appx
+497 | 497 | 497 | 497 | 497 | 497 | 497
+
+-- R3 — Orphelins (répété pour chacune des 6 tables ; exemple file_headers)
+COUNT(*)
+0
+
+-- R4 — Répartition des conteneurs
+conteneur | n | pct
+ole-cfb | 376 | 75.65
+pe | 61 | 12.27
+zip | 60 | 12.07
+
+-- R5 — Présence des signaux par capacité
+version_info_present | certificats_observes | msi_renseignes | manifestes_appx
+57 | 417 | 366 | 0
+
+-- R6 — Croisement conteneur × signaux
+conteneur | n | avec_product_name | avec_certificat | avec_msi_props | avec_appx_manifest
+ole-cfb | 376 | 0 | 360 | 366 | 0
+pe | 61 | 57 | 57 | 0 | 0
+zip | 60 | 0 | 0 | 0 | 0
+
+-- R7 — Structure PE observée
+machine | optional_header_magic | n
+014c | 010b | 49
+4b50 | None | 20
+8664 | 020b | 10
+aa64 | 020b | 2
+
+-- R8 — Éditeurs signataires observés (fréquences brutes, aucune identification)
+subject | n
+CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US | 192
+CN=.NET, O=Microsoft Corporation, L=Redmond, S=Washington, C=US | 64
+CN=Python Software Foundation, O=Python Software Foundation, L=Beaverton, S=Oregon, C=US | 59
+CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US | 28
+CN=Adobe Inc., OU=Acrobat DC, O=Adobe Inc., L=San Jose, S=ca, C=US, SERIALNUMBER=2748129, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US | 11
+CN="Cisco Systems, Inc.", OU=Wireless Networking Business Unit, OU=Digital ID Class 3 - Microsoft Software Validation v2, O="Cisco Systems, Inc.", L=San Jose, S=California, C=US | 9
+CN="Oracle America, Inc.", O="Oracle America, Inc.", L=Redwood City, S=California, C=US | 5
+CN=Microsoft Windows Kits Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US | 4
+CN=OpenJS Foundation, O=OpenJS Foundation, L=San Francisco, S=California, C=US | 3
+CN=ACD Systems International Inc., O=ACD Systems International Inc., L=Victoria, S=British Columbia, C=CA | 3
+CN="REALiX, s.r.o.", O="REALiX, s.r.o.", STREET=Bozeny Nemcovej 2291/28, PostalCode=901 01, L=Malacky, S=Bratislavsky kraj, C=SK, SERIALNUMBER=55326811, OID.1.3.6.1.4.1.311.60.2.1.1=Bratislava, OID.1.3.6.1.4.1.311.60.2.1.2=Bratislavsky kraj, OID.1.3.6.1.4.1.311.60.2.1.3=SK, OID.2.5.4.15=Private Organization | 3
+CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US | 2
+CN=JetBrains s.r.o., SERIALNUMBER=26502275, OID.2.5.4.15=Private Organization, O=JetBrains s.r.o., OID.1.3.6.1.4.1.311.60.2.1.3=CZ, L=Praha, C=CZ | 2
+CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US | 2
+CN=Epic Games Inc., O=Epic Games Inc., L=Raleigh, S=North Carolina, C=US | 2
+CN=Epic Games Inc., O=Epic Games Inc., L=Cary, S=North Carolina, C=US | 2
+CN="Anthropic, PBC", O="Anthropic, PBC", L=San Francisco, S=California, C=US, SERIALNUMBER=4860621, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US | 2
+E=techteam@celestron.com, CN="CELESTRON ACQUISITION, LLC", O="CELESTRON ACQUISITION, LLC", L=Torrance, S=California, C=US | 1
+E=roche@httrack.com, CN="Open Source Developer, Xavier Roche", O=Open Source Developer, C=FR | 1
+CN=Tim Kosse, O=Tim Kosse, S=Nordrhein-Westfalen, C=DE | 1
+CN=Simon Tatham, O=Simon Tatham, S=Cambridgeshire, C=GB | 1
+CN=Shadow, O=Shadow, S=Ile-de-France, C=FR | 1
+CN=Realtek Semiconductor Corp., O=Realtek Semiconductor Corp., L=Hsinchu, S=Taiwan, C=TW, PostalCode=300, STREET="No. 2, Innovation Road II, Hsinchu Science Park", SERIALNUMBER=22671299, OID.1.3.6.1.4.1.311.60.2.1.3=TW, OID.2.5.4.15=Private Organization | 1
+CN=Realtek Semiconductor Corp., O=Realtek Semiconductor Corp., L=Hsinchu, C=TW, SERIALNUMBER=22671299, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.3=TW | 1
+CN=Prusa Research a.s., O=Prusa Research a.s., L=Praha, C=CZ, SERIALNUMBER=06649114, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.3=CZ | 1
+
+-- R9 — Taux de NULL par colonne (version_info)
+n | pct_null_product_name | pct_null_company_name | pct_null_product_version | pct_null_file_version
+497 | 88.53 | 88.53 | 88.53 | 88.53
+
+-- R9bis — Taux de NULL par colonne (msi_properties)
+n | pct_null_product_name | pct_null_product_version | pct_null_manufacturer | pct_null_product_code | pct_null_upgrade_code | pct_null_product_language
+497 | 26.36 | 26.36 | 26.36 | 26.36 | 26.36 | 26.36
+
+-- R9ter — Taux de NULL par colonne (pe_info)
+n | pct_null_machine | pct_null_subsystem | pct_null_optional_header_magic
+497 | 83.7 | 87.73 | 87.73
+
+-- R10 — Multiplicité des sha256
+observations | contenus_distincts
+497 | 381
+
+-- R10 — Multiplicité des sha256
+sha256 | n
+9bdd200622b7e4c2301a853aca3f31051b433ec664494f8d73cafb93d541b04f | 3
+7349bb7c6073e9551a0adbc8bc7cbc69045cffaca1e7dea4f800109816377315 | 3
+72ce5140916c7b025b8064461a8cd292d430209f804aa56d50a17554521995a6 | 3
+46f8123403437e69750b7ad4fefb78c5173ae69e81c537b55fb27738a537fc4c | 3
+fe81b302807cbd7ca5422c02063faf0c0515e6abc1ba4462925a0de6ae281c72 | 2
+fc293ce10825fd9ba9c3215c1b793f6e25ad43940a040dd6f673ef5d4a6f9c5d | 2
+f73830d5f64e7a920aef8ae2c101b3dea69a5feb47c10d1d6b2141235c4156ae | 2
+ea15c753b468c22f4d840c065ba604a9ae46b659d785057f158335cbadae497b | 2
+e3f21aabecc253c258931adaec249376a3d9e423490d529a0c8af19f26336afa | 2
+e368cbd51e46ba49b14975c858f3a6c6295890f438fbeb4e7a07b93a9b5bf00e | 2
+
+-- R11 — Distribution des tailles
+classe | n | mo_total
+a. < 1 Mo | 288 | 130.0
+b. 1-10 Mo | 108 | 426.0
+c. 10-100 Mo | 60 | 1695.0
+d. 100 Mo - 1 Go | 37 | 10924.0
+e. > 1 Go | 4 | 10363.0
+
+-- R12 — Taille de la base
+taille_base_mo
+0.41015625
+
+-- C5 — Validité des hash
+COUNT(*)
+0
+

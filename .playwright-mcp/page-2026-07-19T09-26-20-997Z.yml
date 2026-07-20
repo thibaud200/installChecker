@@ -1,0 +1,256 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e9]:
+        - button "Toggle navigation" [ref=e11] [cursor=pointer]
+        - link "Homepage" [ref=e17] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e20]:
+          - link "Sign in" [ref=e21] [cursor=pointer]:
+            - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fthibaud200%2Fidentity_Plateform%2Freleases
+          - button "Appearance settings" [ref=e24] [cursor=pointer]
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e32]:
+          - link "thibaud200" [ref=e36] [cursor=pointer]:
+            - /url: /thibaud200
+          - generic [ref=e37]: /
+          - strong [ref=e38]:
+            - link "identity_Plateform" [ref=e39] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform
+          - generic [ref=e40]: Public
+        - generic [ref=e41]:
+          - list:
+            - listitem [ref=e42]:
+              - link "You must be signed in to change notification settings" [ref=e43] [cursor=pointer]:
+                - /url: /login?return_to=%2Fthibaud200%2Fidentity_Plateform
+                - text: Notifications
+            - listitem [ref=e46]:
+              - link "Fork 0" [ref=e47] [cursor=pointer]:
+                - /url: /login?return_to=%2Fthibaud200%2Fidentity_Plateform
+                - text: Fork
+                - generic "0" [ref=e50]
+            - listitem [ref=e51]:
+              - link "You must be signed in to star a repository" [ref=e53] [cursor=pointer]:
+                - /url: /login?return_to=%2Fthibaud200%2Fidentity_Plateform
+                - text: Star
+                - generic "0 users starred this repository" [ref=e56]: "0"
+      - navigation "Repository" [ref=e57]:
+        - list [ref=e58]:
+          - listitem [ref=e59]:
+            - link "Code" [ref=e60] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform
+          - listitem [ref=e64]:
+            - link "Issues" [ref=e65] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/issues
+          - listitem [ref=e70]:
+            - link "Pull requests" [ref=e71] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/pulls
+          - listitem [ref=e75]:
+            - link "Actions" [ref=e76] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/actions
+          - listitem [ref=e80]:
+            - link "Projects" [ref=e81] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/projects
+          - listitem [ref=e85]:
+            - link "Security and quality" [ref=e86] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/security
+          - listitem [ref=e90]:
+            - link "Insights" [ref=e91] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/pulse
+    - generic [ref=e96]:
+      - 'heading "Releases: thibaud200/identity_Plateform" [level=1] [ref=e97]'
+      - generic [ref=e98]:
+        - generic [ref=e100]:
+          - navigation "Releases and Tags" [ref=e101]:
+            - link "Releases" [ref=e102] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/releases
+            - link "Tags" [ref=e103] [cursor=pointer]:
+              - /url: /thibaud200/identity_Plateform/tags
+          - searchbox "Find a release" [ref=e107]
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - heading "Release list" [level=2] [ref=e111]
+            - navigation "Release list navigation" [ref=e113]:
+              - list [ref=e115]:
+                - listitem [ref=e116]:
+                  - link "duplicate-files-v1" [ref=e117] [cursor=pointer]:
+                    - /url: "#release-duplicate-files-v1"
+                - listitem [ref=e119]:
+                  - link "identity-v3.0" [ref=e120] [cursor=pointer]:
+                    - /url: "#release-v3"
+                - listitem [ref=e122]:
+                  - link "identity-v2.0" [ref=e123] [cursor=pointer]:
+                    - /url: "#release-v2"
+                - listitem [ref=e125]:
+                  - link "identity-v1.0" [ref=e126] [cursor=pointer]:
+                    - /url: "#release-identity-v1.0"
+          - generic [ref=e128]:
+            - region [ref=e129]:
+              - heading "duplicate-files-v1" [level=2] [ref=e130]
+              - generic [ref=e133]:
+                - generic [ref=e134]:
+                  - generic [ref=e135]:
+                    - generic [ref=e137]:
+                      - link "duplicate-files-v1" [ref=e139] [cursor=pointer]:
+                        - /url: /thibaud200/identity_Plateform/releases/tag/duplicate-files-v1
+                      - link "Latest" [ref=e141] [cursor=pointer]:
+                        - /url: /thibaud200/identity_Plateform/releases/latest
+                    - button "Compare" [ref=e146] [cursor=pointer]
+                  - generic [ref=e150]:
+                    - generic [ref=e151]:
+                      - img "@thibaud200" [ref=e152]
+                      - link "thibaud200" [ref=e153] [cursor=pointer]:
+                        - /url: /thibaud200
+                      - text: released this 12 Jul 08:59 last week
+                    - link [ref=e155] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/tree/duplicate-files-v1
+                      - generic [ref=e156]:
+                        - img "Tag" [ref=e157]
+                        - text: duplicate-files-v1
+                    - generic [ref=e159]:
+                      - link [ref=e160] [cursor=pointer]:
+                        - /url: /thibaud200/identity_Plateform/commit/293cf8b0a31a7f11917b4f32bafb7ce37f6ed6c6
+                        - img "Commit" [ref=e161]
+                        - code [ref=e163]: 293cf8b
+                      - group [ref=e164]:
+                        - img "Verified commit signature" [ref=e166] [cursor=pointer]
+                  - generic [ref=e168]: "Module duplicate (#5) * add docs * docs(duplicate-files): relecture du plan v1 et révision 2 (conception) Rapport de relecture (P1→P7) : vérification factuelle sur l'oracle — les 4 refus du corpus sont aux strates variante/version/identité/famille, pas contenu. Corrige un test faux du plan v1 et recadre la gestion des refus. Révision 2 du plan (sans code) : rapport revu en aide à la décision (synthèse, espace récupérable, cadrage conserver/supprimer, note de capacité), DTO du module au lieu de types moteur. Plan v1 conservé intact pour comparaison. * Claude/duplicate files plan v3 mytguw (#4) * docs(duplicate-files): révision 3 du plan d'implémentation (corrections P1→P7, décisions différées) * docs(duplicate-files): lever les dernières ambiguïtés (contrat extracteur, métriques par groupe, invariant de cardinal, cohérence design) * feat(duplicate-files): scaffold module et extraction groupes + refus des strates supérieures depuis W (Task 1) Contrat à deux flux conforme au plan rev3 (P2) : élections certaines CE-01 de la strate contenu -> groupes ; refus globaux des strates supérieures -> collectés pour la note de capacité. Tests non exécutés dans cet environnement : SDK .NET indisponible et son installation est bloquée par la politique réseau. Commande de validation à lancer : dotnet test. Aucun résultat d'exécution n'est rapporté. * feat(duplicate-files): enrichissement des groupes depuis Ω (Task 2) EnrichisseurDeGroupe relit Ω (jamais W) : chemin, date, taille de l'acte, et présence des attributs de classement. Renommages rev3/P5 : SignatureAuthenticodePresente, EstUnPeLisible, PresenceMetadonneesMsi. Invariant P7 documenté : W et Ω proviennent de la même dérivation. Tests non exécutés dans cet environnement (SDK .NET indisponible, installation bloquée par la politique réseau). Commande de validation : dotnet test. Aucun résultat d'exécution n'est rapporté. * feat(duplicate-files): classeur politique de rétention v1 (Task 3) PolitiqueRetentionV1.Classer applique les 4 critères ordonnés (D4), inchangés vs rev1 : richesse des observations, nom de fichier, ancienneté (plus récent préféré), emplacement ; départage mécanique par identifiant d'acte. Seule adaptation, mécanique et forcée par la Task 2 : richesse lue via les champs renommés EstUnPeLisible / PresenceMetadonneesMsi. ExemplaireClasse reste (Fichier, Rang, Motif) ; l'étiquette conserver/candidat est réservée à Task 5. Tests non exécutés dans cet environnement (SDK .NET indisponible, installation bloquée par la politique réseau). Commande de validation : dotnet test. Aucun résultat d'exécution n'est rapporté. * docs(duplicate-files): registre métier politique de rétention v1 (Task 4) Artefact versionné de la politique de rétention (D6, Approche A) : v1.md documente les 4 critères ordonnés (D4) et le départage mécanique, plus historique.md. Libellé des signaux de richesse aligné sur les renommages rev3/P5 (présence de signature Authenticode / PE lisible / présence de métadonnées MSI). Aucun critère ni ordre modifié. Documentation seule : aucun code de production touché, pas de test. * feat(duplicate-files): synthèse de bibliothèque, cinq agrégats métier (Task 3 bis) SyntheseDeBibliotheque.Calculer produit les 5 agrégats de rev3 § 2.1 à partir des seuls groupes classés (ni Ω, ni W, ni moteur) : nombre de groupes, fichiers redondants, espace récupérable (taille commune × (n-1)), fichiers à conserver (rang 1), candidats à la suppression (rang >= 2). Invariant de cardinal du classeur documenté ; la coïncidence v1 (à conserver = groupes ; candidats = redondants) est vérifiée par test. Tests non exécutés dans cet environnement (SDK .NET indisponible, installation bloquée par la politique réseau). Commande de validation : dotnet test. Aucun résultat d'exécution n'est rapporté. * feat(duplicate-files): générateur de rapport et DTO du module (Task 5) Assemble le rapport rev3 : synthèse de bibliothèque en tête, note de capacité (dérivée des refus des strates supérieures, jamais les refus eux-mêmes), puis groupes classés. Chaque groupe porte ses métriques (taille unitaire, espace récupérable = taille × (n-1) — correction B) ; chaque exemplaire porte le rang et l'étiquette à conserver / candidat à la suppression. Sortie 100 % DTO du module : plus de champ NonTranches, aucun type moteur (P2/P4), garanti par un test réflexif. Le classement reste celui de PolitiqueRetentionV1. Tests non exécutés dans cet environnement (SDK .NET indisponible, installation bloquée par la politique réseau). Commande de validation : dotnet test. Aucun résultat d'exécution n'est rapporté. * feat(duplicate-files): commande CLI duplicates de bout en bout (Task 6) DuplicatesCommand câble les mêmes adaptateurs qu'identity sur Porteur.Deriver, passe W et la même source Ω à GenerateurDeRapport, sérialise le DTO du module. Adaptateur pur : aucune logique métier, aucune décision. Erreurs du moteur restituées telles quelles (mêmes types qu'IdentityCommand), code de sortie 1. Program.cs : branche 'duplicates <base.db> <registre>' + ligne d'usage. La CLI référence désormais le module. Test d'intégration sur le corpus réel (112 groupes, synthèse + 5 agrégats, espace récupérable > 0, note de capacité variante/version/identité/famille, reproductibilité, absence de NonTranches, erreur base absente). Tests non exécutés dans cet environnement (SDK .NET indisponible, installation bloquée par la politique réseau). Commande de validation : dotnet test. Aucun résultat d'exécution n'est rapporté. * docs(duplicate-files): revue statique de l'implémentation v1 (Task 7) Rapport de revue technique du code réel (Tasks 1-6) vs plan rev3, conception D1-D6, architecture et CLAUDE.md. Verdict : conforme avec réserves, aucun écart bloquant ni important, 6 écarts mineurs. Revue statique uniquement (SDK .NET indisponible) : aucun résultat de build/test inventé."
+                - group [ref=e172]:
+                  - button "Assets 2" [expanded] [ref=e173] [cursor=pointer]:
+                    - generic [ref=e174]:
+                      - generic [ref=e175]: Assets
+                      - generic "2" [ref=e176]
+                  - generic [ref=e177]: Loading
+            - region [ref=e185]:
+              - heading "identity-v3.0" [level=2] [ref=e186]
+              - generic [ref=e189]:
+                - generic [ref=e190]:
+                  - generic [ref=e191]:
+                    - link "identity-v3.0" [ref=e195] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/releases/tag/v3
+                    - button "Compare" [ref=e200] [cursor=pointer]
+                  - generic [ref=e204]:
+                    - generic [ref=e205]:
+                      - img "@thibaud200" [ref=e206]
+                      - link "thibaud200" [ref=e207] [cursor=pointer]:
+                        - /url: /thibaud200
+                      - text: released this 10 Jul 22:38 last week
+                    - link [ref=e209] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/tree/v3
+                      - generic [ref=e210]:
+                        - img "Tag" [ref=e211]
+                        - text: v3
+                    - generic [ref=e213]:
+                      - link [ref=e214] [cursor=pointer]:
+                        - /url: /thibaud200/identity_Plateform/commit/6955171299f5ac8a0e7de106aa946d422524a86a
+                        - img "Commit" [ref=e215]
+                        - code [ref=e217]: "6955171"
+                      - group [ref=e218]:
+                        - img "Verified commit signature" [ref=e220] [cursor=pointer]
+                  - generic [ref=e222]: "V3 (#3) * Identity v3 : jalon V3-1 - hygiene documentaire et de depot (report 10) CLAUDE.md reconcilie : restauration du document commite (ADR 001-008, s10, s17 cites par le 013) + integrations ciblees (mission Omega/R/W, architecture logique et regle fondamentale en s5, modules Identity en s7, pipeline s8, ADR-009/ADR-010, roadmap 7 phases, s21 references normatives). Document 019 : resorption des trois references pendantes (009 -> I33 et ss1/7 ; 011 s5 -> sa propre precision normative ; 014 s7.3 -> norme sur place, reconciliation renvoyee au report 6) + inventaire des deux tensions internes du 014 (T1 cause de tau -> report 9 ; T2 identite d'Omega <-> table -> report 5). docs/conformite/declaration-conformite-v1.md : la consignation due par 014 E7, produite a posteriori, chaque enonce cite du 016 s1. Tests autonomes : MiniBaseDObservations (DDL du contrat user_version=1), IdentityCommandTests et 4 tests de frontiere deplaces vers InstallChecker.Tests, reference pipeline retiree d'Identity.Tests (graphe du 013 s1.1 restaure). 131+49 = 180 tests verts (memes scenarios, relocalises), 0 avertissement, zero fichier de src/ touche. * Identity v3 : jalon V3-2 - la clause recoit de C5 et l'enumeration des identifiants d'actes (report 11) Document 020 : trois touchers declares - raffinement du 014 s1 (C5, recoit : + l'enumeration des identifiants d'actes d'Omega, identifiants seuls, usage unique, re-derivable), complement du 014 s3 (ligne nouvelle C1 -> C5 ; la regle « un acte d'observation ne parvient jamais a C5 » demeure vraie a la lettre), raffinement du 018 s5 (onze traversees au lieu de dix, demonstration vraie mot pour mot sur la table completee). Le contrat rattrape l'implementation (v1 E6, v2 porteur) : zero code, zero test, zero invariant, zero comportement. Report 11 clos. 180 tests verts inchanges, 0 avertissement. * Identity v3 : jalon V3-3 - la carte des refus de W0, reconciliation et revision documentaire de l'oracle (report 6) Document 021 : decision Cas B - l'exception d'I59 (revision documentaire prealable de l'oracle, le cas d'espece nomme par I59 lui-meme) exercee sans changement de sortie. Divergence reelle demontree entre la carte du 009 s6 (especes localisees, structurels aux actes - E3 : silence L2) et celle du 014 s8 (quatre refus normatifs de domaine maximal, motifs profonds reserves s7.4). Raffinements declares : 009 ss5/6/9 (la regle du premier maillon manquant actee ; la carte du s6 requalifiee en carte des cessions, integralement conservee et datee) et 010 EXG-26 (citation relue sur la carte reconciliee). E2/E3 relus sous la regle. W0 produit, artefact, registre, tests, invariants : tous invariants. Report 6 clos. 180 tests verts inchanges, 0 avertissement. * Identity v3 : jalon V3-4 - l'espace trivial, definition et completude au-dela des singletons (report 12) Document 022 : decision Cas A (confirmation) - la theorie l'impliquait deja : le 006 s4 nommait le motif « silence » en citant la forme du 005 s11 (la minimale seule non dominee). Definition actee : espace trivial = extremes qui coincident (singletons) ou degenerent en constat (hors-classe de la strate contenu, la seule observee). Reponse centrale demontree par elimination : un domaine multi-actes sans hypothese constructive a strate hypothetique est un refus (ni vide, ni trivial, ni quatrieme categorie) - espece et motif par la regle du premier maillon (021). Un seul raffinement declare : 009 s5 (la precision singleton devient le cas particulier). W0 acte pour acte inchange, moteur/tests/invariants intacts. Report 12 clos. 180 tests verts inchanges, 0 avertissement. * Identity v3 : jalon V3-5 - le journal et l'etat du registre (report 7) Document 023 : trois touchers declares - raffinement du 015 s6.2 (« cinq sous-sections » se lit « cinq elements », la date au titre devient la seule lecture du titre ouverte a C2, « les sous-sections font foi » borne a type/convention), complement du 014 s5.2 (ordre chronologique decroissant -> registre malforme), erratum du 015 s7.4 (le compte d'actes releve de la relecture humaine, la lettre du 014 s5.3 restauree comme reference close de C2) ; erratum constate du 015 s7.3 (l'exemple fautif sur ses deux listes - le s7.5 fait foi). Partage des vingt-quatre points de la check-list : C2 = 1-16, 10 et 20 ; relecture humaine = 17-19 et 21-24. Volet C2 strictement borne : ExtraireDateDuTitre + verification de l'ordre non decroissant (cas de forme, deuxieme etage - 017 s8 intact) ; deux fixtures (JournalDesordonne, EntreeSansDateDeTitre) et deux tests. R0 reel valide tel quel (2026-07-05, non decroissant). Report 7 clos. 133+49 tests verts, 0 avertissement. * Identity v3 : jalon V3-6 - la totalite de la reference d'acte (report 8) Document 024 : decision Cas B (raffinement) - la paire (strate, plus petit identifiant) n'etait que supposee totale : la garde d'agregation du 014 s7.3 contemple les recoupements de domaines a une meme strate, rendant la collision constructible (election {1,2} / refus {1,3}). Un raffinement declare : 014 s7.5 - la reference d'acte est l'identite de l'acte (014 s2 : strate + domaine enumere et trie), totale par la completude (014 C5 : exactement un acte). La paire abregee conserve ses deux roles : cle de tri et designation d'audit (mecanisme nouveau declare), univoque sous la couverture courante (demonstration via 021/022) ; pluralite future -> reference complete, jamais d'erreur nouvelle (C7 « seul cas » intact). Volet logiciel : ReferenceActe = sealed record (Strate, Domaine) a egalite de sequence, CalculerTransition sur cle totale, TrouverActeDesigne(W, Strate, long), six signatures d'audit du porteur et IdentityCommand en designation abregee ; trois suites adaptees + un test de collision. Report 8 clos. 134+49 tests verts, 0 avertissement, W0 inchange. * Identity v3 : jalon V3-7 - l'identite d'un etat d'Omega (report 5) Document 025 : quatre touchers declares - raffinement du 014 s6 (le support declare sa fonction d'empreinte, comme sa version), raffinement du 014 s7.2 (l'empreinte d'etat = fonction declaree sur l'encodage a prefixe de longueur « n:v, » des couples (identifiant, empreinte de contenu) tries), complement des 014 ss1/3 (C1 produit l'identite ; ligne C1 -> C6, symetrie de C2 -> C6), raffinement du 018 s5 (l'exception resorbee en douzieme traversee) ; la tension T2 du 019 close. Ecart publie (docs/conformite/ecart-publie-identite-etat-omega.md) : I59 branche 1 - v1 et v2 non conformes retroactivement sur l'identification d'etat seule ; branche 2 demontree non applicable (014 s8 fixe la procedure par reference : le report 6 demeure le seul cas de revision documentaire d'oracle). Volet logiciel : port ProjeterIdentite(), IdentiteDeLEtatOmega (Access, cote support), adaptateurs SQLite et memoire, IndexOmegaCalculateur supprime, porteur pur convoyeur ; test de construction migre + test de discrimination (memes contenus, identifiants differents -> identites distinctes). 116 actes de W0 intacts, empreinte d'index revisee. Report 5 clos. 135+49 tests verts, 0 avertissement. * Identity v3 : jalon V3-8 - la cause et les continuites d'une transition (report 9) Document 026 : la tension T1 du 019 close par le Cas B. Trois touchers declares : complement du 014 s1 (les deux enumerations d'identifiants entrent dans l'invocation de transition, le patron du 020), raffinement des 014 ss2/7.5 (la cause = suite des volets du changement d'index, Omega puis R, possiblement vide - detail Omega ajoutes et retires, detail R delta des couples), raffinement des 018 ss3/6 (la cause disparait de la demande de transition - la quarantaine se resout par sa propre lettre) ; le regime des continuites fixe (le critere du 006 s5 : elections, meme strate, meme contenu, domaines se recouvrant - les triviales d'E5 declarees). I59 engage sur la surface de tau, premiere branche exercee : ecart publie (docs/conformite/ecart-publie-cause-continuites.md), declaration retroactive bornee a tau. Corrections d'audit contradictoire integrees : ligne 012 dans la table de compatibilite, renvoi 011 s2.2 rectifie, lettre du 018 s9 restituee, cas limite du volet Omega a detail vide. Volet logiciel : Cause en volets (TypeCause supprime), C6 derive cause et continuites, Porteur.Transitionner sans parametre cause, CLI intacte ; les scenarios de transition du 013 s9 joues pour la premiere fois (E5, adoption simulee, double, index egaux). Report 9 clos. 138+49 tests verts, 0 avertissement. * Identity v3 : jalon V3-9 - la verification de coherence d'etat de C6 (report 4) Report 4 (016 s4.1, voie 3 - implementation, aucun acte documentaire) : Cas A, le contrat derive tout. C6 verifie la coherence d'etat avant livraison (014 C6 « garantit », 006 s3), bornee aux clauses de la Definition 3 decidables sur ses entrees declarees (l'ensemble des actes et l'index, 014 s1) : unicite de l'identite d'acte (projection de P1, « exactement un acte » 014 C5), licences des elections (I27 : non vides, en vigueur), dependances en vigueur (« versions comprises » - l'index les enumere). Les clauses restantes (dominance, emboitement I17, Obs dans Omega, completude) exigeraient de « voir plus bas » (012 s2, clause « ignore ») et demeurent garanties par C5. Tout echec est une DefaillanceInterneException, signalee comme telle (011 s4), hors des hierarchies d'erreurs contractuelles - jamais une huitieme erreur ; la CLI ne la retient pas (EstUneErreurContractuelle, inchange). Injoignable depuis la frontiere publique sous un C5 correct : aucune sortie ne change sur aucun index (I59 non engage), W0 bit-a-bit intact. Six tests nouveaux. Audit contradictoire : 0 A, 0 B, 3 C (inscriptions au perimetre de V3-11). Report 4 clos. 144+49 tests verts, 0 avertissement. * Identity v3 : jalon V3-10 - la forme canonique materielle de W et de tau (report 3) Report 3 (016 s4.1, voie 3 - Cas A, aucun acte : la theorie delegue trois fois la syntaxe concrete a l'implementation - 011 s3 « definie par l'implementation », 012 s5 « sans imposer de format », EXG-18 « le moteur definit une forme canonique de sa sortie »). Consignation docs/conformite/forme-canonique-materielle.md : JSON, UTF-8 sans BOM, non-ASCII en clair, LF exclusif avec LF final unique, indentation 2 (la disposition de json.dumps(indent=2)), echappement minimal, champs absents omis, ordres du 014 s7 raffine 024/025/026 ; le manque « reponses d'audit » inventorie au s4 pour la cloture. FormeCanonique.Emettre(W|Transition) ecrit a la main dans le moteur ; CLI alignee - obligation du 018 s6 (« emet W tel que produit, sous la forme canonique du 013 s4 ») - avec Console.OutputEncoding UTF-8 sans BOM (la page de codes CP850 brisait l'identite bit a bit) ; FormeEmise supprimee. Fichier d'or tests/oracle/W0-attendu.json produit par l'oracle independant oracle-w0.py (python stdlib, hors moteur - il revalide l'empreinte d'etat du 025 : a0894c89...) ; .gitattributes -text. Identite a trois voies prouvee (sha256 61532c52... : CLI reelle = fichier d'or = script rejoue) ; le test d'or et le determinisme d'EXG-27 portent enfin sur des octets emis. Report 3 clos - tous les reports du 016 s4 sont resorbes. 148+50 tests verts, 0 avertissement. * cloture v3"
+                - group [ref=e226]:
+                  - button "Assets 2" [ref=e227] [cursor=pointer]:
+                    - generic [ref=e228]:
+                      - generic [ref=e229]: Assets
+                      - generic "2" [ref=e230]
+            - region [ref=e232]:
+              - heading "identity-v2.0" [level=2] [ref=e233]
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - generic [ref=e238]:
+                    - link "identity-v2.0" [ref=e242] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/releases/tag/v2
+                    - button "Compare" [ref=e247] [cursor=pointer]
+                  - generic [ref=e251]:
+                    - generic [ref=e252]:
+                      - img "@thibaud200" [ref=e253]
+                      - link "thibaud200" [ref=e254] [cursor=pointer]:
+                        - /url: /thibaud200
+                      - text: released this 09 Jul 18:39 last week
+                    - link [ref=e256] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/tree/v2
+                      - generic [ref=e257]:
+                        - img "Tag" [ref=e258]
+                        - text: v2
+                    - link [ref=e261] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/commit/c9389a23070110258ac340ddaa9ead0182472322
+                      - img "Commit" [ref=e262]
+                      - code [ref=e264]: c9389a2
+                  - generic [ref=e265]: InstallChecker Identity V2
+                - group [ref=e269]:
+                  - button "Assets 2" [ref=e270] [cursor=pointer]:
+                    - generic [ref=e271]:
+                      - generic [ref=e272]: Assets
+                      - generic "2" [ref=e273]
+            - region [ref=e275]:
+              - heading "identity-v1.0" [level=2] [ref=e276]
+              - generic [ref=e279]:
+                - generic [ref=e280]:
+                  - generic [ref=e281]:
+                    - link "identity-v1.0" [ref=e285] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/releases/tag/identity-v1.0
+                    - button "Compare" [ref=e290] [cursor=pointer]
+                  - generic [ref=e294]:
+                    - generic [ref=e295]:
+                      - img "@thibaud200" [ref=e296]
+                      - link "thibaud200" [ref=e297] [cursor=pointer]:
+                        - /url: /thibaud200
+                      - text: released this 08 Jul 07:43 2 weeks ago
+                    - link [ref=e299] [cursor=pointer]:
+                      - /url: /thibaud200/identity_Plateform/tree/identity-v1.0
+                      - generic [ref=e300]:
+                        - img "Tag" [ref=e301]
+                        - text: identity-v1.0
+                    - generic [ref=e303]:
+                      - link [ref=e304] [cursor=pointer]:
+                        - /url: /thibaud200/identity_Plateform/commit/9dd784d1271b63a76dbcf362ba2e3c540169a12c
+                        - img "Commit" [ref=e305]
+                        - code [ref=e307]: 9dd784d
+                      - group [ref=e308]:
+                        - img "Verified commit signature" [ref=e310] [cursor=pointer]
+                  - paragraph [ref=e313]: identity-v1.0
+                - group [ref=e317]:
+                  - button "Assets 2" [ref=e318] [cursor=pointer]:
+                    - generic [ref=e319]:
+                      - generic [ref=e320]: Assets
+                      - generic "2" [ref=e321]
+  - contentinfo [ref=e324]:
+    - heading "Footer" [level=2] [ref=e325]
+    - generic [ref=e326]:
+      - generic [ref=e327]:
+        - link "GitHub Homepage" [ref=e328] [cursor=pointer]:
+          - /url: https://github.com
+        - generic [ref=e331]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e332]:
+        - heading "Footer navigation" [level=3] [ref=e333]
+        - list "Footer navigation" [ref=e334]:
+          - listitem [ref=e335]:
+            - link "Terms" [ref=e336] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e337]:
+            - link "Privacy" [ref=e338] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e339]:
+            - link "Security" [ref=e340] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e341]:
+            - link "Status" [ref=e342] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e343]:
+            - link "Community" [ref=e344] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e345]:
+            - link "Docs" [ref=e346] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e347]:
+            - link "Contact" [ref=e348] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e349]:
+            - button "Manage cookies" [ref=e351] [cursor=pointer]
+          - listitem [ref=e352]:
+            - button "Do not share my personal information" [ref=e354] [cursor=pointer]

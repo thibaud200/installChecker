@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- D6 (spec 2026-07-11) : le moteur métier ne dépend que du contrat public d'Identity — jamais
+       d'Identity.Access ni de SQLite. L'enveloppe du module porte ces adaptateurs. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\InstallChecker.Identity\InstallChecker.Identity.csproj" />
+  </ItemGroup>
+
+</Project>

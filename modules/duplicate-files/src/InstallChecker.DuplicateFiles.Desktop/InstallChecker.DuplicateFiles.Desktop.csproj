@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>InstallChecker.DuplicateFiles.Desktop</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InstallChecker.DuplicateFiles\InstallChecker.DuplicateFiles.csproj" />
+    <ProjectReference Include="..\..\..\scanner\src\InstallChecker.Scanner\InstallChecker.Scanner.csproj" />
+    <ProjectReference Include="..\..\..\scanner\src\InstallChecker.Scanner.Core\InstallChecker.Scanner.Core.csproj" />
+  </ItemGroup>
+
+</Project>

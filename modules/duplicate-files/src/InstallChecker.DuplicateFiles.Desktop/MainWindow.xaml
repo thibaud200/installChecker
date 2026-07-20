@@ -1,0 +1,419 @@
+<Window x:Class="InstallChecker.DuplicateFiles.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
+        Title="Duplicate Files"
+        Width="1440"
+        Height="860"
+        MinWidth="1100"
+        MinHeight="680"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="56" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="34" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <DockPanel Margin="16,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Margin="0,0,8,0"
+                            Command="{Binding OuvrirSessionCommand}"
+                            Content="Ouvrir session"
+                            ToolTip="Ouvrir une session de tri existante" />
+                    <Button Margin="0,0,8,0"
+                            Command="{Binding ImporterRapportCommand}"
+                            Content="Importer JSON"
+                            ToolTip="Importer un rapport de doublons existant" />
+                    <Button Command="{Binding OuvrirBaseCommand}"
+                            Content="Ouvrir base"
+                            ToolTip="Analyser une base SQLite existante" />
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="Duplicate Files" />
+                    <TextBlock Foreground="{DynamicResource TextMutedBrush}"
+                               FontSize="11"
+                               Text="Bibliothèque locale" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid Margin="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Margin="2,0,0,10"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Text="Dossiers à scanner" />
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Racines}"
+                             SelectedItem="{Binding RacineSelectionnee}"
+                             BorderBrush="{DynamicResource BorderBrush}"
+                             BorderThickness="1"
+                             HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="8,6"
+                                           Text="{Binding}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Grid Grid.Row="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0"
+                                Style="{StaticResource CompactButton}"
+                                Command="{Binding AjouterRacineCommand}"
+                                Content="Ajouter"
+                                ToolTip="Ajouter un dossier" />
+                        <Button Grid.Column="2"
+                                Style="{StaticResource CompactButton}"
+                                Command="{Binding RetirerRacineCommand}"
+                                Content="Retirer"
+                                ToolTip="Retirer le dossier sélectionné" />
+                    </Grid>
+
+                    <Button Grid.Row="3"
+                            Margin="0,12,0,0"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding ScannerCommand}"
+                            Content="Scanner les dossiers"
+                            ToolTip="Lancer le scan puis produire les deux analyses" />
+                </Grid>
+            </Border>
+
+            <TabControl Grid.Column="1" Margin="12,8,12,0">
+                <TabItem Header="Doublons exacts">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="420" />
+                            <ColumnDefinition Width="350" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="42" />
+                                <RowDefinition Height="42" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Margin="2,0,10,0">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Foreground="{DynamicResource TextMutedBrush}" Text="Candidats  " />
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding NombreCandidats}" />
+                                    <TextBlock Margin="18,0,0,0" Foreground="{DynamicResource TextMutedBrush}" Text="Récupérable  " />
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding EspaceRecuperable, StringFormat={}{0:N0} o}" />
+                                </StackPanel>
+                                <TextBlock VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="Groupes exacts" />
+                            </DockPanel>
+
+                            <TextBox Grid.Row="1"
+                                     Margin="0,4,10,6"
+                                     Text="{Binding RechercheDoublons, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Rechercher par chemin ou identifiant" />
+
+                            <DataGrid Grid.Row="2"
+                                      Margin="0,0,10,0"
+                                      ItemsSource="{Binding GroupesDoublonsFiltres}"
+                                      SelectedItem="{Binding GroupeDoublonSelectionne}"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.CanContentScroll="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Width="2*" Header="Chemin repère" Binding="{Binding CheminPrincipal}" />
+                                    <DataGridTextColumn Width="70" Header="Copies" Binding="{Binding NombreFichiers}" />
+                                    <DataGridTextColumn Width="95" Header="Taille" Binding="{Binding TailleUnitaire, StringFormat={}{0:N0}}" />
+                                    <DataGridTextColumn Width="95" Header="Gain" Binding="{Binding EspaceRecuperable, StringFormat={}{0:N0}}" />
+                                    <DataGridTextColumn Width="90" Header="Confiance" Binding="{Binding Confiance}" />
+                                    <DataGridTextColumn Width="92" Header="Revue" Binding="{Binding EtatRevue}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1,0,0,0">
+                            <Grid Margin="14,0,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="Exemplaires" />
+                                <StackPanel Grid.Row="1" Margin="0,10,14,10">
+                                    <TextBlock FontFamily="Cascadia Mono, Consolas"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               Text="{Binding GroupeDoublonSelectionne.GroupeId}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <ComboBox Margin="0,8,0,0"
+                                              ItemsSource="{Binding EtatsRevue}"
+                                              SelectedItem="{Binding GroupeDoublonSelectionne.EtatRevue, Mode=TwoWay}" />
+                                </StackPanel>
+                                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding GroupeDoublonSelectionne.Fichiers}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0,0,14,0"
+                                                        Padding="0,10"
+                                                        BorderBrush="{DynamicResource SurfaceMutedBrush}"
+                                                        BorderThickness="0,0,0,1">
+                                                    <StackPanel>
+                                                        <DockPanel>
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Foreground="{DynamicResource TextMutedBrush}"
+                                                                       Text="{Binding Taille, StringFormat={}{0:N0} o}" />
+                                                            <TextBlock FontWeight="SemiBold" Text="{Binding Role}" />
+                                                        </DockPanel>
+                                                        <TextBlock Margin="0,4,0,0"
+                                                                   Text="{Binding Chemin}"
+                                                                   TextWrapping="Wrap"
+                                                                   ToolTip="{Binding Chemin}" />
+                                                        <TextBlock Margin="0,3,0,0"
+                                                                   Foreground="{DynamicResource TextMutedBrush}"
+                                                                   Text="{Binding Volume, StringFormat=Volume : {0}}" />
+                                                        <ItemsControl ItemsSource="{Binding Blocages}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Margin="0,3,0,0"
+                                                                               Foreground="{DynamicResource BlockedBrush}"
+                                                                               Text="{Binding}" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <Button Grid.Row="3"
+                                        Margin="0,12,14,0"
+                                        Content="Supprimer"
+                                        Command="{Binding SupprimerCommand}"
+                                        ToolTip="Exécution non disponible dans cette version"
+                                        automation:AutomationProperties.HelpText="Action visible mais désactivée" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Versions apparentées">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="420" />
+                            <ColumnDefinition Width="350" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.ColumnSpan="2" Panel.ZIndex="2" Background="{DynamicResource SurfaceBrush}">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding VersionsDisponibles}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                                <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="Versions non disponibles" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           Text="{Binding MessageVersions}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="42" />
+                                <RowDefinition Height="42" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <DockPanel Margin="2,0,10,0">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Foreground="{DynamicResource TextMutedBrush}" Text="Versions antérieures  " />
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding NombreVersionsAnterieures}" />
+                                </StackPanel>
+                                <TextBlock VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="Familles versionnées" />
+                            </DockPanel>
+                            <TextBox Grid.Row="1"
+                                     Margin="0,4,10,6"
+                                     Text="{Binding RechercheVersions, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Rechercher une famille ou une version" />
+                            <DataGrid Grid.Row="2"
+                                      Margin="0,0,10,0"
+                                      ItemsSource="{Binding GroupesVersionsFiltres}"
+                                      SelectedItem="{Binding GroupeVersionSelectionne}"
+                                      EnableRowVirtualization="True"
+                                      EnableColumnVirtualization="True"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      ScrollViewer.CanContentScroll="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Width="2*" Header="Famille" Binding="{Binding Famille}" />
+                                    <DataGridTextColumn Width="90" Header="Référence" Binding="{Binding VersionReference}" />
+                                    <DataGridTextColumn Width="78" Header="Format" Binding="{Binding Format}" />
+                                    <DataGridTextColumn Width="90" Header="Architecture" Binding="{Binding Architecture}" />
+                                    <DataGridTextColumn Width="85" Header="Confiance" Binding="{Binding Confiance}" />
+                                    <DataGridTextColumn Width="92" Header="Revue" Binding="{Binding EtatRevue}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1,0,0,0">
+                            <Grid Margin="14,0,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="Versions de la famille" />
+                                <StackPanel Grid.Row="1" Margin="0,10,14,8">
+                                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding GroupeVersionSelectionne.Famille}" />
+                                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextMutedBrush}">
+                                        <Run Text="Référence " />
+                                        <Run FontWeight="SemiBold" Text="{Binding GroupeVersionSelectionne.VersionReference}" />
+                                        <Run Text="  ·  " />
+                                        <Run Text="{Binding GroupeVersionSelectionne.Architecture}" />
+                                    </TextBlock>
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="{DynamicResource ReviewBrush}"
+                                               Text="Revue humaine obligatoire">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding GroupeVersionSelectionne.RevueHumaine}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <ComboBox Grid.Row="2"
+                                          Margin="0,0,14,8"
+                                          ItemsSource="{Binding EtatsRevue}"
+                                          SelectedItem="{Binding GroupeVersionSelectionne.EtatRevue, Mode=TwoWay}" />
+                                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding GroupeVersionSelectionne.Artefacts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0,0,14,0"
+                                                        Padding="0,10"
+                                                        BorderBrush="{DynamicResource SurfaceMutedBrush}"
+                                                        BorderThickness="0,0,0,1">
+                                                    <StackPanel>
+                                                        <DockPanel>
+                                                            <TextBlock DockPanel.Dock="Right" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding Role}" />
+                                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding Version}" />
+                                                        </DockPanel>
+                                                        <ItemsControl Margin="0,5,0,0" ItemsSource="{Binding Chemins}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Margin="0,2,0,0" Text="{Binding}" TextWrapping="Wrap" ToolTip="{Binding}" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <ItemsControl ItemsSource="{Binding Blocages}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource BlockedBrush}" Text="{Binding}" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+        <Border Grid.Row="2"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="14,0">
+                <DockPanel MinHeight="32">
+                    <Expander DockPanel.Dock="Right"
+                              Margin="18,0,0,0"
+                              VerticalAlignment="Bottom"
+                              Header="{Binding Diagnostics.Count, StringFormat=Diagnostics ({0})}">
+                        <Border Width="520"
+                                MaxHeight="180"
+                                Padding="10"
+                                Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Diagnostics}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,0,8">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding Code}" />
+                                                <TextBlock Foreground="{DynamicResource TextMutedBrush}"
+                                                           Text="{Binding Message}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                    </Expander>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Foreground="{DynamicResource TextMutedBrush}" Text="Fichiers traités  " />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding FichiersTraites}" />
+                    </StackPanel>
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Etat}" />
+                    <TextBlock Margin="16,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               Text="{Binding CheminCourant}"
+                               TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

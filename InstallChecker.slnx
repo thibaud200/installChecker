@@ -1,14 +1,26 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/InstallChecker/InstallChecker.csproj" />
-    <Project Path="src/InstallChecker.Core/InstallChecker.Core.csproj" />
+  <Folder Name="/Identity/">
     <Project Path="src/InstallChecker.Identity/InstallChecker.Identity.csproj" />
     <Project Path="src/InstallChecker.Identity.Access/InstallChecker.Identity.Access.csproj" />
-    <Project Path="src/InstallChecker.DuplicateFiles/InstallChecker.DuplicateFiles.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/InstallChecker.Tests/InstallChecker.Tests.csproj" />
     <Project Path="tests/InstallChecker.Identity.Tests/InstallChecker.Identity.Tests.csproj" />
-    <Project Path="tests/InstallChecker.DuplicateFiles.Tests/InstallChecker.DuplicateFiles.Tests.csproj" />
+  </Folder>
+  <Folder Name="/modules/scanner/">
+    <Project Path="modules/scanner/src/InstallChecker.Scanner.Core/InstallChecker.Scanner.Core.csproj" />
+    <Project Path="modules/scanner/src/InstallChecker.Scanner.Observations/InstallChecker.Scanner.Observations.csproj" />
+    <Project Path="modules/scanner/src/InstallChecker.Scanner/InstallChecker.Scanner.csproj" />
+    <Project Path="modules/scanner/tests/InstallChecker.Scanner.Observations.Tests/InstallChecker.Scanner.Observations.Tests.csproj" />
+    <Project Path="modules/scanner/tests/InstallChecker.Scanner.Tests/InstallChecker.Scanner.Tests.csproj" />
+  </Folder>
+  <Folder Name="/modules/duplicate-files/">
+    <Project Path="modules/duplicate-files/src/InstallChecker.DuplicateFiles.Engine/InstallChecker.DuplicateFiles.Engine.csproj" />
+    <Project Path="modules/duplicate-files/src/InstallChecker.DuplicateFiles/InstallChecker.DuplicateFiles.csproj" />
+    <Project Path="modules/duplicate-files/src/InstallChecker.DuplicateFiles.Desktop/InstallChecker.DuplicateFiles.Desktop.csproj" />
+    <Project Path="modules/duplicate-files/tests/InstallChecker.DuplicateFiles.Desktop.Tests/InstallChecker.DuplicateFiles.Desktop.Tests.csproj" />
+    <Project Path="modules/duplicate-files/tests/InstallChecker.DuplicateFiles.Engine.Tests/InstallChecker.DuplicateFiles.Engine.Tests.csproj" />
+    <Project Path="modules/duplicate-files/tests/InstallChecker.DuplicateFiles.Tests/InstallChecker.DuplicateFiles.Tests.csproj" />
+  </Folder>
+  <Folder Name="/apps/cli/">
+    <Project Path="apps/cli/InstallChecker.Cli/InstallChecker.Cli.csproj" />
+    <Project Path="apps/cli/tests/InstallChecker.Cli.Tests/InstallChecker.Cli.Tests.csproj" />
   </Folder>
 </Solution>

@@ -8,7 +8,7 @@ Identity is an experimental platform whose goal is to solve one of the hardest p
 
 Unlike traditional Master Data Management (MDM) or duplicate detection solutions, Identity does not rely on confidence scores or opaque heuristics. Every decision is deterministic, reproducible, traceable and fully explainable.
 
-The project is currently focused on the formal derivation engine that serves as the foundation of the future platform.
+The formal derivation engine now serves as a frozen foundation for independently organized application modules.
 
 ## Vision
 
@@ -46,7 +46,7 @@ Identity is built around several non-negotiable principles:
 
 ## Current status
 
-The current implementation focuses on the deterministic derivation engine.
+The current implementation contains the deterministic derivation engine and its first file-oriented modules.
 
 It already provides:
 
@@ -56,6 +56,16 @@ It already provides:
 - complete audit generation;
 - deterministic identity indexing;
 - extensive conformance tests.
+
+The repository is organized by domain:
+
+- `src/InstallChecker.Identity*`: the frozen generic Identity foundation;
+- `modules/scanner/`: file observation and SQLite snapshot production;
+- `modules/duplicate-files/`: exact duplicate analysis, retention reports and reviewed plans;
+- `apps/cli/`: command routing and composition only.
+
+Module documentation: [Scanner](modules/scanner/README.md) and
+[Duplicate Files](modules/duplicate-files/README.md).
 
 This engine is intended to become the core of the future Identity platform.
 

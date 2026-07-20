@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InstallChecker.DuplicateFiles.Engine\InstallChecker.DuplicateFiles.Engine.csproj" />
+    <ProjectReference Include="..\..\..\scanner\src\InstallChecker.Scanner.Observations\InstallChecker.Scanner.Observations.csproj" />
+    <ProjectReference Include="..\..\..\..\src\InstallChecker.Identity\InstallChecker.Identity.csproj" />
+    <ProjectReference Include="..\..\..\..\src\InstallChecker.Identity.Access\InstallChecker.Identity.Access.csproj" />
+  </ItemGroup>
+
+</Project>

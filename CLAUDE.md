@@ -175,7 +175,7 @@ Le moteur principal doit être indépendant :
 Le système est composé de deux sous-systèmes indépendants :
 
 ```text
-InstallChecker.Core
+InstallChecker.Scanner
         │
         ▼
  Observations Ω
@@ -192,7 +192,7 @@ CLI / rapports / connecteurs
 
 Principes :
 
-- Core produit uniquement Ω.
+- Scanner produit uniquement Ω.
 - Identity ne modifie jamais Ω.
 - Toute interprétation est réalisée exclusivement par le moteur d'identité.
 - Les conventions sont des données du registre ℛ (`registre/`) et jamais du code.
@@ -256,6 +256,19 @@ Toute évolution de la connaissance passe par le registre ℛ ou par une évolut
 - Cache
 - Logging
 - Reporting
+
+## Organisation physique actuelle
+
+```text
+src/                                      Identity scellé uniquement
+modules/scanner/                          producteur d'observations de fichiers
+modules/duplicate-files/                  moteur et cas d'usage Duplicate Files
+apps/cli/                                 composition et routage des commandes
+```
+
+Le code, les tests, la documentation et les règles propres à un module restent dans son dossier.
+Un composant transverse à un seul module reste dans ce module ; il ne devient global qu'à partir
+d'un second consommateur réel et sans règle métier propre.
 
 ---
 
@@ -468,6 +481,13 @@ Toute décision structurante doit être documentée :
 - **Alternatives** : filtrage par consommateur (rejeté — trois implémentations divergentes du même « courant ») ; flag « courant » maintenu à l'écriture (rejeté — UPDATE interdit par ADR-002) ; lecteur v2 seul (rejeté — casserait le test d'or v1 et rouvrirait la conformité v3).
 - **Conséquences** : bases v1 rescannées (ADR-008, aucune migration) ; un scan partiel remplace tout l'état courant de son volume ; rejouer un état passé reste possible (l'historique est conservé) mais n'est pas exposé.
 
+## ADR-012 — Organisation verticale des modules et scellement d'Identity
+
+- **Contexte** : le Scanner et Duplicate Files possèdent des frontières logiques correctes, mais leur code, leurs tests et leur documentation sont dispersés entre les dossiers globaux `src/`, `tests/`, `docs/` et `modules/`. Cette dispersion rend l'ajout d'un second module métier difficile et entretient une ambiguïté entre le moteur générique Identity et les moteurs métier.
+- **Décision** : chaque module applicatif est regroupé sous `modules/<module>/` avec son code, ses tests, sa documentation et ses règles. L'hôte CLI réside sous `apps/cli/` et ne fait que router et composer les modules. `InstallChecker.Identity`, `InstallChecker.Identity.Access`, leurs tests, l'oracle, le registre et les documents normatifs restent à leurs emplacements historiques et sont scellés : aucun besoin métier ne peut les modifier ou les déplacer.
+- **Alternatives** : conserver l'organisation horizontale `src/tests/docs` (rejeté : les frontières métier restent invisibles) ; extraire immédiatement un dossier global `Shared` ou un système de plugins (rejeté : aucun second consommateur ne justifie ces abstractions) ; déplacer aussi Identity (rejeté : les versions publiées constituent le socle générique figé).
+- **Conséquences** : le Scanner reste un module transverse par usage ; Duplicate Files possède son propre moteur métier ; un composant ne devient global que lorsqu'au moins deux modules en dépendent réellement ; la migration physique conserve les comportements, les sorties CLI et les espaces de noms publics.
+
 ---
 
 # 18. ROADMAP (ÉVOLUTIF)
@@ -509,7 +529,7 @@ Ces documents prévalent sur toute interprétation du présent fichier concernan
 
 La vision fonctionnelle, les objectifs, les contraintes métier et les principes d'architecture du projet utilisant le moteur sont définis dans :
 
-- `docs/projet/vision.md`
+- `docs/projet/VISION.md`
 
 Ce document décrit le produit construit au-dessus du moteur. Il ne modifie jamais la théorie du moteur d'identité.
 
